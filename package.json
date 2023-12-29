@@ -1,0 +1,21 @@
+{
+  "name": "khl-bot",
+  "version": "1.0.0",
+  "description": "Monorepo for a KHL Discord bot",
+  "repository": "https://github.com/shayypy/khl-bot",
+  "author": "shay <43248357+shayypy@users.noreply.github.com>",
+  "license": "MIT",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "lint": "biome lint .",
+    "fix": "biome check --apply .",
+    "dev:site": "cd packages/site && npm run dev",
+    "dev:bot": "cd packages/bot && npm run dev"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "1.4.1"
+  }
+}

@@ -1,0 +1,16 @@
+name = "khl-bot"
+main = "src/index.ts"
+compatibility_date = "2023-12-18"
+
+# Variable bindings. These are arbitrary, plaintext strings (similar to environment variables)
+# Note: Use secrets to store sensitive data.
+# Docs: https://developers.cloudflare.com/workers/platform/environment-variables
+# [vars]
+# MY_VARIABLE = "production_value"
+
+[triggers]
+crons = ["* * * * *"] # run every minute
+
+# [[kv_namespaces]]
+# binding = "KV"
+# id = "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
