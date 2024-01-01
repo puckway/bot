@@ -1,0 +1,9 @@
+{
+    "references": [
+        {"path": "./packages/site"},
+        {"path": "./packages/bot"}
+    ],
+    "files": [],
+    "include": [],
+    "exclude": ["**/node_modules"]
+}

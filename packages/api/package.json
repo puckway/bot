@@ -1,0 +1,14 @@
+{
+  "name": "api",
+  "version": "0.0.0",
+  "description": "Wrapper to implement a KHL pseudo-API",
+  "main": "index.ts",
+  "author": "shayy",
+  "license": "MIT",
+  "private": true,
+  "devDependencies": {
+    "@types/jsdom": "^21.1.6",
+    "typescript": "^5.3.3"
+  },
+  "dependencies": {}
+}
