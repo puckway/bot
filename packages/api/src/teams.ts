@@ -7,7 +7,7 @@ export const getTeams = async (options?: KhlClientMethodOptions) => {
     "/khl_mobile/teams_v2.json",
     {
       params: {
-        locale: options?.language,
+        locale: options?.locale,
       },
     },
   );
@@ -25,7 +25,7 @@ export const getTeam = async (
     {
       params: {
         id: teamId,
-        locale: options?.language,
+        locale: options?.locale,
         stage_id: options?.stageId,
       },
     },

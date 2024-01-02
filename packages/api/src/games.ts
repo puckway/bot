@@ -33,7 +33,7 @@ export const getGames = async (
     "/khl_mobile/events_v2.json",
     {
       params: {
-        locale: options?.language,
+        locale: options?.locale,
         stage_id: options?.stageId,
         "q[start_at_lt_time_from_unixtime]": time,
         order_direction: "desc",
@@ -54,7 +54,7 @@ export const getGame = async (
     {
       params: {
         id: eventId,
-        locale: options?.language,
+        locale: options?.locale,
       },
     },
   );

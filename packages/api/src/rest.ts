@@ -24,7 +24,7 @@ export interface JsonFetchOptions {
 }
 
 export interface KhlClientMethodOptions {
-  language?: "RU" | "EN" | "CN";
+  locale?: "RU" | "EN" | "CN";
   stageId?: number;
 }
 

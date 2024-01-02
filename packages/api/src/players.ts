@@ -8,7 +8,7 @@ export const getPlayer = async (playerId: number, options?: KhlClientMethodOptio
     {
       params: {
         "q[id_in][]": playerId,
-        locale: options?.language,
+        locale: options?.locale,
         stage_id: options?.stageId,
       }
     }
