@@ -23,7 +23,7 @@ const s = transformLocalizations({
 
 export type KhlListedPartialGame = Pick<
   api.KhlEvent,
-  "game_state_key" | "score" | "team_a" | "team_b" | "start_at"
+  "game_state_key" | "score" | "team_a" | "team_b" | "start_at" | "end_at"
 >;
 
 export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
@@ -103,7 +103,9 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
                 ? `🔴 ${time(
                     game.start_at / 1000,
                     "t",
-                  )} - ${awayEmoji} ${awayAbbrev} @ ${homeEmoji} ${homeAbbrev}`
+                  )} - ${awayEmoji} ${awayAbbrev} @ ${homeEmoji} ${homeAbbrev}${
+                    game.end_at ? ` 🏁 ${time(game.end_at / 1000, "t")}` : ""
+                  }`
                 : `${
                     game.game_state_key === "finished" ? "🏁" : "🟢"
                   } ${awayEmoji} ${awayAbbrev} **${awayScore}** - **${homeScore}** ${homeEmoji} ${homeAbbrev}`;
@@ -134,6 +136,7 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
                 team_b: game.team_b,
                 score: game.score,
                 start_at: game.start_at,
+                end_at: game.end_at,
               }) as KhlListedPartialGame,
           ),
         ),
