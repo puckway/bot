@@ -13,7 +13,8 @@
     "lint": "biome lint .",
     "fix": "biome check --apply .",
     "dev:site": "cd packages/site && npm run dev",
-    "dev:bot": "cd packages/bot && npm run dev"
+    "dev:bot": "cd packages/bot && npm run dev",
+    "register": "cd packages/bot && npm run register"
   },
   "devDependencies": {
     "@biomejs/biome": "1.4.1"
