@@ -1,4 +1,4 @@
-import { KhlMinimalPlayer, KhlPlayerRoleKey } from "./players";
+import { KhlPlayerRoleKey } from "./players";
 import { KhlLongStat, KhlTeamArena } from "./teams";
 import { StageType } from "./video";
 
