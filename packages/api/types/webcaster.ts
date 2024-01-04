@@ -2,7 +2,7 @@ import { KhlMinimalPlayer, KhlPlayerRoleKey } from "./players";
 import { KhlLongStat, KhlTeamArena } from "./teams";
 import { StageType } from "./video";
 
-export type KhlGameStateKey = "not_yet_started" | "finished";
+export type KhlGameStateKey = "not_yet_started" | "in_progress" | "finished";
 
 // All of these are from site data except for
 // PlayoffMoment, Broadcast, and Top10
@@ -64,7 +64,7 @@ export interface KhlMinimalEvent {
   };
 }
 
-export type KhlBalancerType = "file" | "record" | "quote";
+export type KhlBalancerType = "file" | "record" | "quote" | "live";
 
 export interface KhlEvent extends KhlMinimalEvent {
   game_state_key: KhlGameStateKey;
