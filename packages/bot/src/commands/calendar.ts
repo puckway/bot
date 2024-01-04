@@ -36,6 +36,7 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
       flags: MessageFlags.Ephemeral,
     });
   }
+  const now = new Date();
   const date = dateMatch
     ? new Date(
         Number(dateMatch[1]),
@@ -43,7 +44,12 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
         Number(dateMatch[3]),
         6,
       )
-    : new Date();
+    : new Date(
+      now.getUTCFullYear(),
+      now.getUTCMonth(),
+      now.getUTCDate(),
+      6,
+    );
   if (Number.isNaN(date.getTime())) {
     return ctx.reply({
       content: s(ctx, "badDate"),
