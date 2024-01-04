@@ -1,6 +1,6 @@
 import { MessageFlags } from "discord-api-types/v10";
 import { ChatInputAppCommandCallback } from "../commands";
-import { getKhlLocale, transformLocalizations, uni } from "../l10n";
+import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
 import * as api from "api";
 import { EmbedBuilder, time } from "@discordjs/builders";
 import { khlTeamEmoji } from "../util/emojis";

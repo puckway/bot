@@ -4,7 +4,7 @@ import {
   MessageFlags,
   RESTError,
 } from "discord-api-types/v10";
-import { InteractionContext } from "./interactions";
+import { InteractionContext } from "../interactions";
 
 interface DiscordError {
   code: number;

@@ -1,6 +1,6 @@
 import { ButtonBuilder, EmbedBuilder } from "@discordjs/builders";
 import { ChatInputAppCommandCallback } from "../commands";
-import { transformLocalizations } from "../l10n";
+import { transformLocalizations } from "../util/l10n";
 import { ButtonStyle } from "discord-api-types/v10";
 import { PermissionFlags, PermissionsBitField } from "discord-bitflag";
 

@@ -1,5 +1,5 @@
 import { APIInteraction } from "discord-api-types/v10";
-import { InteractionContext } from "./interactions";
+import { InteractionContext } from "../interactions";
 
 export const getKhlLocale = (
   ctx: InteractionContext<APIInteraction>,

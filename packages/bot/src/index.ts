@@ -12,7 +12,7 @@ import {
 } from "discord-api-types/v10";
 import { client } from "discord-api-methods";
 import { InteractionContext } from "./interactions";
-import { getErrorMessage, isDiscordError } from "./errors.js";
+import { getErrorMessage, isDiscordError } from "./util/errors.js";
 import {
   ComponentCallbackT,
   ComponentRoutingId,

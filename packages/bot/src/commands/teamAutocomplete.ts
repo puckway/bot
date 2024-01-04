@@ -1,6 +1,6 @@
 import { AppCommandAutocompleteCallback } from "../commands";
 import * as api from "api";
-import { getKhlLocale } from "../l10n";
+import { getKhlLocale } from "../util/l10n";
 
 export const teamAutocomplete: AppCommandAutocompleteCallback = async (ctx) => {
   const query = ctx.getStringOption("team").value;
