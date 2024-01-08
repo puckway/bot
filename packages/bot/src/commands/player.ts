@@ -60,7 +60,7 @@ const getPlayerEmbed = async (
     .setAuthor({
       name: `${name} ${player.shirt_number ? `#${player.shirt_number}` : ""}`,
       url: `${api.DocBaseEnum[locale]}/players/${player.khl_id}`,
-      iconURL: player.team?.image,
+      iconURL: (player.team ?? player.teams[0])?.image,
     })
     .setThumbnail(player.image);
 
@@ -102,8 +102,7 @@ const getPlayerEmbed = async (
   embed.setDescription(description.slice(0, 4096));
 
   embed.addFields(
-    [...player.teams]
-      .reverse()
+    player.teams
       // Sometimes divisions are included with an empty `location`
       // We could hardcode a list of division IDs or we could just check this
       .filter((t) => !!t.location)
@@ -111,7 +110,7 @@ const getPlayerEmbed = async (
       .map((team) => {
         const emoji = khlTeamEmoji(ctx.env, team);
         return {
-          name: `${team.name} ${emoji}`,
+          name: `${emoji} ${team.name}`,
           value: team.seasons.split(",").join(", ").slice(0, 1024),
           inline: false,
         };
