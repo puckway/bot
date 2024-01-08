@@ -14,6 +14,7 @@ import { InteractionContext } from "./interactions";
 import { khlCalendarCallback } from "./commands/calendar";
 import { aboutCallback } from "./commands/about";
 import { teamAutocomplete } from "./commands/teamAutocomplete";
+import { khlPlayerCallback } from "./commands/player";
 
 export type AppCommandCallbackT<T extends APIInteraction> = (
   ctx: InteractionContext<T>,
@@ -150,7 +151,9 @@ export const appCommands: Record<
           ],
         },
       ],
-      handlers: {},
+      handlers: {
+        khl: khlPlayerCallback,
+      },
     },
     about: {
       name: "about",
