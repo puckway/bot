@@ -59,8 +59,7 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
   }
   const dateDay = date.toISOString().split("T")[0];
   const locale = getKhlLocale(ctx);
-  const lowerLocale =
-    locale === "CN" ? "en" : (locale.toLowerCase() as "en" | "ru");
+  const lowerLocale = locale === "cn" ? "en" : locale;
   const key = `games-khl-${date.toISOString().split("T")[0]}-${locale}`;
   const cachedGames = await ctx.env.KV.get<KhlListedPartialGame[]>(key, "json");
 
