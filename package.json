@@ -14,6 +14,7 @@
     "fix": "biome check --apply .",
     "dev:site": "cd packages/site && npm run dev",
     "dev:bot": "cd packages/bot && npm run dev",
+    "ngrok:bot": "cd packages/bot && npm run ngrok",
     "register": "cd packages/bot && npm run register"
   },
   "devDependencies": {
