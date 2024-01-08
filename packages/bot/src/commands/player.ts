@@ -2,10 +2,7 @@ import { ChatInputAppCommandCallback } from "../commands";
 import type { APILightPlayer } from "khl-api-types";
 import * as api from "api";
 import { getKhlLocale, transformLocalizations } from "../util/l10n";
-import {
-  APIInteraction,
-  APIInteractionResponseCallbackData,
-} from "discord-api-types/v10";
+import { APIInteraction } from "discord-api-types/v10";
 import {
   ActionRowBuilder,
   EmbedBuilder,
