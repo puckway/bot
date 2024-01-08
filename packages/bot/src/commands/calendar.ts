@@ -45,12 +45,7 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
         Number(dateMatch[3]),
         6,
       )
-    : new Date(
-      now.getUTCFullYear(),
-      now.getUTCMonth(),
-      now.getUTCDate(),
-      6,
-    );
+    : new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 6);
   if (Number.isNaN(date.getTime())) {
     return ctx.reply({
       content: s(ctx, "badDate"),
@@ -124,7 +119,12 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
   return [
     ctx.defer(),
     async () => {
-      const games = await api.getGames({ locale, date });
+      // The API accepts a specific timestamp, not a broad day, so we have to
+      // make sure our timestamp starts at 0 seconds in order to get all events
+      // for the day.
+      const sortDate = new Date(date);
+      sortDate.setUTCHours(0);
+      const games = await api.getGames({ locale, date: sortDate });
       await ctx.env.KV.put(
         key,
         JSON.stringify(
