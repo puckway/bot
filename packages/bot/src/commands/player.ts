@@ -14,7 +14,7 @@ import {
   StringSelectMenuOptionBuilder,
 } from "@discordjs/builders";
 import { InteractionContext } from "../interactions";
-import { khlTeamEmoji } from "../util/emojis";
+import { countryCodeEmoji, khlTeamEmoji } from "../util/emojis";
 import { SelectMenuCallback } from "../components";
 import { storeComponents } from "../util/components";
 
@@ -75,7 +75,14 @@ const getPlayerEmbed = async (
     description += `${s(ctx, "born")} ${birthdate} (${player.age})\n`;
   }
   if (player.country) {
-    description += player.country;
+    let emoji = "";
+    if (player.flag_image_url) {
+      const match = player.flag_image_url.match(/([A-Z]{2})\.png$/);
+      if (match) {
+        emoji = countryCodeEmoji(match[1]);
+      }
+    }
+    description += `${emoji} ${player.country}`.trim();
     description += "\n";
   }
   if (player.role) {
@@ -128,79 +135,52 @@ export const khlPlayerCallback: ChatInputAppCommandCallback = async (ctx) => {
       return { content: s(ctx, "noPlayer") };
     }
 
-    const embed = await getPlayerEmbed(ctx, matches[0].id);
-    let components;
-    if (matches.length > 1) {
-      components = [
-        new ActionRowBuilder<SelectMenuBuilder>()
-          .addComponents(
-            await storeComponents(ctx.env.KV, [
-              new StringSelectMenuBuilder().setOptions(
-                matches.slice(0, 25).map((p) =>
-                  new StringSelectMenuOptionBuilder({
-                    description: p.team ? p.team.name.slice(0, 100) : undefined,
-                  })
-                    .setValue(String(p.id))
-                    .setLabel(
-                      `${p.name} ${
-                        p.shirt_number ? `#${p.shirt_number}` : ""
-                      }`.slice(0, 100),
-                    ),
+      const matches = players.filter((p) =>
+        p.name.toLowerCase().includes(query),
+      );
+      if (matches.length === 0) {
+        await ctx.followup.editOriginalMessage({ content: s(ctx, "noPlayer") });
+        return;
+      }
+
+      const embed = await getPlayerEmbed(ctx, matches[0].id);
+      let components;
+      if (matches.length > 1) {
+        components = [
+          new ActionRowBuilder<SelectMenuBuilder>()
+            .addComponents(
+              await storeComponents(ctx.env.KV, [
+                new StringSelectMenuBuilder().setOptions(
+                  matches.slice(0, 25).map((p) =>
+                    new StringSelectMenuOptionBuilder({
+                      description: p.team
+                        ? p.team.name.slice(0, 100)
+                        : undefined,
+                    })
+                      .setValue(String(p.id))
+                      .setLabel(
+                        `${p.name} ${
+                          p.shirt_number ? `#${p.shirt_number}` : ""
+                        }`.slice(0, 100),
+                      ),
+                  ),
                 ),
-              ),
-              {
-                componentRoutingId: "player-search",
-                componentTimeout: 600,
-              },
-            ]),
-          )
-          .toJSON(),
-      ];
-    }
+                {
+                  componentRoutingId: "player-search",
+                  componentTimeout: 600,
+                },
+              ]),
+            )
+            .toJSON(),
+        ];
+      }
 
-    return {
-      embeds: [embed.toJSON()],
-      components,
-    };
-  };
-
-  const locale = getKhlLocale(ctx);
-  const key = `players-khl-${locale}`;
-  // await ctx.env.KV.delete(key)
-  const cachedPlayers = await ctx.env.KV.get<KhlPartialPlayer[]>(key, "json");
-  // const cachedPlayers = null;
-  if (!cachedPlayers) {
-    return [
-      ctx.defer(),
-      async () => {
-        // This is really how the KHL app does it. There's no endpoint to
-        // search players, so the entire players list is cached and then
-        // searched. It's really not that much data, especially when reduced
-        // for our KV store, so I'm fine with doing this
-        const players = await api.getPlayers({ locale, light: true });
-        await ctx.env.KV.put(
-          key,
-          JSON.stringify(
-            players.map(
-              (p) =>
-                ({
-                  id: p.id,
-                  name: reverseName(p.name),
-                  shirt_number: p.shirt_number,
-                  team: p.team ? { name: p.team.name } : undefined,
-                }) as KhlPartialPlayer,
-            ),
-          ),
-          {
-            // 3 days
-            expirationTtl: 259200,
-          },
-        );
-        await ctx.followup.editOriginalMessage(await findPlayer(players));
-      },
-    ];
-  }
-  return ctx.reply(await findPlayer(cachedPlayers));
+      await ctx.followup.editOriginalMessage({
+        embeds: [embed.toJSON()],
+        components,
+      });
+    },
+  ];
 };
 
 export const khlPlayerSearchSelectCallback: SelectMenuCallback = async (

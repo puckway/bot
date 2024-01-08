@@ -7,3 +7,9 @@ export const khlTeamEmoji = (env: Env, team: { id: number }) => {
   }
   return "❔";
 };
+
+export const countryCodeEmoji = (cc: string) =>
+  String.fromCodePoint(
+    // biome-ignore lint/style/noNonNullAssertion:
+    ...[...cc.toUpperCase()].map((c) => c.codePointAt(0)! + 127397),
+  );
