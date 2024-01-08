@@ -123,13 +123,36 @@ const getPlayerEmbed = async (
 export const khlPlayerCallback: ChatInputAppCommandCallback = async (ctx) => {
   const query = ctx.getStringOption("name").value.toLowerCase();
 
-  const findPlayer = async (
-    players: KhlPartialPlayer[],
-  ): Promise<APIInteractionResponseCallbackData> => {
-    const matches = players.filter((p) => p.name.toLowerCase().includes(query));
-    if (matches.length === 0) {
-      return { content: s(ctx, "noPlayer") };
-    }
+  return [
+    ctx.defer(),
+    async () => {
+      // This is really how the KHL app does it. There's no endpoint to
+      // search players, so the entire players list is cached and then
+      // searched. It's really not that much data, especially when reduced
+      // for our KV store, so I'm fine with doing this
+      const locale = getKhlLocale(ctx);
+      const key = `players-khl-${locale}`;
+      const players =
+        (await ctx.env.KV.get<KhlPartialPlayer[]>(key, "json")) ??
+        (await api.getPlayers({ locale, light: true }));
+      await ctx.env.KV.put(
+        key,
+        JSON.stringify(
+          players.map(
+            (p) =>
+              ({
+                id: p.id,
+                name: reverseName(p.name),
+                shirt_number: p.shirt_number,
+                team: p.team ? { name: p.team.name } : undefined,
+              }) as KhlPartialPlayer,
+          ),
+        ),
+        {
+          // 3 days
+          expirationTtl: 259200,
+        },
+      );
 
       const matches = players.filter((p) =>
         p.name.toLowerCase().includes(query),
