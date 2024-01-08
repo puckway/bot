@@ -1,16 +1,12 @@
 // import { JSDOM, ConstructorOptions } from "jsdom";
 
-export const DocBaseEnum = {
-  RU: "https://www.khl.ru",
-  EN: "https://en.khl.ru",
-  CN: "https://cn.khl.ru",
-  TEXT: "https://text.khl.ru",
-} as const;
+import { APIRouteBases } from "khl-api-types";
 
-export const APIBaseEnum = {
-  WEBCASTER: "https://webcaster.pro/api",
-  KHL_WEBCASTER: "https://khl.api.webcaster.pro/api",
-  VIDEO_API: "https://api-video.khl.ru/api",
+export const DocBaseEnum = {
+  ru: "https://www.khl.ru",
+  en: "https://en.khl.ru",
+  cn: "https://cn.khl.ru",
+  text: "https://text.khl.ru",
 } as const;
 
 export interface DocFetchOptions {
@@ -24,14 +20,14 @@ export interface JsonFetchOptions {
 }
 
 export interface KhlClientMethodOptions {
-  locale?: "RU" | "EN" | "CN";
+  locale?: "ru" | "en" | "cn";
   stageId?: number;
 }
 
 export class KhlApiError extends Error {}
 
 export const requestJson = async <T>(
-  base: (typeof APIBaseEnum)[keyof typeof APIBaseEnum],
+  base: (typeof APIRouteBases)[keyof typeof APIRouteBases],
   path: string,
   options?: JsonFetchOptions,
 ) => {

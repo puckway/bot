@@ -7,17 +7,17 @@ export const getKhlLocale = (
 ) => {
   const locale = ctx.getLocale(defaultLocale);
   if (locale.endsWith("CN")) {
-    return "CN";
+    return "cn";
   } else if (locale === "ru") {
-    return "RU";
+    return "ru";
   }
-  return "EN";
+  return "en";
 };
 
 export const transformLocalizations =
   <T>(localizations: T) =>
   (ctx: InteractionContext<APIInteraction>, key: string): string => {
-    const locale = getKhlLocale(ctx).toLowerCase() as keyof T;
+    const locale = getKhlLocale(ctx) as keyof T;
     const engStrings = localizations["en" as keyof T];
     const strings = localizations[locale];
     if (key in (strings as Record<string, string>)) {

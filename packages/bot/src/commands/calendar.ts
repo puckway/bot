@@ -2,6 +2,7 @@ import { MessageFlags } from "discord-api-types/v10";
 import { ChatInputAppCommandCallback } from "../commands";
 import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
 import * as api from "api";
+import type { APIEvent } from "khl-api-types";
 import { EmbedBuilder, time } from "@discordjs/builders";
 import { khlTeamEmoji } from "../util/emojis";
 
@@ -22,7 +23,7 @@ const s = transformLocalizations({
 });
 
 export type KhlListedPartialGame = Pick<
-  api.KhlEvent,
+  APIEvent,
   "game_state_key" | "score" | "team_a" | "team_b" | "start_at" | "end_at"
 >;
 

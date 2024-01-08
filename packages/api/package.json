@@ -9,5 +9,7 @@
   "devDependencies": {
     "typescript": "^5.3.3"
   },
-  "dependencies": {}
+  "dependencies": {
+    "khl-api-types": "^1.1.1"
+  }
 }

@@ -1,5 +1,5 @@
-import { KhlTeamWithDivision, KhlTeamWithInfo } from "../types/teams";
-import { APIBaseEnum, KhlClientMethodOptions, requestJson } from "./rest";
+import { APIRouteBases, Routes, type RESTGetAPITeam, type RESTGetAPITeams } from "khl-api-types";
+import { KhlClientMethodOptions, requestJson } from "./rest";
 
 // I didn't want to hardcode the teams like this but it tends to make a lot of
 // things easier, especially since the API is scant on providing abbreviations.
@@ -175,9 +175,9 @@ export const allTeams: {
 ];
 
 export const getTeams = async (options?: KhlClientMethodOptions) => {
-  const data = await requestJson<{ team: KhlTeamWithDivision }[]>(
-    APIBaseEnum.VIDEO_API,
-    "/khl_mobile/teams_v2.json",
+  const data = await requestJson<RESTGetAPITeams>(
+    APIRouteBases.khl,
+    Routes.teams(),
     {
       params: {
         locale: options?.locale,
@@ -192,9 +192,9 @@ export const getTeam = async (
   teamId: number,
   options?: KhlClientMethodOptions & { stageId?: number },
 ) => {
-  const { team } = await requestJson<{ team: KhlTeamWithInfo }>(
-    APIBaseEnum.KHL_WEBCASTER,
-    "/khl_mobile/team_v2.json",
+  const { team } = await requestJson<RESTGetAPITeam>(
+    APIRouteBases.khl,
+    Routes.team(),
     {
       params: {
         id: teamId,

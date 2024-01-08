@@ -1,6 +1,5 @@
-import { VideoAPIGetEvents } from "../types/video";
-import { KhlEventWithInfo } from "../types/webcaster";
-import { APIBaseEnum, KhlClientMethodOptions, requestJson } from "./rest";
+import { type RESTGetAPIEvents, type RESTGetAPIEvent, APIRouteBases, Routes } from "khl-api-types";
+import { KhlClientMethodOptions, requestJson } from "./rest";
 
 export const getGames = async (
   options?: KhlClientMethodOptions & {
@@ -28,9 +27,9 @@ export const getGames = async (
   //   "/khl_site/data.json",
   // );
 
-  const data = await requestJson<VideoAPIGetEvents>(
-    APIBaseEnum.KHL_WEBCASTER,
-    "/khl_mobile/events_v2.json",
+  const data = await requestJson<RESTGetAPIEvents>(
+    APIRouteBases.khl,
+    Routes.events(),
     {
       params: {
         locale: options?.locale,
@@ -48,9 +47,9 @@ export const getGame = async (
   eventId: number,
   options?: KhlClientMethodOptions,
 ) => {
-  const data = await requestJson<{ event: KhlEventWithInfo }>(
-    APIBaseEnum.KHL_WEBCASTER,
-    "/khl_mobile/event_v2.json",
+  const data = await requestJson<RESTGetAPIEvent>(
+    APIRouteBases.khl,
+    Routes.event(),
     {
       params: {
         id: eventId,

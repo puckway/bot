@@ -1759,6 +1759,8 @@ anymatch@~3.1.2:
 
 api@./packages/api:
   version "0.0.0"
+  dependencies:
+    khl-api-types "^1.1.1"
 
 arg@^5.0.1:
   version "5.0.2"
@@ -4047,6 +4049,11 @@ keyv@^4.0.0, keyv@^4.5.3:
   integrity sha512-oxVHkHR/EJf2CNXnWxRLW6mg7JyCCUcG0DtEGmL2ctUo1PNTin1PUil+r/+4r5MpVgC/fn1kjsx7mjSujKqIpw==
   dependencies:
     json-buffer "3.0.1"
+
+khl-api-types@^1.1.1:
+  version "1.1.1"
+  resolved "https://registry.yarnpkg.com/khl-api-types/-/khl-api-types-1.1.1.tgz#b997ca6f26e04dd8092c5dc1b285a377b90a44c6"
+  integrity sha512-E4iFEhtXPAOjKdVjFEB7KvMZlDztAKja4s6IE8nt6gtqkNbLkW52DzHCn4qyU3OAIyZVnBxqJxf8M7ar5rl94Q==
 
 kleur@^4.0.3:
   version "4.1.5"
