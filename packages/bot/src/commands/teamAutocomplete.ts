@@ -6,7 +6,7 @@ export const teamAutocomplete: AppCommandAutocompleteCallback = async (ctx) => {
   const query = ctx.getStringOption("team").value;
   const locale_ = getKhlLocale(ctx);
   const locale =
-    locale_ === "CN" ? "en" : (locale_.toLowerCase() as "en" | "ru");
+    locale_ === "cn" ? "en" : (locale_.toLowerCase() as "en" | "ru");
   const sorted = api.allTeams
     .filter(
       (t) =>
