@@ -14,10 +14,33 @@ export const getKhlLocale = (
   return "en";
 };
 
+export const getHtLocale = (
+  ctx: InteractionContext<APIInteraction>,
+  defaultLocale?: string,
+) => {
+  const locale = ctx.getLocale(defaultLocale);
+  return locale === "fr" ? "fr" : "en";
+};
+
+export const getKeyableLocale = (
+  ctx: InteractionContext<APIInteraction>,
+  defaultLocale?: string,
+) => {
+  const locale = ctx.getLocale(defaultLocale);
+  if (locale.endsWith("CN")) return "cn";
+  switch (locale) {
+    case "ru":
+    case "fr":
+      return locale;
+    default:
+      return "en";
+  }
+};
+
 export const transformLocalizations =
   <T>(localizations: T) =>
   (ctx: InteractionContext<APIInteraction>, key: string): string => {
-    const locale = getKhlLocale(ctx) as keyof T;
+    const locale = getKeyableLocale(ctx) as keyof T;
     const engStrings = localizations["en" as keyof T];
     const strings = localizations[locale];
     if (key in (strings as Record<string, string>)) {
