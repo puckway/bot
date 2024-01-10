@@ -51,6 +51,13 @@ export interface Env {
   KHL_TEAM_EMOJI_22: string;
   KHL_TEAM_EMOJI_28: string;
   KHL_TEAM_EMOJI_34: string;
+  PWHL_LOGO: string;
+  PWHL_TEAM_EMOJI_1: string;
+  PWHL_TEAM_EMOJI_2: string;
+  PWHL_TEAM_EMOJI_3: string;
+  PWHL_TEAM_EMOJI_4: string;
+  PWHL_TEAM_EMOJI_5: string;
+  PWHL_TEAM_EMOJI_6: string;
 }
 
 const router = Router();
