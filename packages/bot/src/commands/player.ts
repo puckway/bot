@@ -19,7 +19,7 @@ import { countryCodeEmoji, khlTeamEmoji, pwhlTeamEmoji } from "../util/emojis";
 import { SelectMenuCallback } from "../components";
 import { storeComponents } from "../util/components";
 import { getPwhlClient } from "../pwhl/client";
-import { allTeams, pwhlTeamLogoUrl } from "../pwhl/team";
+import { pwhlTeamLogoUrl } from "../pwhl/team";
 
 type KhlPartialPlayer = Pick<APILightPlayer, "id" | "name" | "shirt_number"> & {
   team: { name: string } | null;
