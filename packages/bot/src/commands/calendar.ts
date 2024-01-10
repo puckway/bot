@@ -4,7 +4,9 @@ import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
 import * as api from "api";
 import type { APIEvent } from "khl-api-types";
 import { EmbedBuilder, time } from "@discordjs/builders";
-import { khlTeamEmoji } from "../util/emojis";
+import { khlTeamEmoji, pwhlTeamEmoji } from "../util/emojis";
+import { getPwhlClient } from "../pwhl/client";
+import { allTeams } from "../pwhl/team";
 
 export const DATE_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
 
@@ -13,12 +15,20 @@ const s = transformLocalizations({
     badDate: "Invalid date. Must follow the format `YYYY-MM-DD`.",
     schedule: "Schedule",
     noGames: "No games on this date.",
+    today: "Today",
   },
   ru: {
     schedule: "Календарь",
+    today: "Сегодня",
   },
   cn: {
     schedule: "赛程",
+    today: "今天",
+  },
+  fr: {
+    schedule: "Horaire",
+    noGames: "Aucun jeux trouvé",
+    today: "Aujourd'hui"
   },
 });
 
@@ -148,4 +158,83 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
       await ctx.followup.editOriginalMessage({ embeds: [buildEmbed(games)] });
     },
   ];
+};
+
+export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
+  ctx,
+) => {
+  const today = new Date().toISOString().split("T")[0];
+  const client = getPwhlClient();
+  const teamId = ctx.getStringOption("team")?.value;
+  const team = teamId ? allTeams.find((t) => t.id === teamId) : undefined;
+  const data = await client.getSeasonSchedule(
+    Number(ctx.getStringOption("season")?.value ?? 1),
+    teamId ? Number(teamId) : undefined,
+  );
+  const monthIndex = Number(
+    ctx.getStringOption("month")?.value ?? new Date().getUTCMonth(),
+  );
+  let monthDate = new Date();
+  monthDate.setUTCMonth(monthIndex);
+  const games = data.SiteKit.Schedule.filter(
+    (game) => new Date(game.date_time_played).getUTCMonth() === monthIndex,
+  );
+  if (games.length !== 0) {
+    monthDate = new Date(games[0].date_time_played);
+  }
+
+  const embed = new EmbedBuilder()
+    .setAuthor({
+      name: uni(ctx, "pwhl"),
+      iconURL: ctx.env.PWHL_LOGO,
+    })
+    .setTitle(
+      `${s(ctx, "schedule")}${
+        team ? ` - ${team.nickname}` : ""
+      } - ${monthDate.toLocaleString(ctx.getLocale(), {
+        month: "long",
+        year: "numeric",
+      })}`,
+    )
+    .setDescription(
+      games
+        .map((game, i) => {
+          const startAt = new Date(game.date_time_played);
+          const homeEmoji = pwhlTeamEmoji(ctx.env, game.home_team);
+          const awayEmoji = pwhlTeamEmoji(ctx.env, game.visiting_team);
+          let line =
+            game.status === "1"
+              ? `🔴 ${time(startAt, game.date_played === today ? "t" : "d")} - ${awayEmoji} ${
+                  game.visiting_team_code
+                } @ ${homeEmoji} ${game.home_team_code}`
+              : `${
+                  game.status === "4"
+                    ? `🏁 ${time(startAt, "d")}`
+                    : `🟢 ${time(startAt, "t")}`
+                } ${awayEmoji} ${game.visiting_team_code} **${
+                  game.visiting_goal_count
+                }** - **${game.home_goal_count}** ${homeEmoji} ${
+                  game.home_team_code
+                }`;
+
+          const last = games[i - 1];
+          if (
+            game.date_played === today &&
+            (!last || last.date_played !== game.date_played)
+          ) {
+            line = `**${s(ctx, "today")}**\n${line}`;
+          }
+
+          return line;
+        })
+        .join("\n\n")
+        .trim()
+        .slice(0, 4096) || s(ctx, "noGames"),
+    )
+    // .setFooter({
+    //   text: data.SiteKit.Copyright.required_copyright.slice(0, 2048),
+    // })
+    .toJSON();
+
+  return ctx.reply({ embeds: [embed] });
 };
