@@ -6,7 +6,7 @@ import {
   APIModalSubmitInteraction,
 } from "discord-api-types/v10";
 import { InteractionContext } from "./interactions";
-import { khlPlayerSearchSelectCallback } from "./commands/player";
+import { playerSearchSelectCallback } from "./commands/player";
 
 export interface MinimumKVComponentState {
   /** The total number of seconds that the component/modal should be stored. */
@@ -47,7 +47,7 @@ export type ComponentRoutingId = "player-search";
 export type StorableRoutingId = ComponentRoutingId | ModalRoutingId;
 
 export const componentStore: Record<ComponentRoutingId, StoredComponentData> = {
-  "player-search": { handler: khlPlayerSearchSelectCallback },
+  "player-search": { handler: playerSearchSelectCallback },
 };
 
 export const modalStore: Record<string, StoredModalData> = {};
