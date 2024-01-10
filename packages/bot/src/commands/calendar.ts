@@ -1,12 +1,18 @@
-import { MessageFlags } from "discord-api-types/v10";
+import { ButtonStyle, MessageFlags } from "discord-api-types/v10";
 import { ChatInputAppCommandCallback } from "../commands";
 import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
 import * as api from "api";
 import type { APIEvent } from "khl-api-types";
-import { EmbedBuilder, time } from "@discordjs/builders";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  EmbedBuilder,
+  time,
+} from "@discordjs/builders";
 import { khlTeamEmoji, pwhlTeamEmoji } from "../util/emojis";
 import { getPwhlClient } from "../pwhl/client";
 import { allTeams } from "../pwhl/team";
+import { storeComponents } from "../util/components";
 
 export const DATE_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
 
@@ -28,7 +34,7 @@ const s = transformLocalizations({
   fr: {
     schedule: "Horaire",
     noGames: "Aucun jeux trouvé",
-    today: "Aujourd'hui"
+    today: "Aujourd'hui",
   },
 });
 
@@ -204,9 +210,12 @@ export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
           const awayEmoji = pwhlTeamEmoji(ctx.env, game.visiting_team);
           let line =
             game.status === "1"
-              ? `🔴 ${time(startAt, game.date_played === today ? "t" : "d")} - ${awayEmoji} ${
-                  game.visiting_team_code
-                } @ ${homeEmoji} ${game.home_team_code}`
+              ? `🔴 ${time(
+                  startAt,
+                  game.date_played === today ? "t" : "d",
+                )} ${awayEmoji} ${game.visiting_team_code} @ ${homeEmoji} ${
+                  game.home_team_code
+                }`
               : `${
                   game.status === "4"
                     ? `🏁 ${time(startAt, "d")}`
@@ -236,5 +245,23 @@ export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
     // })
     .toJSON();
 
-  return ctx.reply({ embeds: [embed] });
+  let components;
+  if (games.length > 0) {
+    components = [
+      new ActionRowBuilder<ButtonBuilder>()
+        .addComponents(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setURL(
+              `https://lscluster.hockeytech.com/components/calendar/ical_add_games.php?client_code=pwhl&game_ids=${games
+                .map((g) => g.id)
+                .join(",")}`,
+            )
+            .setLabel("Add to Calendar"),
+        )
+        .toJSON(),
+    ];
+  }
+
+  return ctx.reply({ embeds: [embed], components });
 };
