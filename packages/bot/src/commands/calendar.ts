@@ -177,10 +177,10 @@ export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
   let monthDate = new Date();
   monthDate.setUTCMonth(monthIndex);
   const games = data.SiteKit.Schedule.filter(
-    (game) => new Date(game.date_time_played).getUTCMonth() === monthIndex,
+    (game) => new Date(game.GameDateISO8601).getUTCMonth() === monthIndex,
   );
   if (games.length !== 0) {
-    monthDate = new Date(games[0].date_time_played);
+    monthDate = new Date(games[0].GameDateISO8601);
   }
 
   const embed = new EmbedBuilder()
@@ -199,7 +199,7 @@ export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
     .setDescription(
       games
         .map((game, i) => {
-          const startAt = new Date(game.date_time_played);
+          const startAt = new Date(game.GameDateISO8601);
           const homeEmoji = pwhlTeamEmoji(ctx.env, game.home_team);
           const awayEmoji = pwhlTeamEmoji(ctx.env, game.visiting_team);
           let line =
