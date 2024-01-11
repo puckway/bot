@@ -1,4 +1,13 @@
-import { ButtonStyle, MessageFlags } from "discord-api-types/v10";
+import {
+  APIGuildScheduledEvent,
+  ButtonStyle,
+  GuildScheduledEventEntityType,
+  GuildScheduledEventPrivacyLevel,
+  MessageFlags,
+  RESTGetAPIGuildScheduledEventsResult,
+  RESTPostAPIGuildScheduledEventResult,
+  Routes,
+} from "discord-api-types/v10";
 import { ChatInputAppCommandCallback } from "../commands";
 import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
 import * as api from "api";
@@ -13,6 +22,10 @@ import { khlTeamEmoji, pwhlTeamEmoji } from "../util/emojis";
 import { getPwhlClient } from "../pwhl/client";
 import { allTeams } from "../pwhl/team";
 import { storeComponents } from "../util/components";
+import { ButtonCallback, MinimumKVComponentState } from "../components";
+import { PermissionFlags } from "discord-bitflag";
+import { RateLimitError } from "discord-request";
+import { sleep } from "../util/sleep";
 
 export const DATE_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
 
@@ -22,6 +35,9 @@ const s = transformLocalizations({
     schedule: "Schedule",
     noGames: "No games on this date.",
     today: "Today",
+    missingPermissions: "You are missing permissions:",
+    notGuild: "You must be in a server to do that.",
+    noSchedulableGames: "There are no applicable games to import.",
   },
   ru: {
     schedule: "Календарь",
@@ -169,99 +185,245 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
 export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
   ctx,
 ) => {
-  const today = new Date().toISOString().split("T")[0];
-  const client = getPwhlClient();
-  const teamId = ctx.getStringOption("team")?.value;
-  const team = teamId ? allTeams.find((t) => t.id === teamId) : undefined;
-  const data = await client.getSeasonSchedule(
-    Number(ctx.getStringOption("season")?.value ?? 1),
-    teamId ? Number(teamId) : undefined,
-  );
-  const monthIndex = Number(
-    ctx.getStringOption("month")?.value ?? new Date().getUTCMonth(),
-  );
-  let monthDate = new Date();
-  monthDate.setUTCMonth(monthIndex);
-  const games = data.SiteKit.Schedule.filter(
-    (game) => new Date(game.GameDateISO8601).getUTCMonth() === monthIndex,
-  );
-  if (games.length !== 0) {
-    monthDate = new Date(games[0].GameDateISO8601);
-  }
+  return [
+    ctx.defer(),
+    async () => {
+      const today = new Date().toISOString().split("T")[0];
+      const client = getPwhlClient();
+      const teamId = ctx.getStringOption("team")?.value;
+      const team = teamId ? allTeams.find((t) => t.id === teamId) : undefined;
+      const data = await client.getSeasonSchedule(
+        Number(ctx.getStringOption("season")?.value ?? 1),
+        teamId ? Number(teamId) : undefined,
+      );
+      const monthIndex = Number(
+        ctx.getStringOption("month")?.value ?? new Date().getUTCMonth(),
+      );
+      let monthDate = new Date();
+      monthDate.setUTCMonth(monthIndex);
+      const games = data.SiteKit.Schedule.filter(
+        (game) => new Date(game.GameDateISO8601).getUTCMonth() === monthIndex,
+      );
+      if (games.length !== 0) {
+        monthDate = new Date(games[0].GameDateISO8601);
+      }
 
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: uni(ctx, "pwhl"),
-      iconURL: ctx.env.PWHL_LOGO,
-    })
-    .setTitle(
-      `${s(ctx, "schedule")}${
-        team ? ` - ${team.nickname}` : ""
-      } - ${monthDate.toLocaleString(ctx.getLocale(), {
-        month: "long",
-        year: "numeric",
-      })}`,
-    )
-    .setDescription(
-      games
-        .map((game, i) => {
-          const startAt = new Date(game.GameDateISO8601);
-          const homeEmoji = pwhlTeamEmoji(ctx.env, game.home_team);
-          const awayEmoji = pwhlTeamEmoji(ctx.env, game.visiting_team);
-          let line =
-            game.status === "1"
-              ? `🔴 ${time(
-                  startAt,
-                  game.date_played === today ? "t" : "d",
-                )} ${awayEmoji} ${game.visiting_team_code} @ ${homeEmoji} ${
-                  game.home_team_code
-                }`
-              : `${
-                  game.status === "4"
-                    ? `🏁 ${time(startAt, "d")}`
-                    : `🟢 ${time(startAt, "t")}`
-                } ${awayEmoji} ${game.visiting_team_code} **${
-                  game.visiting_goal_count
-                }** - **${game.home_goal_count}** ${homeEmoji} ${
-                  game.home_team_code
-                }`;
-
-          const last = games[i - 1];
-          if (
-            game.date_played === today &&
-            (!last || last.date_played !== game.date_played)
-          ) {
-            line = `**${s(ctx, "today")}**\n${line}`;
-          }
-
-          return line;
+      const embed = new EmbedBuilder()
+        .setAuthor({
+          name: uni(ctx, "pwhl"),
+          iconURL: ctx.env.PWHL_LOGO,
         })
-        .join("\n\n")
-        .trim()
-        .slice(0, 4096) || s(ctx, "noGames"),
-    )
-    // .setFooter({
-    //   text: data.SiteKit.Copyright.required_copyright.slice(0, 2048),
-    // })
-    .toJSON();
-
-  let components;
-  if (games.length > 0) {
-    components = [
-      new ActionRowBuilder<ButtonBuilder>()
-        .addComponents(
-          new ButtonBuilder()
-            .setStyle(ButtonStyle.Link)
-            .setURL(
-              `https://lscluster.hockeytech.com/components/calendar/ical_add_games.php?client_code=pwhl&game_ids=${games
-                .map((g) => g.id)
-                .join(",")}`,
-            )
-            .setLabel("Add to Calendar"),
+        .setTitle(
+          `${s(ctx, "schedule")}${
+            team ? ` - ${team.nickname}` : ""
+          } - ${monthDate.toLocaleString(ctx.getLocale(), {
+            month: "long",
+            year: "numeric",
+          })}`,
         )
-        .toJSON(),
-    ];
+        .setDescription(
+          games
+            .map((game, i) => {
+              const startAt = new Date(game.GameDateISO8601);
+              const homeEmoji = pwhlTeamEmoji(ctx.env, game.home_team);
+              const awayEmoji = pwhlTeamEmoji(ctx.env, game.visiting_team);
+              let line =
+                game.status === "1"
+                  ? `🔴 ${time(
+                      startAt,
+                      game.date_played === today ? "t" : "d",
+                    )} ${awayEmoji} ${game.visiting_team_code} @ ${homeEmoji} ${
+                      game.home_team_code
+                    }`
+                  : `${
+                      game.status === "4" || game.status === "3"
+                        ? `🏁 ${time(startAt, "d")}`
+                        : `🟢 ${time(startAt, "t")}`
+                    } ${awayEmoji} ${game.visiting_team_code} **${
+                      game.visiting_goal_count
+                    }** - **${game.home_goal_count}** ${homeEmoji} ${
+                      game.home_team_code
+                    }`;
+
+              const last = games[i - 1];
+              if (
+                game.date_played === today &&
+                (!last || last.date_played !== game.date_played)
+              ) {
+                line = `**${s(ctx, "today")}**\n${line}`;
+              }
+
+              return line;
+            })
+            .join("\n\n")
+            .trim()
+            .slice(0, 4096) || s(ctx, "noGames"),
+        )
+        // .setFooter({
+        //   text: data.SiteKit.Copyright.required_copyright.slice(0, 2048),
+        // })
+        .toJSON();
+
+      let components;
+      if (games.length > 0) {
+        components = [
+          new ActionRowBuilder<ButtonBuilder>()
+            .addComponents(
+              // Discord provides this feature natively in events.
+              // Might be kind of confusing too.
+              // new ButtonBuilder()
+              //   .setStyle(ButtonStyle.Link)
+              //   .setURL(
+              //     `https://lscluster.hockeytech.com/components/calendar/ical_add_games.php?client_code=pwhl&game_ids=${games
+              //       .map((g) => g.id)
+              //       .join(",")}`,
+              //   )
+              //   .setLabel("Add to Calendar"),
+              ...(await storeComponents(ctx.env.KV, [
+                new ButtonBuilder()
+                  .setStyle(ButtonStyle.Primary)
+                  .setLabel("Add all as server events"),
+                {
+                  componentRoutingId: "add-schedule-events",
+                  componentTimeout: 600,
+                  componentOnce: true,
+                  league: "pwhl",
+                  games: games
+                    .filter((game) => game.status === "1")
+                    .map((game) => ({
+                      id: game.id,
+                      title: `${game.visiting_team_nickname} at ${game.home_team_nickname}`,
+                      location: game.venue_location,
+                      description: [
+                        "📺 Watch live on YouTube [@thepwhlofficial](https://youtube.com/@thepwhlofficial/streams)",
+                        `🏟️ ${game.visiting_team_code} @ ${game.home_team_code} - [${game.venue_name}](${game.venue_url})`,
+                        `🎟️ Buy tickets: ${game.tickets_url}`,
+                        `🆔 pwhl:${game.id}`,
+                      ].join("\n\n"),
+                      date: game.GameDateISO8601,
+                    })),
+                },
+              ])),
+            )
+            .toJSON(),
+        ];
+      }
+      await ctx.followup.editOriginalMessage({ embeds: [embed], components });
+    },
+  ];
+};
+
+export interface AddScheduleEventsState extends MinimumKVComponentState {
+  league: "khl" | "pwhl";
+  games: {
+    id: string;
+    title: string;
+    location: string;
+    description: string;
+    date: string;
+  }[];
+}
+
+export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
+  const state = ctx.state as AddScheduleEventsState;
+  const guildId = ctx.interaction.guild_id;
+
+  if (!ctx.userPermissons.has(PermissionFlags.ManageEvents)) {
+    return ctx.reply({
+      content: `${s(ctx, "missingPermissions")} **Manage Events**`,
+      flags: MessageFlags.Ephemeral,
+    });
   }
 
-  return ctx.reply({ embeds: [embed], components });
+  if (!guildId) {
+    return ctx.reply({
+      content: s(ctx, "notGuild"),
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
+  if (state.games.length === 0) {
+    return ctx.reply({
+      content: s(ctx, "noSchedulableGames"),
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
+  // Don't add duplicate events
+  const extantEvents = (await ctx.client.get(
+    Routes.guildScheduledEvents(guildId),
+  )) as RESTGetAPIGuildScheduledEventsResult;
+  const extantGameIds = state.games
+    .map((game) =>
+      extantEvents.find(
+        (e) =>
+          !!e.description &&
+          e.description.endsWith(`${state.league}:${game.id}`),
+      )
+        ? game.id
+        : undefined,
+    )
+    .filter((e) => !!e)
+    .map((e) => e as string);
+  const newGames = state.games.filter(
+    (game) =>
+      !extantGameIds.includes(game.id) && new Date(game.date) > new Date(),
+  );
+
+  if (newGames.length === 0) {
+    return ctx.reply({
+      content: s(ctx, "noSchedulableGames"),
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
+  return [
+    ctx.reply({
+      content: `Importing ${newGames.length} events...`,
+    }),
+    async () => {
+      const events: APIGuildScheduledEvent[] = [];
+      for (const game of newGames) {
+        const callback = async () => {
+          const event = (await ctx.client.post(
+            Routes.guildScheduledEvents(guildId),
+            {
+              body: {
+                name: game.title,
+                privacy_level: GuildScheduledEventPrivacyLevel.GuildOnly,
+                scheduled_start_time: new Date(game.date).toISOString(),
+                scheduled_end_time: new Date(
+                  new Date(game.date).getTime() + 3600000 * 3,
+                ).toISOString(),
+                description: game.description,
+                entity_type: GuildScheduledEventEntityType.External,
+                entity_metadata: { location: game.location },
+              },
+            },
+          )) as RESTPostAPIGuildScheduledEventResult;
+          events.push(event);
+        };
+        try {
+          await callback();
+        } catch (e) {
+          // https://github.com/IanMitchell/interaction-kit/tree/main/packages/discord-api-methods
+          // "it is fully typed and handles rate limits appropriately"
+          if (e instanceof RateLimitError) {
+            if (e.retryAfter > 10) {
+              continue;
+            }
+
+            await sleep(e.retryAfter * 1000);
+            await callback();
+            continue;
+          }
+          throw e;
+        }
+      }
+
+      await ctx.followup.editOriginalMessage({
+        content: `Imported ${events.length} events.`,
+      });
+    },
+  ];
 };

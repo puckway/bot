@@ -7,6 +7,7 @@ import {
 } from "discord-api-types/v10";
 import { InteractionContext } from "./interactions";
 import { playerSearchSelectCallback } from "./commands/player";
+import { addScheduleEventsCallback } from "./commands/calendar";
 
 export interface MinimumKVComponentState {
   /** The total number of seconds that the component/modal should be stored. */
@@ -42,12 +43,13 @@ export type StoredModalData = { handler: ModalCallback };
 
 export type ModalRoutingId = "";
 
-export type ComponentRoutingId = "player-search";
+export type ComponentRoutingId = "player-search" | "add-schedule-events";
 
 export type StorableRoutingId = ComponentRoutingId | ModalRoutingId;
 
 export const componentStore: Record<ComponentRoutingId, StoredComponentData> = {
   "player-search": { handler: playerSearchSelectCallback },
+  "add-schedule-events": { handler: addScheduleEventsCallback },
 };
 
 export const modalStore: Record<string, StoredModalData> = {};
