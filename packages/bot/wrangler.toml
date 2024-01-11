@@ -1,4 +1,4 @@
-name = "khl-bot"
+name = "puckway-bot"
 main = "src/index.ts"
 node_compat = true
 compatibility_date = "2023-12-18"
