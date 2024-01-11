@@ -291,42 +291,42 @@ export const appCommands: Record<
       },
       description: "...",
       options: [
-        {
-          type: ApplicationCommandOptionType.Subcommand,
-          name: "khl",
-          name_localizations: {
-            ru: "кхл",
-          },
-          description: "Find a player by their number",
-          description_localizations: {
-            fr: "Trouver un joueur par son numéro",
-            ru: "Найдите игрока по номеру",
-          },
-          options: [
-            {
-              type: ApplicationCommandOptionType.Integer,
-              min_value: 1,
-              max_value: 99,
-              name: "number",
-              name_localizations: {
-                fr: "numéro",
-                ru: "число",
-              },
-              description: "The player's jersey number",
-              description_localizations: {
-                fr: "Le numéro de maillot du joueur",
-              },
-              required: true,
-            },
-            {
-              type: ApplicationCommandOptionType.String,
-              name: "team",
-              description: "The team to get games for",
-              required: false,
-              autocomplete: true,
-            }
-          ],
-        },
+        // {
+        //   type: ApplicationCommandOptionType.Subcommand,
+        //   name: "khl",
+        //   name_localizations: {
+        //     ru: "кхл",
+        //   },
+        //   description: "Find a player by their number",
+        //   description_localizations: {
+        //     fr: "Trouver un joueur par son numéro",
+        //     ru: "Найдите игрока по номеру",
+        //   },
+        //   options: [
+        //     {
+        //       type: ApplicationCommandOptionType.Integer,
+        //       min_value: 1,
+        //       max_value: 99,
+        //       name: "number",
+        //       name_localizations: {
+        //         fr: "numéro",
+        //         ru: "число",
+        //       },
+        //       description: "The player's jersey number",
+        //       description_localizations: {
+        //         fr: "Le numéro de maillot du joueur",
+        //       },
+        //       required: true,
+        //     },
+        //     {
+        //       type: ApplicationCommandOptionType.String,
+        //       name: "team",
+        //       description: "The team to search",
+        //       required: false,
+        //       autocomplete: true,
+        //     }
+        //   ],
+        // },
         {
           type: ApplicationCommandOptionType.Subcommand,
           name: "pwhl",
