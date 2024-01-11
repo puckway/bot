@@ -228,7 +228,7 @@ export const playerSearchSelectCallback: SelectMenuCallback = async (ctx) => {
     ];
   } else {
     const embed = await getPwhlPlayerEmbed(ctx, Number(playerId));
-    return ctx.reply({ embeds: [embed.toJSON()] });
+    return ctx.updateMessage({ embeds: [embed.toJSON()] });
   }
 };
 
@@ -335,7 +335,7 @@ export const pwhlPlayerCallback: ChatInputAppCommandCallback = async (ctx) => {
                         ? p.last_team_name.slice(0, 100)
                         : undefined,
                     })
-                      .setValue(`pwhl-${p.person_id}`)
+                      .setValue(`pwhl-${p.player_id}`)
                       .setLabel(
                         `${p.first_name} ${p.last_name} ${
                           p.jersey_number ? `#${p.jersey_number}` : ""
