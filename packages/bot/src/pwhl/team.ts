@@ -1,9 +1,28 @@
-import { TeamsBySeason } from "hockeytech";
+import { Season, TeamsBySeason } from "hockeytech";
 
 type PwhlTeam = Pick<
   TeamsBySeason,
   "id" | "name" | "city" | "code" | "nickname"
 >;
+
+type PwhlSeason = {
+  id: string;
+  names: {
+    en: string;
+    fr?: string;
+  };
+};
+
+export const allSeasons: PwhlSeason[] = [
+  {
+    id: "1",
+    names: { en: "2024 Regular Season", fr: "Saison Régulière 2024" },
+  },
+  {
+    id: "2",
+    names: { en: "2024 Preseason" },
+  },
+];
 
 export const allTeams: PwhlTeam[] = [
   {

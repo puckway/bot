@@ -20,10 +20,11 @@ import {
 } from "@discordjs/builders";
 import { khlTeamEmoji, pwhlTeamEmoji } from "../util/emojis";
 import { getPwhlClient } from "../pwhl/client";
-import { allTeams } from "../pwhl/team";
+import { allSeasons, allTeams } from "../pwhl/team";
 import { storeComponents } from "../util/components";
 import { ButtonCallback, MinimumKVComponentState } from "../components";
 import { PermissionFlags } from "discord-bitflag";
+import { colors } from "../util/colors";
 
 export const DATE_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
 
@@ -97,6 +98,7 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
         // iconURL: "https://www.khl.ru/img/icons/32x32.png",
       })
       .setTitle(`${s(ctx, "schedule")} - ${time(date, "D")}`)
+      .setColor(colors.khl)
       .setDescription(
         events
           .filter(
@@ -193,7 +195,7 @@ export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
       const teamId = ctx.getStringOption("team")?.value;
       const team = teamId ? allTeams.find((t) => t.id === teamId) : undefined;
       const data = await client.getSeasonSchedule(
-        Number(ctx.getStringOption("season")?.value ?? 1),
+        Number(ctx.getStringOption("season")?.value ?? allSeasons[0].id),
         teamId ? Number(teamId) : undefined,
       );
       const monthIndex = Number(
@@ -221,6 +223,7 @@ export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
             year: "numeric",
           })}`,
         )
+        .setColor(colors.pwhl)
         .setDescription(
           games
             .map((game, i) => {
@@ -338,6 +341,7 @@ export const pwhlGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
         "d",
       )}`,
     )
+    .setColor(colors.pwhl)
     .setDescription(
       games
         .map((game, i) => {

@@ -19,8 +19,9 @@ import { countryCodeEmoji, khlTeamEmoji, pwhlTeamEmoji } from "../util/emojis";
 import { SelectMenuCallback } from "../components";
 import { storeComponents } from "../util/components";
 import { getPwhlClient } from "../pwhl/client";
-import { allTeams, pwhlTeamLogoUrl } from "../pwhl/team";
+import { allSeasons, allTeams, pwhlTeamLogoUrl } from "../pwhl/team";
 import { RosterPlayer } from "hockeytech";
+import { colors } from "../util/colors";
 
 type KhlPartialPlayer = Pick<APILightPlayer, "id" | "name" | "shirt_number"> & {
   team: { name: string } | null;
@@ -76,6 +77,7 @@ const getKhlPlayerEmbed = async (
       url: `${api.DocBaseEnum[locale]}/players/${player.khl_id}`,
       iconURL: (player.team ?? player.teams[0])?.image,
     })
+    .setColor(colors.khl)
     .setThumbnail(player.image);
 
   let description = "";
@@ -266,6 +268,7 @@ const getPwhlPlayerEmbed = async (
       }/${playerId}`,
       iconURL: teamId ? pwhlTeamLogoUrl(teamId) : undefined,
     })
+    .setColor(colors.pwhl)
     .setThumbnail(
       ("primary_image" in player
         ? player.primary_image
@@ -381,13 +384,8 @@ export const pwhlWhoisCallback: ChatInputAppCommandCallback = async (ctx) => {
   const teamId = Number(ctx.getStringOption("team").value);
 
   const client = getPwhlClient();
-  const seasonData = await client.getSeasonList();
-  const roster = (
-    await client.getRoster(
-      Number(seasonData.SiteKit.Seasons[0].season_id),
-      teamId,
-    )
-  ).SiteKit.Roster;
+  const roster = (await client.getRoster(Number(allSeasons[0].id), teamId))
+    .SiteKit.Roster;
   // We assume no duplicates
   const player = roster.find(
     (player) => player.tp_jersey_number === String(playerNumber),

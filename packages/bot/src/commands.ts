@@ -24,7 +24,7 @@ import {
   pwhlWhoisCallback,
 } from "./commands/player";
 import * as api from "api";
-import { allTeams } from "./pwhl/team";
+import { allSeasons, allTeams } from "./pwhl/team";
 
 export type AppCommandCallbackT<T extends APIInteraction> = (
   ctx: InteractionContext<T>,
@@ -122,23 +122,17 @@ export const appCommands: Record<
                 fr: "saison",
               },
               description: "Defaults to the current season",
-              choices: [
-                // We can avoid using autocomplete for the first 8.3 years of this bot!
-                // 25 choices total; one pre-, regular-, and post-season per year.
-                // The only downside is that obviously we have to manually update this,
-                // but it's trivial to do so before the season begins.
-                {
-                  name: "2024 Regular Season",
-                  name_localizations: {
-                    fr: "Saison Régulière 2024",
-                  },
-                  value: "1",
+              // We can avoid using autocomplete for the first 8.3 years of this bot!
+              // 25 choices total; one pre-, regular-, and post-season per year.
+              // The only downside is that obviously we have to manually update this,
+              // but it's trivial to do so before the season begins.
+              choices: allSeasons.map((season) => ({
+                name: season.names.en,
+                name_localizations: {
+                  fr: season.names.fr,
                 },
-                {
-                  name: "2024 Preseason",
-                  value: "2",
-                },
-              ],
+                value: season.id,
+              })),
               required: false,
             },
             {
@@ -246,7 +240,8 @@ export const appCommands: Record<
           name_localizations: {
             fr: "lphf",
           },
-          description: "A quick look at the current, recent, and future PWHL games.",
+          description:
+            "A quick look at the current, recent, and future PWHL games.",
           options: [
             {
               type: ApplicationCommandOptionType.String,
