@@ -70,15 +70,13 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
       flags: MessageFlags.Ephemeral,
     });
   }
-  const now = new Date();
   const date = dateMatch
     ? new Date(
         Number(dateMatch[1]),
         Number(dateMatch[2]) - 1,
         Number(dateMatch[3]),
-        6,
       )
-    : new Date(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate(), 6);
+    : new Date();
   if (Number.isNaN(date.getTime())) {
     return ctx.reply({
       content: s(ctx, "badDate"),
@@ -154,10 +152,11 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
     ctx.defer(),
     async () => {
       // The API accepts a specific timestamp, not a broad day, so we have to
-      // make sure our timestamp starts at 0 seconds in order to get all events
-      // for the day.
+      // make sure our timestamp starts at 0 seconds on the next day in order
+      // to get all events for the day.
       const sortDate = new Date(date);
       sortDate.setUTCHours(0);
+      sortDate.setTime(sortDate.getTime() + 86400000)
       const games = await api.getGames({ locale, date: sortDate });
       await ctx.env.KV.put(
         key,
@@ -175,8 +174,8 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
           ),
         ),
         {
-          // 3 days
-          expirationTtl: 259200,
+          // 1hr for empty days (not populated yet?), 3 days otherwise
+          expirationTtl: games.length === 0 ? 3600 : 259200,
         },
       );
       await ctx.followup.editOriginalMessage({ embeds: [buildEmbed(games)] });
