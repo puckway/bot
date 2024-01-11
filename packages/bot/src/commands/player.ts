@@ -276,19 +276,20 @@ const getPwhlPlayerEmbed = async (
       player.shoots ? `(${player.shoots})` : ""
     }\n`;
   }
-  // if (player.height) {
-  //   const inches = player.height * 0.39;
-  //   const feet = Math.floor(inches / 12);
-  //   const imperial = `${feet}' ${Math.floor(inches - feet * 12)}"`;
+  const height = Number(player.height);
+  if (height && !Number.isNaN(height)) {
+    const inches = height * 0.39;
+    const feet = Math.floor(inches / 12);
+    const imperial = `${feet}' ${Math.floor(inches - feet * 12)}"`;
 
-  //   description += `${s(ctx, "height")} ${player.height} cm / ${imperial}\n`;
-  // }
-  // const weight = Number(player.weight);
-  // if (weight && !Number.isNaN(weight)) {
-  //   const pounds = Math.floor(player.weight * 2.2);
-  //   // const stones = Math.floor(player.weight * 0.15747);
-  //   description += `${s(ctx, "weight")} ${player.weight} kg / ${pounds} lb\n`;
-  // }
+    description += `${s(ctx, "height")} ${height} cm / ${imperial}\n`;
+  }
+  const weight = Number(player.weight);
+  if (weight && !Number.isNaN(weight)) {
+    const pounds = Math.floor(weight * 2.2);
+    // const stones = Math.floor(player.weight * 0.15747);
+    description += `${s(ctx, "weight")} ${weight} kg / ${pounds} lb\n`;
+  }
   if (player.most_recent_team_id && player.most_recent_team_name) {
     description += `\n${pwhlTeamEmoji(ctx.env, player.most_recent_team_id)} ${
       player.most_recent_team_name
