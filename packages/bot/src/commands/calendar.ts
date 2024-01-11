@@ -24,8 +24,6 @@ import { allTeams } from "../pwhl/team";
 import { storeComponents } from "../util/components";
 import { ButtonCallback, MinimumKVComponentState } from "../components";
 import { PermissionFlags } from "discord-bitflag";
-import { RateLimitError } from "discord-request";
-import { sleep } from "../util/sleep";
 
 export const DATE_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
 
