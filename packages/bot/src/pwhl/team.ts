@@ -11,16 +11,19 @@ type PwhlSeason = {
     en: string;
     fr?: string;
   };
+  type: "regular" | "exhibition" | "playoff";
 };
 
 export const allSeasons: PwhlSeason[] = [
   {
     id: "1",
     names: { en: "2024 Regular Season", fr: "Saison Régulière 2024" },
+    type: "regular",
   },
   {
     id: "2",
     names: { en: "2024 Preseason" },
+    type: "exhibition",
   },
 ];
 

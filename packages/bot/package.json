@@ -29,6 +29,7 @@
     "hockeytech": "^1.4.0",
     "itty-router": "^4.0.25",
     "ngrok": "^5.0.0-beta.2",
+    "table": "^6.8.1",
     "tsx": "^4.7.0"
   }
 }

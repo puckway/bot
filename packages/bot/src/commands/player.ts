@@ -22,6 +22,7 @@ import { getPwhlClient } from "../pwhl/client";
 import { allSeasons, allTeams, pwhlTeamLogoUrl } from "../pwhl/team";
 import { RosterPlayer } from "hockeytech";
 import { colors } from "../util/colors";
+import { getBorderCharacters, table } from "table";
 
 type KhlPartialPlayer = Pick<APILightPlayer, "id" | "name" | "shirt_number"> & {
   team: { name: string } | null;
@@ -260,6 +261,15 @@ const getPwhlPlayerEmbed = async (
   const number =
     "jersey_number" in player ? player.jersey_number : player.tp_jersey_number;
 
+  const currentSeason = allSeasons[0];
+  const allStats = (
+    await client.getPlayerProfileStatsBySeason(Number(playerId))
+  ).SiteKit.Player;
+  const currentStats = allStats[currentSeason.type]?.find((_, i) => i === 0);
+  const totalStats = allStats[currentSeason.type]?.find(
+    (_, i, a) => i === a.length - 1,
+  );
+
   const embed = new EmbedBuilder()
     .setAuthor({
       name: `${player.name} ${number ? `#${number}` : ""}`,
@@ -313,9 +323,69 @@ const getPwhlPlayerEmbed = async (
     // const stones = Math.floor(player.weight * 0.15747);
     description += `${s(ctx, "weight")} ${weight} kg / ${pounds} lb\n`;
   }
-  if (teamId && teamName) {
+
+  if (currentStats && totalStats) {
+    const dashes = (length: number) => Array(length).fill("-").join("");
+    const tableData = [
+      ["Stats", totalStats.season_name, currentStats.shortname],
+      [
+        "-------",
+        dashes(totalStats.season_name.length),
+        dashes(currentStats.shortname.length),
+      ],
+    ];
+    if (
+      player.position === "G" &&
+      "savepct" in currentStats &&
+      "savepct" in totalStats
+    ) {
+      tableData.push(
+        ["SO", `[ ${totalStats.shutouts} ]`, `[ ${currentStats.shutouts} ]`],
+        ["SV%", `[ ${totalStats.savepct} ]`, `[ ${currentStats.savepct} ]`],
+        [
+          "GAA",
+          `[ ${totalStats.goals_against_average} ]`,
+          `[ ${currentStats.goals_against_average} ]`,
+        ],
+        ["Wins", `[ ${totalStats.wins} ]`, `[ ${currentStats.wins} ]`],
+        ["Losses", `[ ${totalStats.losses} ]`, `[ ${currentStats.losses} ]`],
+        ["OTL", `[ ${totalStats.ot_losses} ]`, `[ ${currentStats.ot_losses} ]`],
+      );
+    } else if ("shots" in currentStats && "shots" in totalStats) {
+      tableData.push(
+        ["Shots", `[ ${totalStats.shots} ]`, `[ ${currentStats.shots} ]`],
+        ["Goals", `[ ${totalStats.goals} ]`, `[ ${currentStats.goals} ]`],
+        ["Points", `[ ${totalStats.points} ]`, `[ ${currentStats.points} ]`],
+        ["Assists", `[ ${totalStats.assists} ]`, `[ ${currentStats.assists} ]`],
+        [
+          "+/-",
+          `[ ${totalStats.plus_minus} ]`,
+          `[ ${currentStats.plus_minus} ]`,
+        ],
+        [
+          "PIM",
+          `[ ${totalStats.penalty_minutes} ]`,
+          `[ ${currentStats.penalty_minutes} ]`,
+        ],
+      );
+    }
+    embed.addFields({
+      name: "Stats",
+      value: `${
+        teamId && teamName
+          ? `${pwhlTeamEmoji(ctx.env, teamId)} ${teamName}`
+          : ""
+      }\n\`\`\`apache\n${table(tableData, {
+        border: getBorderCharacters("void"),
+        columnDefault: { paddingLeft: 0, paddingRight: 1 },
+        drawHorizontalLine: () => false,
+      })}\`\`\``,
+      inline: false,
+    });
+  } else if (teamId && teamName) {
     description += `\n${pwhlTeamEmoji(ctx.env, teamId)} ${teamName}`;
   }
+
   embed.setDescription(description.slice(0, 4096));
 
   return embed;
