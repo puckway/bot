@@ -10,7 +10,7 @@ import {
   ApplicationCommandType,
   APIMessageComponentInteraction,
 } from "discord-api-types/v10";
-import { client } from "discord-api-methods";
+import { REST } from "@discordjs/rest";
 import { InteractionContext } from "./interactions";
 import { getErrorMessage, isDiscordError } from "./util/errors.js";
 import {
@@ -75,7 +75,7 @@ router
       return new Response("Bad request signature.", { status: 401 });
     }
 
-    client.setToken(env.DISCORD_TOKEN);
+    const rest = new REST().setToken(env.DISCORD_TOKEN);
 
     if (interaction.type === InteractionType.Ping) {
       return respond({ type: InteractionResponseType.Pong });
@@ -116,7 +116,7 @@ router
           return respond({ error: "Cannot handle this command" });
         }
 
-        const ctx = new InteractionContext(client, interaction, env);
+        const ctx = new InteractionContext(rest, interaction, env);
         try {
           const response = await (
             handler as AppCommandCallbackT<APIInteraction>
@@ -152,7 +152,7 @@ router
           appCommand.autocompleteHandlers[qualifiedOptions.trim() || "BASE"];
         if (!handler) return noChoices;
 
-        const ctx = new InteractionContext(client, interaction, env);
+        const ctx = new InteractionContext(rest, interaction, env);
         try {
           const response = await handler(ctx);
           return respond({
@@ -183,7 +183,7 @@ router
           return respond({ error: "Unknown routing ID" });
         }
 
-        const ctx = new InteractionContext(client, interaction, env, state);
+        const ctx = new InteractionContext(rest, interaction, env, state);
         try {
           const response = await (
             stored.handler as ComponentCallbackT<APIMessageComponentInteraction>
@@ -227,7 +227,7 @@ router
           return respond({ error: "Unknown routing ID" });
         }
 
-        const ctx = new InteractionContext(client, interaction, env, state);
+        const ctx = new InteractionContext(rest, interaction, env, state);
         try {
           const response = await stored.handler(ctx);
           if (state.componentOnce) {

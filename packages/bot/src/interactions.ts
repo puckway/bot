@@ -1,4 +1,3 @@
-import { DiscordApiClient } from "discord-api-methods";
 import { getDate, Snowflake } from "discord-snowflake";
 import {
   APIApplicationCommandInteractionDataBooleanOption,
@@ -41,6 +40,7 @@ import {
 import { PermissionFlags, PermissionsBitField } from "discord-bitflag";
 import { MinimumKVComponentState } from "./components.js";
 import { Env } from "./index.js";
+import { REST } from "@discordjs/rest";
 
 export type APIPartialResolvedChannelBase = APIPartialChannel & {
   permissions: string;
@@ -63,17 +63,17 @@ export class InteractionContext<
   T extends APIInteraction,
   S extends MinimumKVComponentState | Record<string, any> = {},
 > {
-  public client: DiscordApiClient;
+  public rest: REST;
   public interaction: T;
   public followup: InteractionFollowup;
   public env: Env;
   public state: S | Record<string, any> = {};
 
-  constructor(client: DiscordApiClient, interaction: T, env: Env, state?: S) {
-    this.client = client;
+  constructor(rest: REST, interaction: T, env: Env, state?: S) {
+    this.rest = rest;
     this.interaction = interaction;
     this.env = env;
-    this.followup = new InteractionFollowup(client, interaction);
+    this.followup = new InteractionFollowup(rest, interaction);
 
     if (state) {
       this.state = state;
@@ -364,16 +364,16 @@ export class InteractionContext<
 }
 
 class InteractionFollowup {
-  public client: DiscordApiClient;
+  public rest: REST;
   public interaction: APIInteraction;
 
-  constructor(client: DiscordApiClient, interaction: APIInteraction) {
-    this.client = client;
+  constructor(rest: REST, interaction: APIInteraction) {
+    this.rest = rest;
     this.interaction = interaction;
   }
 
   send(data: string | RESTPostAPIInteractionFollowupJSONBody) {
-    return this.client.post(
+    return this.rest.post(
       Routes.webhook(this.interaction.application_id, this.interaction.token),
       {
         body: typeof data === "string" ? { content: data } : data,
@@ -382,7 +382,7 @@ class InteractionFollowup {
   }
 
   getMessage(messageId: string) {
-    return this.client.get(
+    return this.rest.get(
       Routes.webhookMessage(
         this.interaction.application_id,
         this.interaction.token,
@@ -395,7 +395,7 @@ class InteractionFollowup {
     messageId: string,
     data: RESTPatchAPIInteractionFollowupJSONBody,
   ) {
-    return this.client.patch(
+    return this.rest.patch(
       Routes.webhookMessage(
         this.interaction.application_id,
         this.interaction.token,
@@ -406,7 +406,7 @@ class InteractionFollowup {
   }
 
   deleteMessage(messageId: string) {
-    return this.client.delete(
+    return this.rest.delete(
       Routes.webhookMessage(
         this.interaction.application_id,
         this.interaction.token,

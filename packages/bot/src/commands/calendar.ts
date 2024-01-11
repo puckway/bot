@@ -350,7 +350,7 @@ export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
   }
 
   // Don't add duplicate events
-  const extantEvents = (await ctx.client.get(
+  const extantEvents = (await ctx.rest.get(
     Routes.guildScheduledEvents(guildId),
   )) as RESTGetAPIGuildScheduledEventsResult;
   const extantGameIds = state.games
@@ -384,41 +384,23 @@ export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
     async () => {
       const events: APIGuildScheduledEvent[] = [];
       for (const game of newGames) {
-        const callback = async () => {
-          const event = (await ctx.client.post(
-            Routes.guildScheduledEvents(guildId),
-            {
-              body: {
-                name: game.title,
-                privacy_level: GuildScheduledEventPrivacyLevel.GuildOnly,
-                scheduled_start_time: new Date(game.date).toISOString(),
-                scheduled_end_time: new Date(
-                  new Date(game.date).getTime() + 3600000 * 3,
-                ).toISOString(),
-                description: game.description,
-                entity_type: GuildScheduledEventEntityType.External,
-                entity_metadata: { location: game.location },
-              },
+        const event = (await ctx.rest.post(
+          Routes.guildScheduledEvents(guildId),
+          {
+            body: {
+              name: game.title,
+              privacy_level: GuildScheduledEventPrivacyLevel.GuildOnly,
+              scheduled_start_time: new Date(game.date).toISOString(),
+              scheduled_end_time: new Date(
+                new Date(game.date).getTime() + 3600000 * 3,
+              ).toISOString(),
+              description: game.description,
+              entity_type: GuildScheduledEventEntityType.External,
+              entity_metadata: { location: game.location },
             },
-          )) as RESTPostAPIGuildScheduledEventResult;
-          events.push(event);
-        };
-        try {
-          await callback();
-        } catch (e) {
-          // https://github.com/IanMitchell/interaction-kit/tree/main/packages/discord-api-methods
-          // "it is fully typed and handles rate limits appropriately"
-          if (e instanceof RateLimitError) {
-            if (e.retryAfter > 10) {
-              continue;
-            }
-
-            await sleep(e.retryAfter * 1000);
-            await callback();
-            continue;
-          }
-          throw e;
-        }
+          },
+        )) as RESTPostAPIGuildScheduledEventResult;
+        events.push(event);
       }
 
       await ctx.followup.editOriginalMessage({
