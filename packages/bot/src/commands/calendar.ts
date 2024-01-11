@@ -322,7 +322,7 @@ export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
 
 export const pwhlGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
   const today = new Date();
-  today.setUTCHours(6);
+  today.setUTCHours(6, 0, 0, 0);
   const client = getPwhlClient();
   const teamId = ctx.getStringOption("team")?.value;
   const team = teamId ? allTeams.find((t) => t.id === teamId) : undefined;
@@ -337,7 +337,7 @@ export const pwhlGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
     })
     .setTitle(
       `${s(ctx, "gameDay")}${team ? ` - ${team.nickname}` : ""} - ${time(
-        today,
+        new Date(),
         "d",
       )}`,
     )
