@@ -243,6 +243,10 @@ export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
                       game.home_team_code
                     }`;
 
+              if (game.status !== "1") {
+                line += `\n${game.game_status}`
+              }
+
               const last = games[i - 1];
               if (
                 game.date_played === today &&
