@@ -103,7 +103,7 @@ const getKhlPlayerEmbed = async (
   if (player.height) {
     const inches = player.height * 0.39;
     const feet = Math.floor(inches / 12);
-    const imperial = `${feet}' ${Math.floor(inches - feet * 12)}"`;
+    const imperial = `${feet}'${Math.floor(inches - feet * 12)}"`;
 
     description += `${s(ctx, "height")} ${player.height} cm / ${imperial}\n`;
   }
