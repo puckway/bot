@@ -11,10 +11,18 @@ import {
   RESTPostAPIApplicationCommandsJSONBody,
 } from "discord-api-types/v10";
 import { InteractionContext } from "./interactions";
-import { khlCalendarCallback, pwhlScheduleCallback } from "./commands/calendar";
+import {
+  khlCalendarCallback,
+  pwhlGamedayCallback,
+  pwhlScheduleCallback,
+} from "./commands/calendar";
 import { aboutCallback } from "./commands/about";
 import { teamAutocomplete } from "./commands/teamAutocomplete";
-import { khlPlayerCallback, pwhlPlayerCallback, pwhlWhoisCallback } from "./commands/player";
+import {
+  khlPlayerCallback,
+  pwhlPlayerCallback,
+  pwhlWhoisCallback,
+} from "./commands/player";
 import * as api from "api";
 import { allTeams } from "./pwhl/team";
 
@@ -224,6 +232,40 @@ export const appCommands: Record<
         khl: teamAutocomplete,
       },
     },
+    gameday: {
+      name: "gameday",
+      name_localizations: {
+        ru: "день-игры",
+        fr: "jour-de-match",
+      },
+      description: "...",
+      options: [
+        {
+          type: ApplicationCommandOptionType.Subcommand,
+          name: "pwhl",
+          name_localizations: {
+            fr: "lphf",
+          },
+          description: "A quick look at the current, recent, and future PWHL games.",
+          options: [
+            {
+              type: ApplicationCommandOptionType.String,
+              name: "team",
+              name_localizations: { fr: "equipe" },
+              description: "The team to get games for",
+              required: false,
+              choices: allTeams.map((team) => ({
+                name: team.nickname,
+                value: team.id,
+              })),
+            },
+          ],
+        },
+      ],
+      handlers: {
+        pwhl: pwhlGamedayCallback,
+      },
+    },
     player: {
       name: "player",
       name_localizations: {
@@ -374,7 +416,7 @@ export const appCommands: Record<
       },
       autocompleteHandlers: {
         khl: teamAutocomplete,
-      }
+      },
     },
     about: {
       name: "about",

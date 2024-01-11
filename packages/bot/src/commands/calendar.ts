@@ -31,6 +31,7 @@ const s = transformLocalizations({
   en: {
     badDate: "Invalid date. Must follow the format `YYYY-MM-DD`.",
     schedule: "Schedule",
+    gameDay: "Game Day",
     noGames: "No games on this date.",
     today: "Today",
     missingPermissions: "You are missing permissions:",
@@ -47,6 +48,7 @@ const s = transformLocalizations({
   },
   fr: {
     schedule: "Horaire",
+    gameDay: "Jour de match",
     noGames: "Aucun jeux trouvé",
     today: "Aujourd'hui",
   },
@@ -244,7 +246,7 @@ export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
                     }`;
 
               if (game.status !== "1") {
-                line += `\n${game.game_status}`
+                line += `\n${game.game_status}`;
               }
 
               const last = games[i - 1];
@@ -313,6 +315,64 @@ export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
       await ctx.followup.editOriginalMessage({ embeds: [embed], components });
     },
   ];
+};
+
+export const pwhlGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
+  const today = new Date();
+  today.setUTCHours(6);
+  const client = getPwhlClient();
+  const teamId = ctx.getStringOption("team")?.value;
+  const team = teamId ? allTeams.find((t) => t.id === teamId) : undefined;
+  const games = (await client.getScorebar(1, 1)).SiteKit.Scorebar.filter(
+    (game) => (teamId ? [game.HomeID, game.VisitorID].includes(teamId) : true),
+  );
+
+  const embed = new EmbedBuilder()
+    .setAuthor({
+      name: uni(ctx, "pwhl"),
+      iconURL: ctx.env.PWHL_LOGO,
+    })
+    .setTitle(
+      `${s(ctx, "gameDay")}${team ? ` - ${team.nickname}` : ""} - ${time(
+        today,
+        "d",
+      )}`,
+    )
+    .setDescription(
+      games
+        .map((game, i) => {
+          const startAt = new Date(game.GameDateISO8601);
+          const homeEmoji = pwhlTeamEmoji(ctx.env, game.HomeID);
+          const awayEmoji = pwhlTeamEmoji(ctx.env, game.VisitorID);
+          let line =
+            game.GameStatus === "1"
+              ? `🔴 ${time(
+                  startAt,
+                  game.Date === today.toISOString().split("T")[0] ? "t" : "d",
+                )} ${awayEmoji} ${game.VisitorCode} @ ${homeEmoji} ${
+                  game.HomeCode
+                }`
+              : `${
+                  game.GameStatus === "4" || game.GameStatus === "3"
+                    ? `🏁 ${time(startAt, "d")}`
+                    : `🟢 ${time(startAt, "t")}`
+                } ${awayEmoji} ${game.VisitorCode} **${
+                  game.VisitorGoals
+                }** - **${game.HomeGoals}** ${homeEmoji} ${game.HomeCode}`;
+
+          if (game.GameStatus !== "1") {
+            line += `\n${game.GameStatusString}`;
+          }
+
+          return line;
+        })
+        .join("\n\n")
+        .trim()
+        .slice(0, 4096) || s(ctx, "noGames"),
+    )
+    .toJSON();
+
+  return ctx.reply({ embeds: [embed] });
 };
 
 export interface AddScheduleEventsState extends MinimumKVComponentState {
