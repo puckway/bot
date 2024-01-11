@@ -14,7 +14,7 @@ import { InteractionContext } from "./interactions";
 import { khlCalendarCallback, pwhlScheduleCallback } from "./commands/calendar";
 import { aboutCallback } from "./commands/about";
 import { teamAutocomplete } from "./commands/teamAutocomplete";
-import { khlPlayerCallback, pwhlPlayerCallback } from "./commands/player";
+import { khlPlayerCallback, pwhlPlayerCallback, pwhlWhoisCallback } from "./commands/player";
 import * as api from "api";
 import { allTeams } from "./pwhl/team";
 
@@ -282,6 +282,99 @@ export const appCommands: Record<
         khl: khlPlayerCallback,
         pwhl: pwhlPlayerCallback,
       },
+    },
+    whois: {
+      name: "whois",
+      name_localizations: {
+        ru: "кто",
+        fr: "qui-est",
+      },
+      description: "...",
+      options: [
+        {
+          type: ApplicationCommandOptionType.Subcommand,
+          name: "khl",
+          name_localizations: {
+            ru: "кхл",
+          },
+          description: "Find a player by their number",
+          description_localizations: {
+            fr: "Trouver un joueur par son numéro",
+            ru: "Найдите игрока по номеру",
+          },
+          options: [
+            {
+              type: ApplicationCommandOptionType.Integer,
+              min_value: 1,
+              max_value: 99,
+              name: "number",
+              name_localizations: {
+                fr: "numéro",
+                ru: "число",
+              },
+              description: "The player's jersey number",
+              description_localizations: {
+                fr: "Le numéro de maillot du joueur",
+              },
+              required: true,
+            },
+            {
+              type: ApplicationCommandOptionType.String,
+              name: "team",
+              description: "The team to get games for",
+              required: false,
+              autocomplete: true,
+            }
+          ],
+        },
+        {
+          type: ApplicationCommandOptionType.Subcommand,
+          name: "pwhl",
+          name_localizations: {
+            fr: "lphf",
+          },
+          description: "Find a player by their number",
+          description_localizations: {
+            fr: "Trouver un joueur par son numéro",
+            ru: "Найдите игрока по номеру",
+          },
+          options: [
+            {
+              type: ApplicationCommandOptionType.Integer,
+              min_value: 1,
+              max_value: 99,
+              name: "number",
+              name_localizations: {
+                fr: "numéro",
+                ru: "число",
+              },
+              description: "The player's jersey number",
+              description_localizations: {
+                fr: "Le numéro de maillot du joueur",
+              },
+              required: true,
+            },
+            {
+              type: ApplicationCommandOptionType.String,
+              name: "team",
+              name_localizations: { fr: "equipe" },
+              description: "The team to search",
+              required: true,
+              choices: allTeams.map((team) => ({
+                name: team.nickname,
+                value: team.id,
+              })),
+            },
+          ],
+        },
+      ],
+      handlers: {
+        // khl: khlWhoisCallback,
+        pwhl: pwhlWhoisCallback,
+      },
+      autocompleteHandlers: {
+        khl: teamAutocomplete,
+      }
     },
     about: {
       name: "about",

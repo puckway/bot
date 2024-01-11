@@ -6,7 +6,7 @@ import {
   getKhlLocale,
   transformLocalizations,
 } from "../util/l10n";
-import { APIInteraction } from "discord-api-types/v10";
+import { APIInteraction, MessageFlags } from "discord-api-types/v10";
 import {
   ActionRowBuilder,
   EmbedBuilder,
@@ -19,7 +19,8 @@ import { countryCodeEmoji, khlTeamEmoji, pwhlTeamEmoji } from "../util/emojis";
 import { SelectMenuCallback } from "../components";
 import { storeComponents } from "../util/components";
 import { getPwhlClient } from "../pwhl/client";
-import { pwhlTeamLogoUrl } from "../pwhl/team";
+import { allTeams, pwhlTeamLogoUrl } from "../pwhl/team";
+import { RosterPlayer } from "hockeytech";
 
 type KhlPartialPlayer = Pick<APILightPlayer, "id" | "name" | "shirt_number"> & {
   team: { name: string } | null;
@@ -28,7 +29,7 @@ type KhlPartialPlayer = Pick<APILightPlayer, "id" | "name" | "shirt_number"> & {
 const s = transformLocalizations({
   en: {
     players: "Players",
-    noPlayer: "No player was found by that name.",
+    noPlayer: "No players were found.",
     born: "Born:",
     height: "Height:",
     weight: "Weight:",
@@ -46,7 +47,7 @@ const s = transformLocalizations({
     // This is the feminine form. We're assuming most French-speaking
     // users will be looking at the PWHL and not the KHL
     players: "Joueuses",
-    noPlayer: "Il n'y a aucun joueur avec ce nom",
+    noPlayer: "Aucun joueur n'a pu être trouvé.",
     born: "Date de naissance",
   },
 });
@@ -234,23 +235,42 @@ export const playerSearchSelectCallback: SelectMenuCallback = async (ctx) => {
 
 const getPwhlPlayerEmbed = async (
   ctx: InteractionContext<APIInteraction>,
-  playerId: number,
+  playerInput: number | RosterPlayer,
 ) => {
   const locale = getHtLocale(ctx);
   const client = getPwhlClient(locale);
-  const data = await client.getPlayerProfileBio(playerId);
-  const player = data.SiteKit.Player;
+  const player =
+    typeof playerInput === "number"
+      ? (await client.getPlayerProfileBio(playerInput)).SiteKit.Player
+      : playerInput;
 
-  const teamId = player.current_team || player.most_recent_team_id;
+  const playerId =
+    "player_id" in player ? player.player_id : String(playerInput);
+  const teamId =
+    player.current_team ||
+    ("most_recent_team_id" in player
+      ? player.most_recent_team_id
+      : player.latest_team_id);
+  const teamName =
+    "most_recent_team_name" in player
+      ? player.most_recent_team_name
+      : allTeams.find((t) => t.id === teamId)?.name;
+  const number =
+    "jersey_number" in player ? player.jersey_number : player.tp_jersey_number;
+
   const embed = new EmbedBuilder()
     .setAuthor({
-      name: `${player.name} ${
-        player.jersey_number ? `#${player.jersey_number}` : ""
-      }`,
-      url: `https://thepwhl.com/${locale}/stats/${locale === "fr" ? "joueur" : "player"}/${playerId}`,
+      name: `${player.name} ${number ? `#${number}` : ""}`,
+      url: `https://thepwhl.com/${locale}/stats/${
+        locale === "fr" ? "joueur" : "player"
+      }/${playerId}`,
       iconURL: teamId ? pwhlTeamLogoUrl(teamId) : undefined,
     })
-    .setThumbnail(player.primary_image || null);
+    .setThumbnail(
+      ("primary_image" in player
+        ? player.primary_image
+        : player.player_image) || null,
+    );
 
   let description = "";
   if (player.birthdate) {
@@ -290,15 +310,10 @@ const getPwhlPlayerEmbed = async (
     // const stones = Math.floor(player.weight * 0.15747);
     description += `${s(ctx, "weight")} ${weight} kg / ${pounds} lb\n`;
   }
-  if (player.most_recent_team_id && player.most_recent_team_name) {
-    description += `\n${pwhlTeamEmoji(ctx.env, player.most_recent_team_id)} ${
-      player.most_recent_team_name
-    }`;
+  if (teamId && teamName) {
+    description += `\n${pwhlTeamEmoji(ctx.env, teamId)} ${teamName}`;
   }
   embed.setDescription(description.slice(0, 4096));
-  // embed.setFooter({
-  //   text: data.SiteKit.Copyright.required_copyright.slice(0, 2048),
-  // });
 
   return embed;
 };
@@ -359,4 +374,31 @@ export const pwhlPlayerCallback: ChatInputAppCommandCallback = async (ctx) => {
       });
     },
   ];
+};
+
+export const pwhlWhoisCallback: ChatInputAppCommandCallback = async (ctx) => {
+  const playerNumber = ctx.getIntegerOption("number").value;
+  const teamId = Number(ctx.getStringOption("team").value);
+
+  const client = getPwhlClient();
+  const seasonData = await client.getSeasonList();
+  const roster = (
+    await client.getRoster(
+      Number(seasonData.SiteKit.Seasons[0].season_id),
+      teamId,
+    )
+  ).SiteKit.Roster;
+  // We assume no duplicates
+  const player = roster.find(
+    (player) => player.tp_jersey_number === String(playerNumber),
+  );
+  if (!player) {
+    return ctx.reply({
+      content: s(ctx, "noPlayer"),
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
+  const embed = await getPwhlPlayerEmbed(ctx, player);
+  return ctx.reply({ embeds: [embed.toJSON()] });
 };

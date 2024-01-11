@@ -13,6 +13,9 @@ Puckway is an intragalactic bot for everything hockey (excluding the NHL). You m
 - View player info
     - [x] KHL
     - [x] PWHL
+- Find player by jersey number
+    - [ ] KHL
+    - [x] PWHL
 - Automatic game threads
     - [ ] KHL
     - [ ] PWHL
