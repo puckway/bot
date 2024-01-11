@@ -344,7 +344,7 @@ export const pwhlGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
     .setColor(colors.pwhl)
     .setDescription(
       games
-        .map((game, i) => {
+        .map((game) => {
           const startAt = new Date(game.GameDateISO8601);
           const homeEmoji = pwhlTeamEmoji(ctx.env, game.HomeID);
           const awayEmoji = pwhlTeamEmoji(ctx.env, game.VisitorID);
