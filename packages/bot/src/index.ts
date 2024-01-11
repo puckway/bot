@@ -21,6 +21,7 @@ import {
   componentStore,
   modalStore,
 } from "./components";
+import { PermissionFlags, PermissionsBitField } from "discord-bitflag";
 
 export interface Env {
   // DB: D1Database;
@@ -64,7 +65,29 @@ const router = Router();
 
 router
   .get("/", (_, env: Env) => {
-    return new Response(`👋 ${env.DISCORD_APPLICATION_ID}`);
+    const inviteUrl = new URL("https://discord.com/oauth2/authorize");
+    inviteUrl.searchParams.set("client_id", env.DISCORD_APPLICATION_ID);
+    inviteUrl.searchParams.set("scope", "bot");
+    inviteUrl.searchParams.set(
+      "permissions",
+      new PermissionsBitField()
+        .set(PermissionFlags.ViewChannel, true)
+        .set(PermissionFlags.ManageEvents, true)
+        .set(PermissionFlags.SendMessages, true)
+        .set(PermissionFlags.CreatePublicThreads, true)
+        .set(PermissionFlags.ManageThreads, true)
+        .set(PermissionFlags.EmbedLinks, true)
+        .set(PermissionFlags.AttachFiles, true)
+        .set(PermissionFlags.MentionEveryone, true)
+        .set(PermissionFlags.UseExternalEmojis, true)
+        .toString(),
+    );
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: inviteUrl.href,
+      },
+    });
   })
   .post("/", async (request, env: Env, workerCtx: ExecutionContext) => {
     const { isValid, interaction } = await server.verifyDiscordRequest(
