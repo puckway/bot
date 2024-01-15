@@ -43,7 +43,7 @@ export const transformLocalizations =
     const locale = getKeyableLocale(ctx) as keyof T;
     const engStrings = localizations["en" as keyof T];
     const strings = localizations[locale];
-    if (key in (strings as Record<string, string>)) {
+    if (strings && key in (strings as Record<string, string>)) {
       // @ts-ignore
       return strings[key];
     }

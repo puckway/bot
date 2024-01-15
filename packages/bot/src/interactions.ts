@@ -112,7 +112,9 @@ export class InteractionContext<
   }
 
   getLocale(defaultLocale = "en") {
-    return this.user.locale ?? this.interaction.guild_locale ?? defaultLocale;
+    return "locale" in this.interaction
+      ? this.interaction.locale
+      : this.interaction.guild_locale ?? defaultLocale;
   }
 
   getMessage(): T extends APIMessageApplicationCommandInteraction
@@ -331,7 +333,9 @@ export class InteractionContext<
           : undefined,
       };
     }
-    throw Error(`Invalid stack. Does this interaction type (${this.interaction.type}) support deferring?`)
+    throw Error(
+      `Invalid stack. Does this interaction type (${this.interaction.type}) support deferring?`,
+    );
   }
 
   reply(
