@@ -60,7 +60,7 @@ export type APIPartialResolvedChannel =
   | APIPartialResolvedThread;
 
 export class InteractionContext<
-  T extends APIInteraction,
+  T extends APIInteraction = APIInteraction,
   S extends MinimumKVComponentState | Record<string, any> = {},
 > {
   public rest: REST;

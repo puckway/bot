@@ -8,6 +8,7 @@ import {
   APIUserApplicationCommandInteraction,
   ApplicationCommandOptionType,
   ApplicationCommandType,
+  ChannelType,
   RESTPostAPIApplicationCommandsJSONBody,
 } from "discord-api-types/v10";
 import { InteractionContext } from "./interactions";
@@ -23,8 +24,9 @@ import {
   pwhlPlayerCallback,
   pwhlWhoisCallback,
 } from "./commands/player";
-import * as api from "api";
 import { allSeasons, allTeams } from "./pwhl/team";
+import { notificationsCallback } from "./commands/notifications";
+import { PermissionFlags, PermissionsBitField } from "discord-bitflag";
 
 export type AppCommandCallbackT<T extends APIInteraction> = (
   ctx: InteractionContext<T>,
@@ -411,6 +413,47 @@ export const appCommands: Record<
       },
       autocompleteHandlers: {
         khl: teamAutocomplete,
+      },
+    },
+    notifications: {
+      name: "notifications",
+      description: "Configure gameday notifications",
+      default_member_permissions: new PermissionsBitField(
+        PermissionFlags.ManageGuild,
+      ).toString(),
+      options: [
+        {
+          type: ApplicationCommandOptionType.String,
+          name: "league",
+          description: "The league to configure notifications for",
+          choices: [
+            // {
+            //   name: "KHL",
+            //   value: "khl",
+            // },
+            {
+              name: "PWHL",
+              name_localizations: {
+                fr: "LPHF",
+              },
+              value: "pwhl",
+            },
+          ],
+          required: true,
+        },
+        {
+          type: ApplicationCommandOptionType.Channel,
+          name: "channel",
+          description: "The channel to configure notifications for",
+          channel_types: [
+            ChannelType.GuildText,
+            // ChannelType.GuildAnnouncement,
+          ],
+          required: true,
+        },
+      ],
+      handlers: {
+        BASE: notificationsCallback,
       },
     },
     about: {

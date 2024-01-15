@@ -8,10 +8,13 @@
     "deploy": "wrangler deploy",
     "dev": "wrangler dev --test-scheduled",
     "ngrok": "ngrok http 8787",
-    "register": "tsx ./src/register.ts"
+    "register": "tsx ./src/register.ts",
+    "migrate-dev": "drizzle-kit generate:sqlite --schema=src/db/schema.ts --out=./migrations && wrangler d1 migrations apply DB --local",
+    "migrate": "yarn migrate-dev && wrangler d1 migrations apply DB"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20231218.0",
+    "drizzle-kit": "^0.20.12",
     "khl-api-types": "^1.1.2",
     "typescript": "^5.0.4",
     "wrangler": "^3.22.2"
@@ -25,7 +28,7 @@
     "discord-bitflag": "^1.0.1",
     "discord-snowflake": "^2.0.0",
     "discord-verify": "^1.2.0",
-    "drizzle-orm": "^0.29.2",
+    "drizzle-orm": "^0.29.3",
     "hockeytech": "shayypy/hockeytech",
     "itty-router": "^4.0.25",
     "ngrok": "^5.0.0-beta.2",

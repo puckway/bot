@@ -8,6 +8,11 @@ import {
 import { InteractionContext } from "./interactions";
 import { playerSearchSelectCallback } from "./commands/player";
 import { addScheduleEventsCallback } from "./commands/calendar";
+import {
+  selectNotificationFeaturesCallback,
+  selectNotificationTeamCallback,
+  toggleNotificationActiveButtonCallback,
+} from "./commands/notifications";
 
 export interface MinimumKVComponentState {
   /** The total number of seconds that the component/modal should be stored. */
@@ -43,13 +48,25 @@ export type StoredModalData = { handler: ModalCallback };
 
 export type ModalRoutingId = "";
 
-export type ComponentRoutingId = "player-search" | "add-schedule-events";
+export type ComponentRoutingId =
+  | "player-search"
+  | "add-schedule-events"
+  | "select-notifications-teams"
+  | "select-notifications-features"
+  | "select-notifications-activate-toggle";
 
 export type StorableRoutingId = ComponentRoutingId | ModalRoutingId;
 
 export const componentStore: Record<ComponentRoutingId, StoredComponentData> = {
   "player-search": { handler: playerSearchSelectCallback },
   "add-schedule-events": { handler: addScheduleEventsCallback },
+  "select-notifications-teams": { handler: selectNotificationTeamCallback },
+  "select-notifications-features": {
+    handler: selectNotificationFeaturesCallback,
+  },
+  "select-notifications-activate-toggle": {
+    handler: toggleNotificationActiveButtonCallback,
+  },
 };
 
 export const modalStore: Record<string, StoredModalData> = {};

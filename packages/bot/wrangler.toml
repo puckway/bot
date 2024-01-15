@@ -42,3 +42,8 @@ PWHL_TEAM_EMOJI_6 = "1194368796224393328"
 binding = "KV"
 id = "7dfb9367010c4892ba02b12ec4b35fed"
 preview_id = "e4d99620fddd4e959acd584ab2ca15ee"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "puckway"
+database_id = "6004009b-2d06-427e-905e-bb60b3802ff5"
