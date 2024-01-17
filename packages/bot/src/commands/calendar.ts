@@ -11,7 +11,7 @@ import {
 import { ChatInputAppCommandCallback } from "../commands";
 import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
 import * as api from "api";
-import type { APIEvent } from "khl-api-types";
+import { State, type APIEvent } from "khl-api-types";
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -156,7 +156,7 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
       // to get all events for the day.
       const sortDate = new Date(date);
       sortDate.setUTCHours(0);
-      sortDate.setTime(sortDate.getTime() + 86400000)
+      sortDate.setTime(sortDate.getTime() + 86400000);
       const games = await api.getGames({ locale, date: sortDate });
       await ctx.env.KV.put(
         key,
@@ -174,8 +174,13 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
           ),
         ),
         {
-          // 1hr for empty days (not populated yet?), 3 days otherwise
-          expirationTtl: games.length === 0 ? 3600 : 259200,
+          // 1hr for empty days (not populated yet?), 5 minutes if there are ongoing games, 10 minutes otherwise
+          expirationTtl:
+            games.length === 0
+              ? 3600
+              : games.find((g) => g.game_state_key === State.InProgress)
+                ? 300000
+                : 600000,
         },
       );
       await ctx.followup.editOriginalMessage({ embeds: [buildEmbed(games)] });
