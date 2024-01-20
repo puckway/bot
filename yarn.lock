@@ -3806,9 +3806,10 @@ hast-util-whitespace@^2.0.0:
   resolved "https://registry.yarnpkg.com/heap/-/heap-0.2.7.tgz#1e6adf711d3f27ce35a81fe3b7bd576c2260a8fc"
   integrity sha512-2bsegYkkHO+h/9MGbn6KWcE45cHZgPANo5LXF7EvWdT0yT2EguSVO1nDgU5c8+ZOPwp2vMNa7YFsJhVcDR9Sdg==
 
-hockeytech@shayypy/hockeytech:
-  version "1.4.0"
-  resolved "https://codeload.github.com/shayypy/hockeytech/tar.gz/dabbf09431e159d1aebcc81586bf25269d1dec36"
+hockeytech@^1.4.1:
+  version "1.4.1"
+  resolved "https://registry.yarnpkg.com/hockeytech/-/hockeytech-1.4.1.tgz#36118c491e7b3862df0e3f6de26805ec8ac65dd9"
+  integrity sha512-jMrMzqPBGjtXZdBnh9cUEC/1HCuywV5h/e6P9B6laaF66IW6hUiKmBBe6d7p861c+SKwCjfcWoOU6q11OBzwxA==
   dependencies:
     axios "^1.6.0"
 

@@ -8,6 +8,34 @@
       "when": 1705287529992,
       "tag": "0000_common_wendell_rand",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1705372512980,
+      "tag": "0001_illegal_chimera",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1705469144752,
+      "tag": "0002_crazy_bloodscream",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1705531225799,
+      "tag": "0003_absurd_misty_knight",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1705777293932,
+      "tag": "0004_futuristic_pepper_potts",
+      "breakpoints": true
     }
   ]
 }

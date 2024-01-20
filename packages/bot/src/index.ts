@@ -22,6 +22,7 @@ import {
   modalStore,
 } from "./components";
 import { PermissionFlags, PermissionsBitField } from "discord-bitflag";
+import { checkPosts } from "./cron";
 
 export interface Env {
   DB: D1Database;
@@ -313,13 +314,7 @@ const server = {
   ): Promise<Response> {
     return router.handle(request, env, ctx);
   },
-  async scheduled(
-    event: ScheduledEvent,
-    env: Env,
-    ctx: ExecutionContext,
-  ): Promise<void> {
-    console.log(`trigger fired at ${event.cron}`);
-  },
+  scheduled: checkPosts,
 };
 
 export default server;

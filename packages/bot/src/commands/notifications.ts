@@ -24,8 +24,10 @@ import { and, eq } from "drizzle-orm";
 
 export interface NotificationSendConfig {
   preview?: boolean;
+  threads?: boolean;
   hype?: boolean;
   start?: boolean;
+  periods?: boolean;
   goals?: boolean;
   penalties?: boolean;
   end?: boolean;
@@ -42,8 +44,10 @@ const s = transformLocalizations({
     deactivate: "Deactivate",
     channel: "Channel",
     preview: "Preview",
+    threads: "Threads",
     hype: "Hype messages",
     start: "Game start",
+    periods: "Periods",
     goals: "Goals",
     penalties: "Penalties",
     end: "Game end",
@@ -58,8 +62,10 @@ const s = transformLocalizations({
     deactivate: "Désactiver",
     channel: "Salon",
     preview: "Aperçu",
+    threads: "Fils de discussion",
     hype: "Messages d'enthousiasme",
     start: "Début du jeu",
+    periods: "Périodes",
     goals: "Buts",
     penalties: "Pénalités",
     end: "Fin du jeu",
@@ -139,10 +145,12 @@ const getComponents = async (
             (
               [
                 "preview",
-                "hype",
+                "threads",
+                // "hype",
                 "start",
+                "periods",
                 "goals",
-                "penalties",
+                // "penalties",
                 "end",
                 "final",
               ] as const

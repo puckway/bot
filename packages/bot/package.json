@@ -29,7 +29,7 @@
     "discord-snowflake": "^2.0.0",
     "discord-verify": "^1.2.0",
     "drizzle-orm": "^0.29.3",
-    "hockeytech": "shayypy/hockeytech",
+    "hockeytech": "^1.4.1",
     "itty-router": "^4.0.25",
     "ngrok": "^5.0.0-beta.2",
     "table": "^6.8.1",

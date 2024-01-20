@@ -35,8 +35,8 @@ PWHL_TEAM_EMOJI_4 = "1194368791283519660"
 PWHL_TEAM_EMOJI_5 = "1194368782131540099"
 PWHL_TEAM_EMOJI_6 = "1194368796224393328"
 
-# [triggers]
-# crons = ["* * * * *"] # run every minute
+[triggers]
+crons = ["*/5 * * * *"] # run every 5 minutes
 
 [[kv_namespaces]]
 binding = "KV"
