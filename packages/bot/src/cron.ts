@@ -22,7 +22,7 @@ import {
   ScorebarMatch,
 } from "hockeytech";
 import { REST } from "@discordjs/rest";
-import { Routes } from "discord-api-types/v10";
+import { APIMessage, ChannelType, Routes } from "discord-api-types/v10";
 import { EmbedBuilder, time } from "@discordjs/builders";
 import { PwhlTeamId, colors } from "./util/colors";
 import { pwhlTeamEmoji } from "./util/emojis";
@@ -525,22 +525,22 @@ export const checkPosts = async (
               const getSummary = async () =>
                 (await client.getGameSummary(Number(game.ID))).GC.Gamesummary;
 
-              const startChannels = filterConfigChannels(
-                channelConfigs,
-                (c) => c.start,
-              );
               const periodChannels = filterConfigChannels(
                 channelConfigs,
                 (c) => c.periods,
+              );
+              const startChannels = filterConfigChannels(
+                channelConfigs,
+                (c) => c.start,
+              ).filter((id) => !periodChannels.includes(id));
+              const threadChannels = filterConfigChannels(
+                channelConfigs,
+                (c) => c.threads,
               );
               const goalChannels = filterConfigChannels(
                 channelConfigs,
                 (c) => c.goals,
               );
-              // const penaltyChannels = filterConfigChannels(
-              //   channelConfigs,
-              //   (c) => c.penalties,
-              // );
 
               if (
                 dbGame?.lastKnownPeriodId !== game.Period &&
@@ -556,12 +556,54 @@ export const checkPosts = async (
                     ) as 1 | 2 | 3
                   ];
 
-                for (const channelId of periodChannels) {
+                for (const channelId of [
+                  ...periodChannels,
+                  ...(game.Period === "1" ? startChannels : []),
+                ]) {
                   ctx.waitUntil(
-                    rest.post(Routes.channelMessages(channelId), {
+                    (async () => {
+                      const message = (await rest.post(
+                        Routes.channelMessages(channelId),
+                        {
+                          body: {
+                            content: `**${period?.long_name} Period Starting - ${game.VisitorCode} @ ${game.HomeCode}**`,
+                            embeds: [getHtStatusEmbed(env, summary)],
+                          },
+                        },
+                      )) as APIMessage;
+                      if (
+                        threadChannels.includes(channelId) &&
+                        game.Period === "1"
+                      ) {
+                        await rest.post(Routes.threads(channelId, message.id), {
+                          body: {
+                            name: `${game.VisitorCode} @ ${game.HomeCode} - ${game.GameDate}`,
+                          },
+                        });
+                      }
+                      return undefined;
+                    })(),
+                  );
+                }
+              }
+
+              if (
+                dbGame?.lastKnownPeriodId !== game.Period &&
+                game.Period === "1"
+              ) {
+                for (const channelId of threadChannels.filter(
+                  // Assume threads for the other two configs have already been created
+                  (id) =>
+                    !startChannels.includes(id) && !periodChannels.includes(id),
+                )) {
+                  ctx.waitUntil(
+                    rest.post(Routes.threads(channelId), {
                       body: {
-                        content: `**${period?.long_name} Period Starting - ${game.VisitorCode} @ ${game.HomeCode}**`,
-                        embeds: [getHtStatusEmbed(env, summary)],
+                        name: `${game.VisitorCode} @ ${game.HomeCode} - ${game.GameDate}`,
+                        // We need some extra statefulness to have this
+                        // work with announcement channels due to the separate
+                        // thread type required
+                        type: ChannelType.PublicThread,
                       },
                     }),
                   );
