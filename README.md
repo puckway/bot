@@ -18,7 +18,7 @@ Puckway is an intragalactic bot for everything hockey (excluding the NHL). You m
     - [x] PWHL
 - Automatic game threads
     - [ ] KHL
-    - [ ] PWHL
+    - [x] PWHL
 - Live event notifications
     - [ ] KHL
-    - [ ] PWHL
+    - [x] PWHL
