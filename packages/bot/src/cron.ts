@@ -476,12 +476,34 @@ export const checkPosts = async (
                   channelConfigs,
                   (c) => c.preview,
                 );
+                const threadChannels = filterConfigChannels(
+                  channelConfigs,
+                  (c) => c.threads,
+                );
                 if (previewChannels.length > 0) {
                   for (const channelId of previewChannels) {
                     ctx.waitUntil(
-                      rest.post(Routes.channelMessages(channelId), {
-                        body: { embeds: [getHtGamePreviewEmbed(env, game)] },
-                      }),
+                      (async () => {
+                        const message = (await rest.post(
+                          Routes.channelMessages(channelId),
+                          {
+                            body: {
+                              embeds: [getHtGamePreviewEmbed(env, game)],
+                            },
+                          },
+                        )) as APIMessage;
+                        if (threadChannels.includes(channelId)) {
+                          await rest.post(
+                            Routes.threads(channelId, message.id),
+                            {
+                              body: {
+                                name: `${game.VisitorCode} @ ${game.HomeCode} - ${game.GameDate}`,
+                              },
+                            },
+                          );
+                        }
+                        return undefined;
+                      })(),
                     );
                   }
                   postedPreviewIds.push([league, game.ID]);
@@ -594,7 +616,12 @@ export const checkPosts = async (
                 for (const channelId of threadChannels.filter(
                   // Assume threads for the other two configs have already been created
                   (id) =>
-                    !startChannels.includes(id) && !periodChannels.includes(id),
+                    !filterConfigChannels(
+                      channelConfigs,
+                      (c) => c.preview,
+                    ).includes(id) &&
+                    !startChannels.includes(id) &&
+                    !periodChannels.includes(id),
                 )) {
                   ctx.waitUntil(
                     rest.post(Routes.threads(channelId), {
