@@ -15,7 +15,6 @@ import {
   GameStatus,
   GameSummary,
   Goal,
-  HomeOrVisitor,
   Penalty,
   Period,
   PlayerInfo,
@@ -29,6 +28,14 @@ import { pwhlTeamEmoji } from "./util/emojis";
 import { pwhlTeamLogoUrl } from "./pwhl/team";
 import { toHMS } from "./util/time";
 import { htPlayerImageUrl } from "./pwhl/player";
+
+const logErrors = async (promise: Promise<any>) => {
+  try {
+    await promise;
+  } catch (e) {
+    console.error(e);
+  }
+};
 
 /**
  * Takes minutes remaining (e.g. 56 minutes until game start) and converts
@@ -408,7 +415,6 @@ export const checkPosts = async (
     },
   });
   const ongoingGames = await db.query.games.findMany({
-    where: eq(games.postedFinal, false),
     columns: { id: false },
   });
   const ongoingIds = Object.fromEntries(
@@ -448,14 +454,17 @@ export const checkPosts = async (
           (g) => !ongoingIds.pwhl.includes(g.ID),
         );
         if (newGames.length !== 0) {
-          await db.insert(games).values(
-            newGames.map((game) => ({
-              league,
-              nativeId: game.ID,
-              lastKnownHomeGoals: Number(game.HomeGoals),
-              lastKnownAwayGoals: Number(game.VisitorGoals),
-            })),
-          );
+          await db
+            .insert(games)
+            .values(
+              newGames.map((game) => ({
+                league,
+                nativeId: game.ID,
+                lastKnownHomeGoals: Number(game.HomeGoals),
+                lastKnownAwayGoals: Number(game.VisitorGoals),
+              })),
+            )
+            .onConflictDoNothing();
         }
         for (const game of scorebar) {
           const start = new Date(game.GameDateISO8601);
@@ -483,27 +492,29 @@ export const checkPosts = async (
                 if (previewChannels.length > 0) {
                   for (const channelId of previewChannels) {
                     ctx.waitUntil(
-                      (async () => {
-                        const message = (await rest.post(
-                          Routes.channelMessages(channelId),
-                          {
-                            body: {
-                              embeds: [getHtGamePreviewEmbed(env, game)],
-                            },
-                          },
-                        )) as APIMessage;
-                        if (threadChannels.includes(channelId)) {
-                          await rest.post(
-                            Routes.threads(channelId, message.id),
+                      logErrors(
+                        (async () => {
+                          const message = (await rest.post(
+                            Routes.channelMessages(channelId),
                             {
                               body: {
-                                name: `${game.VisitorCode} @ ${game.HomeCode} - ${game.GameDate}`,
+                                embeds: [getHtGamePreviewEmbed(env, game)],
                               },
                             },
-                          );
-                        }
-                        return undefined;
-                      })(),
+                          )) as APIMessage;
+                          if (threadChannels.includes(channelId)) {
+                            await rest.post(
+                              Routes.threads(channelId, message.id),
+                              {
+                                body: {
+                                  name: `${game.VisitorCode} @ ${game.HomeCode} - ${game.GameDate}`,
+                                },
+                              },
+                            );
+                          }
+                          return undefined;
+                        })(),
+                      ),
                     );
                   }
                   postedPreviewIds.push([league, game.ID]);
@@ -521,13 +532,15 @@ export const checkPosts = async (
                     if (hypeMin) {
                       for (const channelId of hypeChannels) {
                         ctx.waitUntil(
-                          rest.post(Routes.channelMessages(channelId), {
-                            body: {
-                              content: `${game.VisitorLongName} @ ${
-                                game.HomeLongName
-                              } starts ${time(start, "R")}`,
-                            },
-                          }),
+                          logErrors(
+                            rest.post(Routes.channelMessages(channelId), {
+                              body: {
+                                content: `${game.VisitorLongName} @ ${
+                                  game.HomeLongName
+                                } starts ${time(start, "R")}`,
+                              },
+                            }),
+                          ),
                         );
                       }
                       postedHypeMinutes[String(hypeMin)] =
@@ -583,28 +596,33 @@ export const checkPosts = async (
                   ...(game.Period === "1" ? startChannels : []),
                 ]) {
                   ctx.waitUntil(
-                    (async () => {
-                      const message = (await rest.post(
-                        Routes.channelMessages(channelId),
-                        {
-                          body: {
-                            content: `**${period?.long_name} Period Starting - ${game.VisitorCode} @ ${game.HomeCode}**`,
-                            embeds: [getHtStatusEmbed(env, summary)],
+                    logErrors(
+                      (async () => {
+                        const message = (await rest.post(
+                          Routes.channelMessages(channelId),
+                          {
+                            body: {
+                              content: `**${period?.long_name} Period Starting - ${game.VisitorCode} @ ${game.HomeCode}**`,
+                              embeds: [getHtStatusEmbed(env, summary)],
+                            },
                           },
-                        },
-                      )) as APIMessage;
-                      if (
-                        threadChannels.includes(channelId) &&
-                        game.Period === "1"
-                      ) {
-                        await rest.post(Routes.threads(channelId, message.id), {
-                          body: {
-                            name: `${game.VisitorCode} @ ${game.HomeCode} - ${game.GameDate}`,
-                          },
-                        });
-                      }
-                      return undefined;
-                    })(),
+                        )) as APIMessage;
+                        if (
+                          threadChannels.includes(channelId) &&
+                          game.Period === "1"
+                        ) {
+                          await rest.post(
+                            Routes.threads(channelId, message.id),
+                            {
+                              body: {
+                                name: `${game.VisitorCode} @ ${game.HomeCode} - ${game.GameDate}`,
+                              },
+                            },
+                          );
+                        }
+                        return undefined;
+                      })(),
+                    ),
                   );
                 }
               }
@@ -624,15 +642,17 @@ export const checkPosts = async (
                     !periodChannels.includes(id),
                 )) {
                   ctx.waitUntil(
-                    rest.post(Routes.threads(channelId), {
-                      body: {
-                        name: `${game.VisitorCode} @ ${game.HomeCode} - ${game.GameDate}`,
-                        // We need some extra statefulness to have this
-                        // work with announcement channels due to the separate
-                        // thread type required
-                        type: ChannelType.PublicThread,
-                      },
-                    }),
+                    logErrors(
+                      rest.post(Routes.threads(channelId), {
+                        body: {
+                          name: `${game.VisitorCode} @ ${game.HomeCode} - ${game.GameDate}`,
+                          // We need some extra statefulness to have this
+                          // work with announcement channels due to the separate
+                          // thread type required
+                          type: ChannelType.PublicThread,
+                        },
+                      }),
+                    ),
                   );
                 }
               }
@@ -655,11 +675,13 @@ export const checkPosts = async (
                   const goal = revGoals[missedRevIndex];
                   for (const channelId of goalChannels) {
                     ctx.waitUntil(
-                      rest.post(Routes.channelMessages(channelId), {
-                        body: {
-                          embeds: [getHtGoalEmbed(env, summary, goal)],
-                        },
-                      }),
+                      logErrors(
+                        rest.post(Routes.channelMessages(channelId), {
+                          body: {
+                            embeds: [getHtGoalEmbed(env, summary, goal)],
+                          },
+                        }),
+                      ),
                     );
                   }
                 }
@@ -724,14 +746,16 @@ export const checkPosts = async (
 
               for (const channelId of channels) {
                 ctx.waitUntil(
-                  rest.post(Routes.channelMessages(channelId), {
-                    body: {
-                      embeds: [
-                        getHtStatusEmbed(env, summary, game.GameStatus),
-                        getHtGoalsEmbed(env, summary),
-                      ],
-                    },
-                  }),
+                  logErrors(
+                    rest.post(Routes.channelMessages(channelId), {
+                      body: {
+                        embeds: [
+                          getHtStatusEmbed(env, summary, game.GameStatus),
+                          getHtGoalsEmbed(env, summary),
+                        ],
+                      },
+                    }),
+                  ),
                 );
               }
               postedUnofficialFinalIds.push([league, game.ID]);
@@ -750,14 +774,16 @@ export const checkPosts = async (
 
               for (const channelId of channels) {
                 ctx.waitUntil(
-                  rest.post(Routes.channelMessages(channelId), {
-                    body: {
-                      embeds: [
-                        getHtStatusEmbed(env, summary, game.GameStatus),
-                        getHtGoalsEmbed(env, summary),
-                      ],
-                    },
-                  }),
+                  logErrors(
+                    rest.post(Routes.channelMessages(channelId), {
+                      body: {
+                        embeds: [
+                          getHtStatusEmbed(env, summary, game.GameStatus),
+                          getHtGoalsEmbed(env, summary),
+                        ],
+                      },
+                    }),
+                  ),
                 );
               }
               postedFinalIds.push([league, game.ID]);
@@ -775,52 +801,85 @@ export const checkPosts = async (
   }
   if (postedPreviewIds.length !== 0) {
     await db
-      .update(games)
-      .set({ postedPreview: true })
-      .where(
-        or(
+      .insert(games)
+      .values(
+        postedPreviewIds.map(([league, id]) => ({
+          league,
+          nativeId: id,
+          postedPreview: true,
+        })),
+      )
+      .onConflictDoUpdate({
+        set: { postedPreview: true },
+        target: [games.league, games.nativeId],
+        where: or(
           ...postedPreviewIds.map(([league, id]) =>
             and(eq(games.league, league), eq(games.nativeId, id)),
           ),
         ),
-      );
+      });
   }
   if (Object.keys(postedHypeMinutes).length !== 0) {
     for (const min of Object.keys(postedHypeMinutes)) {
       await db
-        .update(games)
-        .set({ lastPostedHypeMinutes: Number(min) as HypeMinute })
-        .where(
-          or(
+        .insert(games)
+        .values(
+          postedHypeMinutes[min].map(([league, id]) => ({
+            league,
+            nativeId: id,
+            lastPostedHypeMinutes: Number(min) as HypeMinute,
+          })),
+        )
+        .onConflictDoUpdate({
+          set: { lastPostedHypeMinutes: Number(min) as HypeMinute },
+          target: [games.league, games.nativeId],
+          where: or(
             ...postedHypeMinutes[min].map(([league, id]) =>
               and(eq(games.league, league), eq(games.nativeId, id)),
             ),
           ),
-        );
+        });
     }
   }
   if (postedUnofficialFinalIds.length !== 0) {
     await db
-      .update(games)
-      .set({ postedUnofficialFinal: true })
-      .where(
-        or(
+      .insert(games)
+      .values(
+        postedUnofficialFinalIds.map(([league, id]) => ({
+          league,
+          nativeId: id,
+          postedUnofficialFinal: true,
+        })),
+      )
+      .onConflictDoUpdate({
+        set: { postedUnofficialFinal: true },
+        target: [games.league, games.nativeId],
+        where: or(
           ...postedUnofficialFinalIds.map(([league, id]) =>
             and(eq(games.league, league), eq(games.nativeId, id)),
           ),
         ),
-      );
+      });
   }
   if (postedFinalIds.length !== 0) {
+    console.log(`Inserting ${postedFinalIds.length} final records`)
     await db
-      .update(games)
-      .set({ postedFinal: true })
-      .where(
-        or(
+      .insert(games)
+      .values(
+        postedFinalIds.map(([league, id]) => ({
+          league,
+          nativeId: id,
+          postedFinal: true,
+        })),
+      )
+      .onConflictDoUpdate({
+        set: { postedFinal: true },
+        target: [games.league, games.nativeId],
+        where: or(
           ...postedFinalIds.map(([league, id]) =>
             and(eq(games.league, league), eq(games.nativeId, id)),
           ),
         ),
-      );
+      });
   }
 };
