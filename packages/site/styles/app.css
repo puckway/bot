@@ -1,0 +1,51 @@
+@import "tailwindcss/base";
+@import "tailwindcss/components";
+@import "tailwindcss/utilities";
+
+@font-face {
+  font-family: Transducer;
+  font-style: normal;
+  font-weight: 400;
+  src: url(/fonts/Transducer-Regular.otf);
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Transducer;
+  font-style: oblique;
+  font-weight: 400;
+  src: url(/fonts/Transducer-Regular-Oblique.otf);
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Transducer;
+  font-style: normal;
+  font-weight: 500;
+  src: url(/fonts/Transducer-Medium.otf);
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Transducer;
+  font-style: oblique;
+  font-weight: 500;
+  src: url(/fonts/Transducer-Medium-Oblique.otf);
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Transducer;
+  font-style: normal;
+  font-weight: 600;
+  src: url(/fonts/Transducer-Bold.otf);
+  font-display: swap;
+}
+
+@font-face {
+  font-family: Transducer;
+  font-style: oblique;
+  font-weight: 600;
+  src: url(/fonts/Transducer-Bold-Oblique.otf);
+  font-display: swap;
+}
