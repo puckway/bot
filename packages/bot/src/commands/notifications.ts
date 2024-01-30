@@ -9,7 +9,7 @@ import {
   StringSelectMenuOptionBuilder,
 } from "@discordjs/builders";
 import { storeComponents } from "../util/components";
-import { ButtonStyle, MessageFlags } from "discord-api-types/v10";
+import { ButtonStyle, ChannelType, MessageFlags } from "discord-api-types/v10";
 import { transformLocalizations, uni } from "../util/l10n";
 import { colors } from "../util/colors";
 import { InteractionContext } from "../interactions";
@@ -44,14 +44,24 @@ const s = transformLocalizations({
     deactivate: "Deactivate",
     channel: "Channel",
     preview: "Preview",
+    previewDescription:
+      "Sent 6 hours before game time. Shows location, tickets, & records",
     threads: "Threads",
+    threadsDescription: "Public chat thread under the preview or start message",
     hype: "Hype messages",
     start: "Game start",
+    startDescription: "First period started",
     periods: "Periods",
+    periodsDescription: "Any period started",
     goals: "Goals",
+    goalsDescription: "A goal was scored by either team",
     penalties: "Penalties",
+    penaltiesDescription: "Either team was penalized",
     end: "Game end",
+    endDescription: "Last period ended",
     final: "Game final",
+    finalDescription:
+      "Final score posted online. Stats shouldn't change after this",
   },
   fr: {
     settings: "Paramètres de notification",
@@ -97,10 +107,30 @@ const getComponents = async (
   ctx: InteractionContext,
   league: League,
   channelId: string,
+  channelType: ChannelType,
   sendConfig?: NotificationSendConfig,
   teamIds?: string[],
   active?: boolean,
 ) => {
+  const allFeatures = [
+    "preview",
+    "threads",
+    "start",
+    "periods",
+    "goals",
+    "end",
+    "final",
+  ] as const;
+  const features = allFeatures;
+  // I was going to do this in order to allow announcement channels but I decided
+  // against it because the type can be swapped with the same channel ID, rendering
+  // thread creation suddenly broken. The only workaround as far as I know would be
+  // to get every channel every time to make sure it hasn't changed, which is wasteful.
+  // Keeping this snippet for posterity in case I try again.
+  // .filter(
+  //   (f) => !(channelType === ChannelType.GuildAnnouncement && f === "threads"),
+  // );
+
   return [
     new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
       await storeComponents(ctx.env.KV, [
@@ -133,6 +163,7 @@ const getComponents = async (
           componentOnce: true,
           league,
           channelId,
+          channelType,
         },
       ]),
     ),
@@ -140,24 +171,13 @@ const getComponents = async (
       await storeComponents(ctx.env.KV, [
         new StringSelectMenuBuilder()
           .setPlaceholder(s(ctx, "selectFeatures"))
-          .setMaxValues(7)
+          .setMaxValues(features.length)
           .addOptions(
-            (
-              [
-                "preview",
-                "threads",
-                // "hype",
-                "start",
-                "periods",
-                "goals",
-                // "penalties",
-                "end",
-                "final",
-              ] as const
-            ).map(
+            features.map(
               (feature) =>
                 new StringSelectMenuOptionBuilder({
                   label: s(ctx, feature),
+                  description: s(ctx, `${feature}Description`),
                   value: feature,
                   default: sendConfig ? sendConfig[feature] : false,
                 }),
@@ -169,6 +189,7 @@ const getComponents = async (
           componentOnce: true,
           league,
           channelId,
+          channelType,
         },
       ]),
     ),
@@ -184,6 +205,7 @@ const getComponents = async (
           componentOnce: true,
           league,
           channelId,
+          channelType,
         },
       ]),
     ),
@@ -217,6 +239,7 @@ export const notificationsCallback: ChatInputAppCommandCallback = async (
         ctx,
         league,
         channel.id,
+        channel.type,
         settings?.sendConfig,
         settings?.teamIds,
         settings?.active ?? undefined,
@@ -243,6 +266,7 @@ export const selectNotificationTeamCallback: SelectMenuCallback = async (
   const state = ctx.state as MinimumKVComponentState & {
     league: League;
     channelId: string;
+    channelType: ChannelType;
   };
   const teamIds = ctx.interaction.data.values;
 
@@ -269,6 +293,7 @@ export const selectNotificationTeamCallback: SelectMenuCallback = async (
       ctx,
       state.league,
       state.channelId,
+      state.channelType,
       settings?.sendConfig,
       teamIds,
     ),
@@ -281,6 +306,7 @@ export const selectNotificationFeaturesCallback: SelectMenuCallback = async (
   const state = ctx.state as MinimumKVComponentState & {
     league: League;
     channelId: string;
+    channelType: ChannelType;
   };
   const featureValues = ctx.interaction.data
     .values as (keyof NotificationSendConfig)[];
@@ -330,6 +356,7 @@ export const selectNotificationFeaturesCallback: SelectMenuCallback = async (
       ctx,
       state.league,
       state.channelId,
+      state.channelType,
       settings.sendConfig,
       settings.teamIds,
     ),
@@ -342,6 +369,7 @@ export const toggleNotificationActiveButtonCallback: ButtonCallback = async (
   const state = ctx.state as MinimumKVComponentState & {
     league: League;
     channelId: string;
+    channelType: ChannelType;
   };
   const db = getDb(ctx.env.DB);
   const settings = await db.query.notifications.findFirst({
@@ -380,6 +408,7 @@ export const toggleNotificationActiveButtonCallback: ButtonCallback = async (
       ctx,
       state.league,
       state.channelId,
+      state.channelType,
       settings?.sendConfig,
       settings?.teamIds,
       active,

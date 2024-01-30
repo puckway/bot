@@ -22,6 +22,7 @@ export const notifications = sqliteTable(
     id: integer("id").primaryKey({ autoIncrement: true }),
     league: text("league").$type<League>().notNull(),
     channelId: snowflake("channelId").notNull(),
+    // channelType: integer("channelType").notNull().$type<ChannelType>().default(ChannelType.GuildText),
     teamIds: text("teamIds", { mode: "json" })
       .$type<string[]>()
       .notNull()

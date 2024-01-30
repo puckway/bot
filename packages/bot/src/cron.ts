@@ -17,6 +17,7 @@ import {
   Goal,
   Penalty,
   Period,
+  Periods,
   PlayerInfo,
   ScorebarMatch,
 } from "hockeytech";
@@ -560,6 +561,12 @@ export const checkPosts = async (
               const getSummary = async () =>
                 (await client.getGameSummary(Number(game.ID))).GC.Gamesummary;
 
+              const score = [Number(game.VisitorGoals), Number(game.HomeGoals)];
+              const totalScore = score[0] + score[1];
+              const totalPriorScore = dbGame
+                ? dbGame.lastKnownAwayGoals + dbGame.lastKnownHomeGoals
+                : 0;
+
               const periodChannels = filterConfigChannels(
                 channelConfigs,
                 (c) => c.periods,
@@ -580,6 +587,7 @@ export const checkPosts = async (
               if (
                 dbGame?.lastKnownPeriodId !== game.Period &&
                 periodChannels.length !== 0
+                // (game.Period === "1" ? totalScore === 0 : true)
               ) {
                 if (!summary) summary = await getSummary();
                 const period =
@@ -588,13 +596,13 @@ export const checkPosts = async (
                       Object.keys(summary.periods)[
                         Object.keys(summary.periods).length - 1
                       ],
-                    ) as 1 | 2 | 3
+                    ) as keyof Periods
                   ];
 
                 for (const channelId of [
                   ...periodChannels,
                   ...(game.Period === "1" ? startChannels : []),
-                ]) {
+                ].filter((c, i, a) => a.indexOf(c) === i)) {
                   ctx.waitUntil(
                     logErrors(
                       (async () => {
@@ -603,7 +611,9 @@ export const checkPosts = async (
                           {
                             body: {
                               content: `**${period?.long_name} Period Starting - ${game.VisitorCode} @ ${game.HomeCode}**`,
-                              embeds: [getHtStatusEmbed(env, summary)],
+                              embeds: [
+                                getHtStatusEmbed(env, summary, game.GameStatus),
+                              ],
                             },
                           },
                         )) as APIMessage;
@@ -656,12 +666,6 @@ export const checkPosts = async (
                   );
                 }
               }
-
-              const score = [Number(game.VisitorGoals), Number(game.HomeGoals)];
-              const totalScore = score[0] + score[1];
-              const totalPriorScore = dbGame
-                ? dbGame.lastKnownAwayGoals + dbGame.lastKnownHomeGoals
-                : 0;
 
               if (totalScore > totalPriorScore && goalChannels.length !== 0) {
                 if (!summary) summary = await getSummary();
@@ -862,7 +866,6 @@ export const checkPosts = async (
       });
   }
   if (postedFinalIds.length !== 0) {
-    console.log(`Inserting ${postedFinalIds.length} final records`)
     await db
       .insert(games)
       .values(
