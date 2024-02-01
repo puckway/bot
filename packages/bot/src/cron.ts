@@ -1,16 +1,7 @@
+import { EmbedBuilder, time } from "@discordjs/builders";
+import { REST } from "@discordjs/rest";
+import { APIMessage, ChannelType, Routes } from "discord-api-types/v10";
 import { and, eq, or } from "drizzle-orm";
-import { Env } from ".";
-import { getDb } from "./db";
-import {
-  HypeMinute,
-  League,
-  games,
-  hypeMinutes,
-  leagues,
-  notifications,
-} from "./db/schema";
-import { getPwhlClient } from "./pwhl/client";
-import { NotificationSendConfig } from "./commands/notifications";
 import {
   GameStatus,
   GameSummary,
@@ -21,14 +12,23 @@ import {
   PlayerInfo,
   ScorebarMatch,
 } from "hockeytech";
-import { REST } from "@discordjs/rest";
-import { APIMessage, ChannelType, Routes } from "discord-api-types/v10";
-import { EmbedBuilder, time } from "@discordjs/builders";
+import { Env } from ".";
+import { NotificationSendConfig } from "./commands/notifications";
+import { getDb } from "./db";
+import {
+  HypeMinute,
+  League,
+  games,
+  hypeMinutes,
+  leagues,
+  notifications,
+} from "./db/schema";
+import { getPwhlClient } from "./pwhl/client";
+import { htPlayerImageUrl } from "./pwhl/player";
+import { pwhlTeamLogoUrl } from "./pwhl/team";
 import { PwhlTeamId, colors } from "./util/colors";
 import { pwhlTeamEmoji } from "./util/emojis";
-import { pwhlTeamLogoUrl } from "./pwhl/team";
 import { toHMS } from "./util/time";
-import { htPlayerImageUrl } from "./pwhl/player";
 
 const logErrors = async (promise: Promise<any>) => {
   try {

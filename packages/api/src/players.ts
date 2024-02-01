@@ -1,10 +1,10 @@
 import {
-  Routes,
-  type RESTGetAPIPlayers,
-  type RESTGetAPIPlayersLight,
   APILightPlayer,
   APIPlayer,
   APIRouteBases,
+  type RESTGetAPIPlayers,
+  type RESTGetAPIPlayersLight,
+  Routes,
 } from "khl-api-types";
 import { KhlApiError, KhlClientMethodOptions, requestJson } from "./rest";
 

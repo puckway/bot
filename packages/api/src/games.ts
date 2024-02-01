@@ -1,4 +1,9 @@
-import { type RESTGetAPIEvents, type RESTGetAPIEvent, APIRouteBases, Routes } from "khl-api-types";
+import {
+  APIRouteBases,
+  type RESTGetAPIEvent,
+  type RESTGetAPIEvents,
+  Routes,
+} from "khl-api-types";
 import { KhlClientMethodOptions, requestJson } from "./rest";
 
 export const getGames = async (

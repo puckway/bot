@@ -3,9 +3,7 @@ import { Link, useSearchParams } from "@remix-run/react";
 import { Header } from "~/components/Header";
 
 export const meta: MetaFunction = () => {
-  return [
-    { title: "Scores - Puckway" },
-  ];
+  return [{ title: "Scores - Puckway" }];
 };
 
 export default function Scores() {

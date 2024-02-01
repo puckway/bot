@@ -1,14 +1,13 @@
 import { ButtonBuilder, EmbedBuilder } from "@discordjs/builders";
-import { ChatInputAppCommandCallback } from "../commands";
-import { transformLocalizations } from "../util/l10n";
 import { ButtonStyle } from "discord-api-types/v10";
+import { ChatInputAppCommandCallback } from "../commands";
 import { colors } from "../util/colors";
+import { transformLocalizations } from "../util/l10n";
 
 const s = transformLocalizations({
   en: {
     about: "About",
-    description:
-      "This bot covers various aspects of the PWHL and KHL.",
+    description: "This bot covers various aspects of the PWHL and KHL.",
     site: "Website",
     // site: "Site (+ Mac/iOS app!)",
   },

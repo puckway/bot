@@ -1,5 +1,5 @@
-import { AppCommandAutocompleteCallback } from "../commands";
 import * as api from "api";
+import { AppCommandAutocompleteCallback } from "../commands";
 import { getKhlLocale } from "../util/l10n";
 
 export const teamAutocomplete: AppCommandAutocompleteCallback = async (ctx) => {

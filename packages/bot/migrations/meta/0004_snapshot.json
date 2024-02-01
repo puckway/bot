@@ -94,10 +94,7 @@
       "indexes": {
         "games_league_nativeId_unique": {
           "name": "games_league_nativeId_unique",
-          "columns": [
-            "league",
-            "nativeId"
-          ],
+          "columns": ["league", "nativeId"],
           "isUnique": true
         }
       },
@@ -157,10 +154,7 @@
       "indexes": {
         "notifications_league_channelId_unique": {
           "name": "notifications_league_channelId_unique",
-          "columns": [
-            "league",
-            "channelId"
-          ],
+          "columns": ["league", "channelId"],
           "isUnique": true
         }
       },

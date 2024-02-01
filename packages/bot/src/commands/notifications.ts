@@ -1,6 +1,3 @@
-import { ChatInputAppCommandCallback } from "../commands";
-import * as api from "api";
-import { allTeams } from "../pwhl/team";
 import {
   ActionRowBuilder,
   ButtonBuilder,
@@ -8,19 +5,22 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
 } from "@discordjs/builders";
-import { storeComponents } from "../util/components";
+import * as api from "api";
 import { ButtonStyle, ChannelType, MessageFlags } from "discord-api-types/v10";
-import { transformLocalizations, uni } from "../util/l10n";
-import { colors } from "../util/colors";
-import { InteractionContext } from "../interactions";
+import { and, eq } from "drizzle-orm";
+import { ChatInputAppCommandCallback } from "../commands";
 import {
   ButtonCallback,
   MinimumKVComponentState,
   SelectMenuCallback,
 } from "../components";
-import { League, makeSnowflake, notifications } from "../db/schema";
 import { getDb } from "../db";
-import { and, eq } from "drizzle-orm";
+import { League, makeSnowflake, notifications } from "../db/schema";
+import { InteractionContext } from "../interactions";
+import { allTeams } from "../pwhl/team";
+import { colors } from "../util/colors";
+import { storeComponents } from "../util/components";
+import { transformLocalizations, uni } from "../util/l10n";
 
 export interface NotificationSendConfig {
   preview?: boolean;

@@ -54,10 +54,7 @@
       "indexes": {
         "notifications_league_channelId_unique": {
           "name": "notifications_league_channelId_unique",
-          "columns": [
-            "league",
-            "channelId"
-          ],
+          "columns": ["league", "channelId"],
           "isUnique": true
         }
       },

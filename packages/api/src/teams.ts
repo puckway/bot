@@ -1,4 +1,9 @@
-import { APIRouteBases, Routes, type RESTGetAPITeam, type RESTGetAPITeams } from "khl-api-types";
+import {
+  APIRouteBases,
+  type RESTGetAPITeam,
+  type RESTGetAPITeams,
+  Routes,
+} from "khl-api-types";
 import { KhlClientMethodOptions, requestJson } from "./rest";
 
 // I didn't want to hardcode the teams like this but it tends to make a lot of

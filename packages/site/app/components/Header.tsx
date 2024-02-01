@@ -1,6 +1,6 @@
-import { League } from "~/types/league";
 import { Link } from "@remix-run/react";
 import { twMerge } from "tailwind-merge";
+import { League } from "~/types/league";
 
 const LeagueLink: React.FC<{ league: League; name: string }> = ({
   league,
@@ -13,7 +13,12 @@ const LeagueLink: React.FC<{ league: League; name: string }> = ({
         className="w-8 sm:w-6 my-auto mr-1"
         alt={`${name} Logo`}
       />
-      <p className={twMerge(league === "pwhl" ? "font-pwhl font-bold" : "", "hidden sm:block")}>
+      <p
+        className={twMerge(
+          league === "pwhl" ? "font-pwhl font-bold" : "",
+          "hidden sm:block",
+        )}
+      >
         {name}
       </p>
     </Link>

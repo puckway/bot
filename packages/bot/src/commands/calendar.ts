@@ -1,4 +1,11 @@
 import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  EmbedBuilder,
+  time,
+} from "@discordjs/builders";
+import * as api from "api";
+import {
   APIGuildScheduledEvent,
   ButtonStyle,
   GuildScheduledEventEntityType,
@@ -8,23 +15,16 @@ import {
   RESTPostAPIGuildScheduledEventResult,
   Routes,
 } from "discord-api-types/v10";
+import { PermissionFlags } from "discord-bitflag";
+import { type APIEvent, State } from "khl-api-types";
 import { ChatInputAppCommandCallback } from "../commands";
-import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
-import * as api from "api";
-import { State, type APIEvent } from "khl-api-types";
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  EmbedBuilder,
-  time,
-} from "@discordjs/builders";
-import { khlTeamEmoji, pwhlTeamEmoji } from "../util/emojis";
+import { ButtonCallback, MinimumKVComponentState } from "../components";
 import { getPwhlClient } from "../pwhl/client";
 import { allSeasons, allTeams } from "../pwhl/team";
-import { storeComponents } from "../util/components";
-import { ButtonCallback, MinimumKVComponentState } from "../components";
-import { PermissionFlags } from "discord-bitflag";
 import { colors } from "../util/colors";
+import { storeComponents } from "../util/components";
+import { khlTeamEmoji, pwhlTeamEmoji } from "../util/emojis";
+import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
 
 export const DATE_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
 

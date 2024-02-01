@@ -1,5 +1,5 @@
-import { appCommands } from "./commands";
 import dotenv from "dotenv";
+import { appCommands } from "./commands";
 
 /**
  * This file is meant to be run from the command line, and is not used by the
@@ -9,7 +9,7 @@ import dotenv from "dotenv";
 
 const config = dotenv.config({ path: ".dev.vars" });
 if (!config.parsed) {
-  throw Error("Invalid .dev.vars")
+  throw Error("Invalid .dev.vars");
 }
 
 const token = config.parsed.DISCORD_TOKEN;

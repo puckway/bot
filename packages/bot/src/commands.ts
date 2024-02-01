@@ -11,22 +11,22 @@ import {
   ChannelType,
   RESTPostAPIApplicationCommandsJSONBody,
 } from "discord-api-types/v10";
-import { InteractionContext } from "./interactions";
+import { PermissionFlags, PermissionsBitField } from "discord-bitflag";
+import { aboutCallback } from "./commands/about";
 import {
   khlCalendarCallback,
   pwhlGamedayCallback,
   pwhlScheduleCallback,
 } from "./commands/calendar";
-import { aboutCallback } from "./commands/about";
-import { teamAutocomplete } from "./commands/teamAutocomplete";
+import { notificationsCallback } from "./commands/notifications";
 import {
   khlPlayerCallback,
   pwhlPlayerCallback,
   pwhlWhoisCallback,
 } from "./commands/player";
+import { teamAutocomplete } from "./commands/teamAutocomplete";
+import { InteractionContext } from "./interactions";
 import { allSeasons, allTeams } from "./pwhl/team";
-import { notificationsCallback } from "./commands/notifications";
-import { PermissionFlags, PermissionsBitField } from "discord-bitflag";
 
 export type AppCommandCallbackT<T extends APIInteraction> = (
   ctx: InteractionContext<T>,

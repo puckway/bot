@@ -5,14 +5,14 @@ import {
   APIMessageComponentSelectMenuInteraction,
   APIModalSubmitInteraction,
 } from "discord-api-types/v10";
-import { InteractionContext } from "./interactions";
-import { playerSearchSelectCallback } from "./commands/player";
 import { addScheduleEventsCallback } from "./commands/calendar";
 import {
   selectNotificationFeaturesCallback,
   selectNotificationTeamCallback,
   toggleNotificationActiveButtonCallback,
 } from "./commands/notifications";
+import { playerSearchSelectCallback } from "./commands/player";
+import { InteractionContext } from "./interactions";
 
 export interface MinimumKVComponentState {
   /** The total number of seconds that the component/modal should be stored. */

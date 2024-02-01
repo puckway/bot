@@ -1,12 +1,3 @@
-import { ChatInputAppCommandCallback } from "../commands";
-import type { APILightPlayer } from "khl-api-types";
-import * as api from "api";
-import {
-  getHtLocale,
-  getKhlLocale,
-  transformLocalizations,
-} from "../util/l10n";
-import { APIInteraction, MessageFlags } from "discord-api-types/v10";
 import {
   ActionRowBuilder,
   EmbedBuilder,
@@ -14,15 +5,24 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
 } from "@discordjs/builders";
-import { InteractionContext } from "../interactions";
-import { countryCodeEmoji, khlTeamEmoji, pwhlTeamEmoji } from "../util/emojis";
+import * as api from "api";
+import { APIInteraction, MessageFlags } from "discord-api-types/v10";
+import { RosterPlayer } from "hockeytech";
+import type { APILightPlayer } from "khl-api-types";
+import { getBorderCharacters, table } from "table";
+import { ChatInputAppCommandCallback } from "../commands";
 import { SelectMenuCallback } from "../components";
-import { storeComponents } from "../util/components";
+import { InteractionContext } from "../interactions";
 import { getPwhlClient } from "../pwhl/client";
 import { allSeasons, allTeams, pwhlTeamLogoUrl } from "../pwhl/team";
-import { RosterPlayer } from "hockeytech";
 import { colors } from "../util/colors";
-import { getBorderCharacters, table } from "table";
+import { storeComponents } from "../util/components";
+import { countryCodeEmoji, khlTeamEmoji, pwhlTeamEmoji } from "../util/emojis";
+import {
+  getHtLocale,
+  getKhlLocale,
+  transformLocalizations,
+} from "../util/l10n";
 
 type KhlPartialPlayer = Pick<APILightPlayer, "id" | "name" | "shirt_number"> & {
   team: { name: string } | null;
