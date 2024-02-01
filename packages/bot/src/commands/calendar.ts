@@ -6,6 +6,8 @@ import {
 } from "@discordjs/builders";
 import * as api from "api";
 import {
+  APIActionRowComponent,
+  APIButtonComponent,
   APIGuildScheduledEvent,
   ButtonStyle,
   GuildScheduledEventEntityType,
@@ -275,7 +277,7 @@ export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
         // })
         .toJSON();
 
-      let components;
+      let components: APIActionRowComponent<APIButtonComponent>[] = [];
       if (games.length > 0) {
         components = [
           new ActionRowBuilder<ButtonBuilder>()
