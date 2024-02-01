@@ -2,9 +2,8 @@ on:
     push:
       branches:
         - main
-    pull_request:
-  name: ci
-  jobs:
+name: ci
+jobs:
     lint:
       runs-on: ubuntu-latest
       steps:
