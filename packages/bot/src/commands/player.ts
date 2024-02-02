@@ -353,6 +353,11 @@ const getPwhlPlayerEmbed = async (
         dashes(totalStats.season_name.length),
         dashes(currentStats.shortname.length),
       ],
+      [
+        "GP",
+        `[ ${totalStats.games_played} ]`,
+        `[ ${currentStats.games_played} ]`,
+      ],
     ];
     if (
       player.position === "G" &&
@@ -360,7 +365,6 @@ const getPwhlPlayerEmbed = async (
       "savepct" in totalStats
     ) {
       tableData.push(
-        ["SO", `[ ${totalStats.shutouts} ]`, `[ ${currentStats.shutouts} ]`],
         ["SV%", `[ ${totalStats.savepct} ]`, `[ ${currentStats.savepct} ]`],
         [
           "GAA",
@@ -370,11 +374,12 @@ const getPwhlPlayerEmbed = async (
         ["Wins", `[ ${totalStats.wins} ]`, `[ ${currentStats.wins} ]`],
         ["Losses", `[ ${totalStats.losses} ]`, `[ ${currentStats.losses} ]`],
         ["OTL", `[ ${totalStats.ot_losses} ]`, `[ ${currentStats.ot_losses} ]`],
+        ["SO", `[ ${totalStats.shutouts} ]`, `[ ${currentStats.shutouts} ]`],
       );
     } else if ("shots" in currentStats && "shots" in totalStats) {
       tableData.push(
-        ["Shots", `[ ${totalStats.shots} ]`, `[ ${currentStats.shots} ]`],
         ["Goals", `[ ${totalStats.goals} ]`, `[ ${currentStats.goals} ]`],
+        ["Shots", `[ ${totalStats.shots} ]`, `[ ${currentStats.shots} ]`],
         ["Points", `[ ${totalStats.points} ]`, `[ ${currentStats.points} ]`],
         ["Assists", `[ ${totalStats.assists} ]`, `[ ${currentStats.assists} ]`],
         [
