@@ -23,6 +23,8 @@ import {
   getKhlLocale,
   transformLocalizations,
 } from "../util/l10n";
+import { getEpHtPlayer } from "../ep/rest";
+import { DBWithSchema, getDb } from "../db";
 
 type KhlPartialPlayer = Pick<APILightPlayer, "id" | "name" | "shirt_number"> & {
   team: { name: string } | null;
@@ -239,6 +241,7 @@ export const playerSearchSelectCallback: SelectMenuCallback = async (ctx) => {
 const getPwhlPlayerEmbed = async (
   ctx: InteractionContext<APIInteraction>,
   playerInput: number | RosterPlayer,
+  db?: DBWithSchema,
 ) => {
   const locale = getHtLocale(ctx);
   const client = getPwhlClient(locale);
@@ -260,6 +263,17 @@ const getPwhlPlayerEmbed = async (
       : allTeams.find((t) => t.id === teamId)?.name;
   const number =
     "jersey_number" in player ? player.jersey_number : player.tp_jersey_number;
+
+  const playerDetails = await getEpHtPlayer(
+    playerId,
+    player,
+    "pwhl",
+    db ?? getDb(ctx.env.DB),
+    teamName,
+  );
+  const epUrl = playerDetails?.epId
+    ? `https://www.eliteprospects.com/player/${playerDetails.epId}/${playerDetails.epSlug}`
+    : undefined;
 
   const currentSeason = allSeasons[0];
   const allStats = (
@@ -299,17 +313,20 @@ const getPwhlPlayerEmbed = async (
       birthdayToday ? " 🎉" : ""
     })\n`;
   }
-  if (player.birthtown || player.birthprov || player.birthcntry) {
-    description += `${
-      player.birthtown || player.birthprov || player.birthcntry
-    }\n`;
+  const hometown =
+    player.birthtown ||
+    player.birthprov ||
+    player.birthcntry ||
+    playerDetails?.country;
+  if (hometown) {
+    description += `${hometown}\n`;
   }
   if (player.position) {
     description += `${s(ctx, "position")} ${player.position} ${
       player.shoots ? `(${player.shoots})` : ""
     }\n`;
   }
-  const height = Number(player.height);
+  const height = playerDetails?.height ?? Number(player.height);
   if (height && !Number.isNaN(height)) {
     const inches = height * 0.39;
     const feet = Math.floor(inches / 12);
@@ -317,11 +334,14 @@ const getPwhlPlayerEmbed = async (
 
     description += `${s(ctx, "height")} ${height} cm / ${imperial}\n`;
   }
-  const weight = Number(player.weight);
+  const weight = playerDetails?.weight ?? Number(player.weight);
   if (weight && !Number.isNaN(weight)) {
     const pounds = Math.floor(weight * 2.2);
     // const stones = Math.floor(player.weight * 0.15747);
     description += `${s(ctx, "weight")} ${weight} kg / ${pounds} lb\n`;
+  }
+  if (epUrl) {
+    description += `[Elite Prospects](${epUrl})`;
   }
 
   if (currentStats && totalStats) {

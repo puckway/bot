@@ -66,3 +66,23 @@ export const games = sqliteTable(
     unq: unique().on(table.league, table.nativeId),
   }),
 );
+
+export const players = sqliteTable(
+  "players",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    league: text("league").$type<League>().notNull(),
+    nativeId: text("nativeId").notNull(),
+    epId: text("epId"),
+    epSlug: text("epSlug"),
+    fullName: text("fullName").notNull(),
+    country: text("country"),
+    /** Centimeters */
+    height: integer("height"),
+    /** Kilograms */
+    weight: integer("weight"),
+  },
+  (table) => ({
+    unq: unique().on(table.league, table.nativeId),
+  }),
+);
