@@ -29,7 +29,7 @@ export const aboutCallback: ChatInputAppCommandCallback = async (ctx) => {
           new ButtonBuilder()
             .setStyle(ButtonStyle.Link)
             .setLabel(s(ctx, "site"))
-            .setURL("https://shay.cat")
+            .setURL("https://puckway.shay.cat")
             .toJSON(),
         ],
       },
