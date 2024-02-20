@@ -38,16 +38,24 @@ export const getKeyableLocale = (
 };
 
 export const transformLocalizations =
-  <T>(localizations: T) =>
-  (ctx: InteractionContext<APIInteraction>, key: string): string => {
+  <
+    L extends Record<string, string>,
+    T extends {
+      en: L;
+      fr?: L;
+      ru?: L;
+      [key: string]: L | undefined;
+    },
+  >(
+    localizations: T,
+  ) =>
+  (ctx: InteractionContext<APIInteraction>, key: keyof T["en"]) => {
     const locale = getKeyableLocale(ctx) as keyof T;
-    const engStrings = localizations["en" as keyof T];
+    const engStrings = localizations.en;
     const strings = localizations[locale];
-    if (strings && key in (strings as Record<string, string>)) {
-      // @ts-ignore
-      return strings[key];
+    if (strings && key in strings) {
+      return strings[key as keyof Record<string, string>];
     }
-    // @ts-ignore
     return engStrings[key] ?? key;
   };
 
@@ -62,5 +70,8 @@ export const uni = transformLocalizations({
     khl: "КХЛ",
     pwhl: "Пжхл",
     zhhl: "ЖХЛ",
+  },
+  fr: {
+    pwhl: "LPHF",
   },
 });
