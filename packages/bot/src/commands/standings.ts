@@ -101,7 +101,7 @@ const getStandingsEmbed = (
   const embed = new EmbedBuilder()
     .setAuthor({
       name: `${uni(ctx, league)} Standings`,
-      iconURL: getLeagueLogoUrl(ctx.env, league),
+      iconURL: getLeagueLogoUrl(league),
     })
     .setColor(colors[league]);
 

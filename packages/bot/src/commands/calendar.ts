@@ -25,7 +25,7 @@ import { HockeyTechLeague, getHtClient } from "../ht/client";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
-import { getLeagueLogoUrl, getTeamEmoji, khlTeamEmoji } from "../util/emojis";
+import { getLeagueLogoUrl, getTeamEmoji } from "../util/emojis";
 import { League } from "../db/schema";
 import { GameStatus, GamesByDate } from "hockeytech";
 import { getOffset } from "../util/time";
@@ -129,8 +129,8 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
               // Just in case
               extraScoreText = a.split(" ")[1] ?? "";
             }
-            const homeEmoji = khlTeamEmoji(ctx.env, game.team_a);
-            const awayEmoji = khlTeamEmoji(ctx.env, game.team_b);
+            const homeEmoji = getTeamEmoji("khl", game.team_a.id);
+            const awayEmoji = getTeamEmoji("khl", game.team_b.id);
             const line =
               game.game_state_key === "not_yet_started"
                 ? `🔴 ${time(
@@ -251,7 +251,7 @@ export const scheduleCallback: ChatInputAppCommandCallback = async (ctx) => {
       const embed = new EmbedBuilder()
         .setAuthor({
           name: uni(ctx, league),
-          iconURL: getLeagueLogoUrl(ctx.env, league),
+          iconURL: getLeagueLogoUrl(league),
         })
         .setTitle(
           `${s(ctx, "schedule")}${
@@ -267,12 +267,8 @@ export const scheduleCallback: ChatInputAppCommandCallback = async (ctx) => {
           games
             .map((game) => {
               const startAt = new Date(isoDate(game));
-              const homeEmoji = getTeamEmoji(ctx.env, league, game.home_team);
-              const awayEmoji = getTeamEmoji(
-                ctx.env,
-                league,
-                game.visiting_team,
-              );
+              const homeEmoji = getTeamEmoji(league, game.home_team);
+              const awayEmoji = getTeamEmoji(league, game.visiting_team);
               const line =
                 game.status === "1"
                   ? `🔴 ${time(startAt, "t")} ${awayEmoji} ${
@@ -376,7 +372,7 @@ export const htGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
   const embed = new EmbedBuilder()
     .setAuthor({
       name: uni(ctx, league),
-      iconURL: getLeagueLogoUrl(ctx.env, league),
+      iconURL: getLeagueLogoUrl(league),
     })
     .setTitle(
       `${s(ctx, "gameDay")}${team ? ` - ${team.nickname}` : ""} - ${time(
@@ -389,8 +385,8 @@ export const htGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
       games
         .map((game) => {
           const startAt = new Date(game.GameDateISO8601);
-          const homeEmoji = getTeamEmoji(ctx.env, league, game.HomeID);
-          const awayEmoji = getTeamEmoji(ctx.env, league, game.VisitorID);
+          const homeEmoji = getTeamEmoji(league, game.HomeID);
+          const awayEmoji = getTeamEmoji(league, game.VisitorID);
           let line =
             game.GameStatus === "1"
               ? `🔴 ${time(

@@ -97,7 +97,7 @@ const getSettingsEmbed = (
   return new EmbedBuilder()
     .setAuthor({
       name: uni(ctx, league),
-      iconURL: getLeagueLogoUrl(ctx.env, league),
+      iconURL: getLeagueLogoUrl(league),
     })
     .setTitle(`${s(ctx, "settings")} (<#${channelId}>)`)
     .setDescription(`${emojiBool(active ?? false)} ${s(ctx, "active")}`)

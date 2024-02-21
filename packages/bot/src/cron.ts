@@ -58,7 +58,6 @@ const roundToHypeMinute = (minutes: number): HypeMinute | undefined => {
 };
 
 export const getHtGamePreviewEmbed = (
-  env: Env,
   league: HockeyTechLeague,
   game: ScorebarMatch,
 ) => {
@@ -80,16 +79,16 @@ export const getHtGamePreviewEmbed = (
     .addFields(
       {
         name: "Season Records",
-        value: `${getTeamEmoji(env, league, game.VisitorID)} ${
-          game.VisitorCode
-        } **${game.VisitorWins}-${game.VisitorRegulationLosses}-${
-          game.VisitorOTLosses
-        }-${game.VisitorShootoutLosses}**`,
+        value: `${getTeamEmoji(league, game.VisitorID)} ${game.VisitorCode} **${
+          game.VisitorWins
+        }-${game.VisitorRegulationLosses}-${game.VisitorOTLosses}-${
+          game.VisitorShootoutLosses
+        }**`,
         inline: true,
       },
       {
         name: "_ _",
-        value: `${getTeamEmoji(env, league, game.HomeID)} ${game.HomeCode} **${
+        value: `${getTeamEmoji(league, game.HomeID)} ${game.HomeCode} **${
           game.HomeWins
         }-${game.HomeRegulationLosses}-${game.HomeOTLosses}-${
           game.HomeShootoutLosses
@@ -115,7 +114,6 @@ const htPlayerName = (
   }](${utils.player(player.player_id)})`;
 
 export const getHtGoalEmbed = (
-  env: Env,
   league: HockeyTechLeague,
   game: GameSummary,
   goalPlays: GamePlayByPlayEventGoal[],
@@ -175,15 +173,13 @@ export const getHtGoalEmbed = (
     .addFields(
       {
         name: "Score",
-        value: `${getTeamEmoji(env, league, game.visitor.id)} ${
+        value: `${getTeamEmoji(league, game.visitor.id)} ${
           game.visitor.code
         } **${goals.filter((g) => g.team_id === game.visitor.id).length}** (${
           game.totalShots.visitor
-        } shots)\n${getTeamEmoji(env, league, game.home.id)} ${
-          game.home.code
-        } **${goals.filter((g) => g.team_id === game.home.id).length}** (${
-          game.totalShots.home
-        } shots)`,
+        } shots)\n${getTeamEmoji(league, game.home.id)} ${game.home.code} **${
+          goals.filter((g) => g.team_id === game.home.id).length
+        }** (${game.totalShots.home} shots)`,
         inline: true,
       },
       {
@@ -201,7 +197,6 @@ export const getHtGoalEmbed = (
 };
 
 export const getHtPenaltyEmbed = (
-  env: Env,
   league: HockeyTechLeague,
   game: GameSummary,
   penalty: GamePlayByPlayEventPenalty,
@@ -236,14 +231,14 @@ export const getHtPenaltyEmbed = (
     .addFields(
       {
         name: "Penalty Minutes",
-        value: `${getTeamEmoji(env, league, team.id)} ${team.code} **${
+        value: `${getTeamEmoji(league, team.id)} ${team.code} **${
           game.pimTotal[penalty.home === "1" ? "visitor" : "home"]
         }**`,
         inline: true,
       },
       {
         name: "Power Play",
-        value: `${getTeamEmoji(env, league, otherTeam.id)} ${
+        value: `${getTeamEmoji(league, otherTeam.id)} ${
           otherTeam.code
         } ${pctStat(
           game.powerPlayGoals[penalty.home === "1" ? "visitor" : "home"],
@@ -276,7 +271,6 @@ const pctStat = (left: number, right: number, showPercent = true) =>
   }`;
 
 export const getHtStatusEmbed = (
-  env: Env,
   league: HockeyTechLeague,
   game: GameSummary,
   status?: GameStatus,
@@ -290,7 +284,7 @@ export const getHtStatusEmbed = (
   //       | 3
   //   ];
   const awayStats = [
-    `${getTeamEmoji(env, league, game.visitor.id)} ${game.visitor.nickname}`,
+    `${getTeamEmoji(league, game.visitor.id)} ${game.visitor.nickname}`,
     `PP: ${pctStat(game.powerPlayGoals.visitor, game.powerPlayCount.visitor)}`,
     `PIM: **${game.pimTotal.visitor}**`,
     `FO: ${pctStat(
@@ -299,7 +293,7 @@ export const getHtStatusEmbed = (
     )}`,
   ].join("\n");
   const homeStats = [
-    `${getTeamEmoji(env, league, game.home.id)} ${game.home.nickname}`,
+    `${getTeamEmoji(league, game.home.id)} ${game.home.nickname}`,
     `PP: ${pctStat(game.powerPlayGoals.home, game.powerPlayCount.home)}`,
     `PIM: **${game.pimTotal.home}**`,
     `FO: ${pctStat(game.totalFaceoffs.home.won, game.totalFaceoffs.home.att)}`,
@@ -322,13 +316,13 @@ export const getHtStatusEmbed = (
     .addFields(
       {
         name: "Score",
-        value: `${getTeamEmoji(env, league, game.visitor.id)} ${
+        value: `${getTeamEmoji(league, game.visitor.id)} ${
           game.visitor.code
         } **${game.totalGoals.visitor}** (${
           game.totalShots.visitor
-        } shots)\n${getTeamEmoji(env, league, game.home.id)} ${
-          game.home.code
-        } **${game.totalGoals.home}** (${game.totalShots.home} shots)`,
+        } shots)\n${getTeamEmoji(league, game.home.id)} ${game.home.code} **${
+          game.totalGoals.home
+        }** (${game.totalShots.home} shots)`,
         inline: true,
       },
       {
@@ -343,7 +337,6 @@ export const getHtStatusEmbed = (
               .map(
                 (player, i) =>
                   `${getTeamEmoji(
-                    env,
                     league,
                     player.home ? game.home.id : game.visitor.id,
                   )} ${Array(i + 1)
@@ -380,7 +373,6 @@ export const getHtStatusEmbed = (
 };
 
 export const getHtGoalsEmbed = (
-  env: Env,
   league: HockeyTechLeague,
   game: GameSummary,
 ) => {
@@ -402,13 +394,10 @@ export const getHtGoalsEmbed = (
                 : goals
                     .map((goal) => {
                       const team = goal.home === "1" ? game.home : game.visitor;
-                      return `${getTeamEmoji(
-                        env,
-                        league,
-                        team.id,
-                      )} ${htPlayerName(goal.goal_scorer, utils)} (${
-                        goal.scorer_goal_num
-                      })`;
+                      return `${getTeamEmoji(league, team.id)} ${htPlayerName(
+                        goal.goal_scorer,
+                        utils,
+                      )} (${goal.scorer_goal_num})`;
                     })
                     .join("\n")
                     .slice(0, 1024),
@@ -493,7 +482,6 @@ export const getPlayStats = (plays: Play[]) => {
 };
 
 export const getHtPeriodStatusEmbed = (
-  env: Env,
   league: HockeyTechLeague,
   game: ScorebarMatch,
   plays: Play[],
@@ -501,8 +489,8 @@ export const getHtPeriodStatusEmbed = (
   const utils = getExternalUtils(league);
   const stats = getPlayStats(plays);
 
-  const visitorEmoji = getTeamEmoji(env, league, game.VisitorID);
-  const homeEmoji = getTeamEmoji(env, league, game.HomeID);
+  const visitorEmoji = getTeamEmoji(league, game.VisitorID);
+  const homeEmoji = getTeamEmoji(league, game.HomeID);
   const awayStats = [
     `${visitorEmoji} ${game.VisitorNickname}`,
     `PP: ${pctStat(stats.goals.visitor.pp, stats.penalties.home.total)}`,
@@ -888,7 +876,7 @@ export const checkPosts = async (
                         Routes.channelMessages(channelId),
                         {
                           body: {
-                            embeds: [getHtGamePreviewEmbed(env, league, game)],
+                            embeds: [getHtGamePreviewEmbed(league, game)],
                           },
                         },
                       )) as APIMessage;
@@ -993,12 +981,7 @@ export const checkPosts = async (
                             body: {
                               content: `**${play.period_name} Period Starting - ${game.VisitorCode} @ ${game.HomeCode}**`,
                               embeds: [
-                                getHtPeriodStatusEmbed(
-                                  env,
-                                  league,
-                                  game,
-                                  allPlays,
-                                ),
+                                getHtPeriodStatusEmbed(league, game, allPlays),
                               ],
                             },
                           },
@@ -1065,13 +1048,7 @@ export const checkPosts = async (
                       rest.post(Routes.channelMessages(channelId), {
                         body: {
                           embeds: [
-                            getHtGoalEmbed(
-                              env,
-                              league,
-                              summary,
-                              goalPlays,
-                              play,
-                            ),
+                            getHtGoalEmbed(league, summary, goalPlays, play),
                           ],
                         },
                       }),
@@ -1091,7 +1068,7 @@ export const checkPosts = async (
                   ctx.waitUntil(
                     rest.post(Routes.channelMessages(channelId), {
                       body: {
-                        embeds: [getHtPenaltyEmbed(env, league, summary, play)],
+                        embeds: [getHtPenaltyEmbed(league, summary, play)],
                       },
                     }),
                   );
@@ -1123,13 +1100,8 @@ export const checkPosts = async (
                       rest.post(Routes.channelMessages(channelId), {
                         body: {
                           embeds: [
-                            getHtStatusEmbed(
-                              env,
-                              league,
-                              summary,
-                              game.GameStatus,
-                            ),
-                            getHtGoalsEmbed(env, league, summary),
+                            getHtStatusEmbed(league, summary, game.GameStatus),
+                            getHtGoalsEmbed(league, summary),
                           ],
                         },
                       }),

@@ -22,7 +22,7 @@ import {
 } from "../ht/team";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
-import { countryCodeEmoji, getTeamEmoji, khlTeamEmoji } from "../util/emojis";
+import { countryCodeEmoji, getTeamEmoji } from "../util/emojis";
 import {
   getHtLocale,
   getKhlLocale,
@@ -134,7 +134,7 @@ const getKhlPlayerEmbed = async (
       .filter((t) => !!t.location)
       .slice(0, 5)
       .map((team) => {
-        const emoji = khlTeamEmoji(ctx.env, team);
+        const emoji = getTeamEmoji("khl", team.id);
         return {
           name: `${emoji} ${team.name}`,
           value: team.seasons.split(",").join(", ").slice(0, 1024),
@@ -472,9 +472,7 @@ const getHtPlayerEmbed = async (
     embed.addFields({
       name: "Stats",
       value: `${
-        teamId && teamName
-          ? `${getTeamEmoji(ctx.env, league, teamId)} ${teamName}`
-          : ""
+        teamId && teamName ? `${getTeamEmoji(league, teamId)} ${teamName}` : ""
       }\n\`\`\`apache\n${table(tableData, {
         border: getBorderCharacters("void"),
         columnDefault: { paddingLeft: 0, paddingRight: 1 },
@@ -483,7 +481,7 @@ const getHtPlayerEmbed = async (
       inline: false,
     });
   } else if (teamId && teamName) {
-    description += `\n${getTeamEmoji(ctx.env, league, teamId)} ${teamName}`;
+    description += `\n${getTeamEmoji(league, teamId)} ${teamName}`;
   }
 
   embed.setDescription(description.slice(0, 4096));
