@@ -91,9 +91,14 @@ export const leagueAssets: Record<
 };
 
 export const getTeamEmoji = (league: League, teamId: string | number) => {
+  const emojiId = leagueAssets[league].teamEmojis[Number(teamId)];
+  if (emojiId) {
+    return `<:_:${emojiId}>`;
+  }
+
   // A question mark default looked pretty bad. Players that have been transferred
   // to other leagues may still show up, so we want to compensate for them.
-  return leagueAssets[league].teamEmojis[Number(teamId)] ?? "📃";
+  return "📃";
 };
 
 export const getLeagueLogoUrl = (league: League) => {
