@@ -31,10 +31,17 @@ export const teamAutocomplete: AppCommandAutocompleteCallback = async (ctx) => {
     }
     case "ahl":
     case "pwhl":
-      return getLeagueTeams(league).map((t) => ({
-        name: t.name,
-        value: t.id,
-      }));
+      return getLeagueTeams(league)
+        .filter(
+          (t) =>
+            t.name.toLowerCase().includes(query.toLowerCase()) ||
+            t.nickname.toLowerCase().includes(query.toLowerCase()) ||
+            t.city.toLowerCase().includes(query.toLowerCase()),
+        )
+        .map((t) => ({
+          name: t.name,
+          value: t.id,
+        }));
     default:
       return [];
   }
