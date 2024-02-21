@@ -18,15 +18,18 @@ import {
   Routes,
 } from "discord-api-types/v10";
 import { PermissionFlags } from "discord-bitflag";
-import { type APIEvent, State } from "khl-api-types";
+import { type APIEvent } from "khl-api-types";
 import { ChatInputAppCommandCallback } from "../commands";
 import { ButtonCallback, MinimumKVComponentState } from "../components";
-import { getPwhlClient } from "../pwhl/client";
-import { allSeasons, allTeams } from "../pwhl/team";
+import { HockeyTechLeague, getHtClient } from "../ht/client";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
-import { khlTeamEmoji, pwhlTeamEmoji } from "../util/emojis";
 import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
+import { getLeagueLogoUrl, getTeamEmoji, khlTeamEmoji } from "../util/emojis";
+import { League } from "../db/schema";
+import { GameStatus, GamesByDate } from "hockeytech";
+import { getOffset } from "../util/time";
+import { getLeagueTeams } from "../ht/team";
 
 export const DATE_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
 
@@ -63,7 +66,8 @@ export type KhlListedPartialGame = Pick<
 >;
 
 export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
-  const teamVal = ctx.getStringOption("team")?.value;
+  // const teamVal = ctx.getStringOption("team")?.value;
+  const league = ctx.getStringOption("league").value as League;
   const dateVal = ctx.getStringOption("date")?.value;
   const dateMatch = dateVal ? dateVal.match(DATE_REGEX) : undefined;
   if (dateVal && !dateMatch) {
@@ -88,13 +92,13 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
   const dateDay = date.toISOString().split("T")[0];
   const locale = getKhlLocale(ctx);
   const lowerLocale = locale === "cn" ? "en" : locale;
-  const key = `games-khl-${date.toISOString().split("T")[0]}-${locale}`;
+  const key = `games-${league}-${date.toISOString().split("T")[0]}-${locale}`;
   const cachedGames = await ctx.env.KV.get<KhlListedPartialGame[]>(key, "json");
 
   const buildEmbed = (events: KhlListedPartialGame[]) =>
     new EmbedBuilder()
       .setAuthor({
-        name: uni(ctx, "khl"),
+        name: uni(ctx, league),
         // iconURL: "https://www.khl.ru/img/icons/32x32.png",
       })
       .setTitle(`${s(ctx, "schedule")} - ${time(date, "D")}`)
@@ -180,7 +184,7 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
           expirationTtl:
             games.length === 0
               ? 3600
-              : games.find((g) => g.game_state_key === State.InProgress)
+              : games.find((g) => g.game_state_key === "in_progress")
                 ? 300000
                 : 600000,
         },
@@ -190,81 +194,99 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
   ];
 };
 
-export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
-  ctx,
-) => {
+export const scheduleCallback: ChatInputAppCommandCallback = async (ctx) => {
+  const league = ctx.getStringOption("league").value as League;
+  if (league === "khl") {
+    return await khlCalendarCallback(ctx);
+  }
+
+  const today = new Date().toISOString().split("T")[0];
+  const client = getHtClient(league);
+  const teamId = ctx.getStringOption("team")?.value;
+  const team = teamId
+    ? getLeagueTeams(league).find((t) => t.id === teamId)
+    : undefined;
+
+  const dateVal = ctx.getStringOption("date")?.value;
+  const dateMatch = dateVal ? dateVal.match(DATE_REGEX) : undefined;
+  if (dateVal && !dateMatch) {
+    return ctx.reply({
+      content: s(ctx, "badDate"),
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+  const date = dateMatch
+    ? new Date(
+        Number(dateMatch[1]),
+        Number(dateMatch[2]) - 1,
+        Number(dateMatch[3]),
+      )
+    : new Date();
+  if (Number.isNaN(date.getTime())) {
+    return ctx.reply({
+      content: s(ctx, "badDate"),
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+  const dateDay = date.toISOString().split("T")[0];
+
+  const isoDate = (game: GamesByDate) =>
+    `${game.date_played}T${game.schedule_time}${getOffset(game.timezone)}`;
+
   return [
     ctx.defer(),
     async () => {
-      const today = new Date().toISOString().split("T")[0];
-      const client = getPwhlClient();
-      const teamId = ctx.getStringOption("team")?.value;
-      const team = teamId ? allTeams.find((t) => t.id === teamId) : undefined;
-      const data = await client.getSeasonSchedule(
-        Number(ctx.getStringOption("season")?.value ?? allSeasons[0].id),
-        teamId ? Number(teamId) : undefined,
+      const games = (
+        await client.getDailySchedule(dateDay)
+      ).SiteKit.Gamesbydate.filter((game) =>
+        teamId
+          ? game.home_team === teamId || game.visiting_team === teamId
+          : true,
       );
-      const monthIndex = Number(
-        ctx.getStringOption("month")?.value ?? new Date().getUTCMonth(),
-      );
-      let monthDate = new Date();
-      monthDate.setUTCMonth(monthIndex);
-      const games = data.SiteKit.Schedule.filter(
-        (game) => new Date(game.GameDateISO8601).getUTCMonth() === monthIndex,
-      );
-      if (games.length !== 0) {
-        monthDate = new Date(games[0].GameDateISO8601);
-      }
+
+      const displayDate = games.length
+        ? new Date(isoDate(games[0]))
+        : new Date();
 
       const embed = new EmbedBuilder()
         .setAuthor({
-          name: uni(ctx, "pwhl"),
-          iconURL: ctx.env.PWHL_LOGO,
+          name: uni(ctx, league),
+          iconURL: getLeagueLogoUrl(ctx.env, league),
         })
         .setTitle(
           `${s(ctx, "schedule")}${
             team ? ` - ${team.nickname}` : ""
-          } - ${monthDate.toLocaleString(ctx.getLocale(), {
+          } - ${displayDate.toLocaleString(ctx.getLocale(), {
             month: "long",
+            day: "numeric",
             year: "numeric",
           })}`,
         )
-        .setColor(colors.pwhl)
+        .setColor(colors[league])
         .setDescription(
           games
-            .map((game, i) => {
-              const startAt = new Date(game.GameDateISO8601);
-              const homeEmoji = pwhlTeamEmoji(ctx.env, game.home_team);
-              const awayEmoji = pwhlTeamEmoji(ctx.env, game.visiting_team);
-              let line =
+            .map((game) => {
+              const startAt = new Date(isoDate(game));
+              const homeEmoji = getTeamEmoji(ctx.env, league, game.home_team);
+              const awayEmoji = getTeamEmoji(
+                ctx.env,
+                league,
+                game.visiting_team,
+              );
+              const line =
                 game.status === "1"
-                  ? `🔴 ${time(
-                      startAt,
-                      game.date_played === today ? "t" : "d",
-                    )} ${awayEmoji} ${game.visiting_team_code} @ ${homeEmoji} ${
-                      game.home_team_code
-                    }`
+                  ? `🔴 ${time(startAt, "t")} ${awayEmoji} ${
+                      game.visiting_team_code
+                    } @ ${homeEmoji} ${game.home_team_code}`
                   : `${
-                      game.status === "4" || game.status === "3"
-                        ? `🏁 ${time(startAt, "d")}`
-                        : `🟢 ${time(startAt, "t")}`
-                    } ${awayEmoji} ${game.visiting_team_code} **${
-                      game.visiting_goal_count
-                    }** - **${game.home_goal_count}** ${homeEmoji} ${
-                      game.home_team_code
+                      game.status === "4" || game.status === "3" ? "🏁" : "🟢"
+                    } ${time(startAt, "t")} ${awayEmoji} ${
+                      game.visiting_team_code
+                    } **${game.visiting_goal_count}** - **${
+                      game.home_goal_count
+                    }** ${homeEmoji} ${game.home_team_code}\n${
+                      game.game_status
                     }`;
-
-              if (game.status !== "1") {
-                line += `\n${game.game_status}`;
-              }
-
-              const last = games[i - 1];
-              if (
-                game.date_played === today &&
-                (!last || last.date_played !== game.date_played)
-              ) {
-                line = `**${s(ctx, "today")}**\n${line}`;
-              }
 
               return line;
             })
@@ -295,25 +317,33 @@ export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
               ...(await storeComponents(ctx.env.KV, [
                 new ButtonBuilder()
                   .setStyle(ButtonStyle.Primary)
-                  .setLabel("Add all as server events"),
+                  .setLabel("Add all as server events")
+                  .setDisabled(
+                    games.filter((g) => g.status === GameStatus.NotStarted)
+                      .length === 0,
+                  ),
                 {
                   componentRoutingId: "add-schedule-events",
                   componentTimeout: 600,
                   componentOnce: true,
-                  league: "pwhl",
+                  league,
                   games: games
-                    .filter((game) => game.status === "1")
+                    .filter((game) => game.status === GameStatus.NotStarted)
                     .map((game) => ({
                       id: game.id,
                       title: `${game.visiting_team_nickname} at ${game.home_team_nickname}`,
                       location: game.venue_location,
                       description: [
-                        "📺 Watch live on YouTube [@thepwhlofficial](https://youtube.com/@thepwhlofficial/streams)",
-                        `🏟️ ${game.visiting_team_code} @ ${game.home_team_code} - [${game.venue_name}](${game.venue_url})`,
+                        league === "pwhl"
+                          ? "📺 Watch live on YouTube [@thepwhlofficial](https://youtube.com/@thepwhlofficial/streams)"
+                          : "",
+                        `🏟️ ${game.visiting_team_code} @ ${game.home_team_code} - ${game.venue}`,
                         `🎟️ Buy tickets: ${game.tickets_url}`,
-                        `🆔 pwhl:${game.id}`,
-                      ].join("\n\n"),
-                      date: game.GameDateISO8601,
+                        `🆔 ${league}:${game.id}`,
+                      ]
+                        .join("\n\n")
+                        .trim(),
+                      date: isoDate(game),
                     })),
                 },
               ])),
@@ -326,20 +356,27 @@ export const pwhlScheduleCallback: ChatInputAppCommandCallback = async (
   ];
 };
 
-export const pwhlGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
+export const htGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
   const today = new Date();
   today.setUTCHours(6, 0, 0, 0);
-  const client = getPwhlClient();
+  const league = ctx.getStringOption("league").value as HockeyTechLeague;
+  const client = getHtClient(league);
   const teamId = ctx.getStringOption("team")?.value;
-  const team = teamId ? allTeams.find((t) => t.id === teamId) : undefined;
-  const games = (await client.getScorebar(1, 1)).SiteKit.Scorebar.filter(
-    (game) => (teamId ? [game.HomeID, game.VisitorID].includes(teamId) : true),
-  );
+  const team = teamId
+    ? getLeagueTeams(league).find((t) => t.id === teamId)
+    : undefined;
+  const games =
+    // The PWHL doesn't play many games
+    (
+      await client.getScorebar(1, league === "pwhl" ? 1 : 0)
+    ).SiteKit.Scorebar.filter((game) =>
+      teamId ? [game.HomeID, game.VisitorID].includes(teamId) : true,
+    );
 
   const embed = new EmbedBuilder()
     .setAuthor({
-      name: uni(ctx, "pwhl"),
-      iconURL: ctx.env.PWHL_LOGO,
+      name: uni(ctx, league),
+      iconURL: getLeagueLogoUrl(ctx.env, league),
     })
     .setTitle(
       `${s(ctx, "gameDay")}${team ? ` - ${team.nickname}` : ""} - ${time(
@@ -347,13 +384,13 @@ export const pwhlGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
         "d",
       )}`,
     )
-    .setColor(colors.pwhl)
+    .setColor(colors[league])
     .setDescription(
       games
         .map((game) => {
           const startAt = new Date(game.GameDateISO8601);
-          const homeEmoji = pwhlTeamEmoji(ctx.env, game.HomeID);
-          const awayEmoji = pwhlTeamEmoji(ctx.env, game.VisitorID);
+          const homeEmoji = getTeamEmoji(ctx.env, league, game.HomeID);
+          const awayEmoji = getTeamEmoji(ctx.env, league, game.VisitorID);
           let line =
             game.GameStatus === "1"
               ? `🔴 ${time(
@@ -386,7 +423,7 @@ export const pwhlGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
 };
 
 export interface AddScheduleEventsState extends MinimumKVComponentState {
-  league: "khl" | "pwhl";
+  league: League;
   games: {
     id: string;
     title: string;

@@ -6,11 +6,23 @@ export const toHMS = (sec: number) => {
   const minutes = Math.floor((sec - hours * 3600) / 60);
   const seconds = sec - hours * 3600 - minutes * 60;
 
-  return [
-    hours === 0 ? "" : `${hours < 10 ? "0" : ""}${hours}`,
-    `${minutes < 10 ? "0" : ""}${minutes}`,
-    `${seconds < 10 ? "0" : ""}${seconds}`,
-  ]
-    .filter(Boolean)
-    .join(":");
+  return (
+    [
+      hours === 0 ? "" : `${hours < 10 ? "0" : ""}${hours}`,
+      `${minutes < 10 ? "0" : ""}${minutes}`,
+      `${seconds < 10 ? "0" : ""}${seconds}`,
+    ]
+      // Remove negatives
+      .map((s) => s.replaceAll(/-/g, ""))
+      .filter(Boolean)
+      .join(":")
+  );
+};
+
+export const getOffset = (timeZone = "UTC", date = new Date()): string => {
+  const utcDate = new Date(date.toLocaleString("en-US", { timeZone: "UTC" }));
+  const tzDate = new Date(date.toLocaleString("en-US", { timeZone }));
+  const minutes = (tzDate.getTime() - utcDate.getTime()) / 6e4;
+  const offset = toHMS(minutes * 60).replace(/:00$/, "");
+  return `${minutes < 0 ? "-" : "+"}${offset}`;
 };

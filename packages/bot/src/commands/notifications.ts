@@ -17,10 +17,11 @@ import {
 import { getDb } from "../db";
 import { League, makeSnowflake, notifications } from "../db/schema";
 import { InteractionContext } from "../interactions";
-import { allTeams } from "../pwhl/team";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { transformLocalizations, uni } from "../util/l10n";
+import { getLeagueLogoUrl } from "../util/emojis";
+import { getLeagueTeams } from "../ht/team";
 
 export interface NotificationSendConfig {
   preview?: boolean;
@@ -49,6 +50,7 @@ const s = transformLocalizations({
     threads: "Threads",
     threadsDescription: "Public chat thread under the preview or start message",
     hype: "Hype messages",
+    hypeDescription: "Sent at intervals before the game starts",
     start: "Game start",
     startDescription: "First period started",
     periods: "Periods",
@@ -95,7 +97,7 @@ const getSettingsEmbed = (
   return new EmbedBuilder()
     .setAuthor({
       name: uni(ctx, league),
-      iconURL: league === "pwhl" ? ctx.env.PWHL_LOGO : undefined,
+      iconURL: getLeagueLogoUrl(ctx.env, league),
     })
     .setTitle(`${s(ctx, "settings")} (<#${channelId}>)`)
     .setDescription(`${emojiBool(active ?? false)} ${s(ctx, "active")}`)
@@ -118,9 +120,10 @@ const getComponents = async (
     "start",
     "periods",
     "goals",
+    "penalties",
     "end",
     "final",
-  ] as const;
+  ] as (keyof NotificationSendConfig)[];
   const features = allFeatures;
   // I was going to do this in order to allow announcement channels but I decided
   // against it because the type can be swapped with the same channel ID, rendering
@@ -131,42 +134,59 @@ const getComponents = async (
   //   (f) => !(channelType === ChannelType.GuildAnnouncement && f === "threads"),
   // );
 
+  const options =
+    league === "khl"
+      ? api.allTeams.map((team) => ({
+          label: team.names.en,
+          value: String(team.id),
+          default: teamIds?.includes(String(team.id)),
+          emoji: {
+            id: ctx.env[
+              `${league.toUpperCase()}_TEAM_EMOJI_${
+                team.id
+              }` as keyof typeof ctx.env
+            ] as string,
+          },
+        }))
+      : getLeagueTeams(league).map((team) => ({
+          label: team.name,
+          value: team.id,
+          default: teamIds?.includes(team.id),
+          emoji: {
+            id: ctx.env[
+              `${league.toUpperCase()}_TEAM_EMOJI_${
+                team.id
+              }` as keyof typeof ctx.env
+            ] as string,
+          },
+        }));
+
+  const optionGroups = [];
+  while (options.length > 0) {
+    // Maximum 25 options per select
+    const opts = options.splice(0, 25);
+    optionGroups.push(
+      new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
+        await storeComponents(ctx.env.KV, [
+          new StringSelectMenuBuilder()
+            .setPlaceholder(s(ctx, "selectTeamsPlaceholder"))
+            .setMaxValues(opts.length)
+            .addOptions(opts),
+          {
+            componentRoutingId: "select-notifications-teams",
+            componentTimeout: 300,
+            componentOnce: true,
+            league,
+            channelId,
+            channelType,
+          },
+        ]),
+      ),
+    );
+  }
+
   return [
-    new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
-      await storeComponents(ctx.env.KV, [
-        new StringSelectMenuBuilder()
-          .setPlaceholder(s(ctx, "selectTeamsPlaceholder"))
-          .setMaxValues(
-            league === "khl" ? api.allTeams.length : allTeams.length,
-          )
-          .addOptions(
-            league === "khl"
-              ? api.allTeams.map((team) => ({
-                  label: team.names.en,
-                  value: String(team.id),
-                  default: teamIds?.includes(String(team.id)),
-                }))
-              : allTeams.map((team) => ({
-                  label: team.name,
-                  value: team.id,
-                  default: teamIds?.includes(team.id),
-                  emoji: {
-                    id: ctx.env[
-                      `PWHL_TEAM_EMOJI_${team.id}` as keyof typeof ctx.env
-                    ],
-                  },
-                })),
-          ),
-        {
-          componentRoutingId: "select-notifications-teams",
-          componentTimeout: 300,
-          componentOnce: true,
-          league,
-          channelId,
-          channelType,
-        },
-      ]),
-    ),
+    ...optionGroups,
     new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(
       await storeComponents(ctx.env.KV, [
         new StringSelectMenuBuilder()

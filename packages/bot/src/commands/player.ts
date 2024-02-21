@@ -7,17 +7,22 @@ import {
 } from "@discordjs/builders";
 import * as api from "api";
 import { APIInteraction, MessageFlags } from "discord-api-types/v10";
-import { RosterPlayer } from "hockeytech";
+import { NumericBoolean, RosterPlayer } from "hockeytech";
 import type { APILightPlayer } from "khl-api-types";
 import { getBorderCharacters, table } from "table";
 import { ChatInputAppCommandCallback } from "../commands";
 import { SelectMenuCallback } from "../components";
 import { InteractionContext } from "../interactions";
-import { getPwhlClient } from "../pwhl/client";
-import { allSeasons, allTeams, pwhlTeamLogoUrl } from "../pwhl/team";
+import { HockeyTechLeague, getHtClient } from "../ht/client";
+import {
+  allAhlTeams,
+  allPwhlSeasons,
+  getHtTeamLogoUrl,
+  getLeagueTeams,
+} from "../ht/team";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
-import { countryCodeEmoji, khlTeamEmoji, pwhlTeamEmoji } from "../util/emojis";
+import { countryCodeEmoji, getTeamEmoji, khlTeamEmoji } from "../util/emojis";
 import {
   getHtLocale,
   getKhlLocale,
@@ -25,6 +30,8 @@ import {
 } from "../util/l10n";
 import { getEpHtPlayer } from "../ep/rest";
 import { DBWithSchema, getDb } from "../db";
+import { League } from "../db/schema";
+import { getExternalUtils } from "../util/external";
 
 type KhlPartialPlayer = Pick<APILightPlayer, "id" | "name" | "shirt_number"> & {
   team: { name: string } | null;
@@ -139,6 +146,14 @@ const getKhlPlayerEmbed = async (
   return embed;
 };
 
+export const playerCallback: ChatInputAppCommandCallback = (ctx) => {
+  if (["khl"].includes(ctx.getStringOption("league").value)) {
+    return khlPlayerCallback(ctx);
+  } else {
+    return htPlayerCallback(ctx);
+  }
+};
+
 export const khlPlayerCallback: ChatInputAppCommandCallback = async (ctx) => {
   const query = ctx.getStringOption("name").value.toLowerCase();
 
@@ -233,18 +248,23 @@ export const playerSearchSelectCallback: SelectMenuCallback = async (ctx) => {
       },
     ];
   } else {
-    const embed = await getPwhlPlayerEmbed(ctx, Number(playerId));
+    const embed = await getHtPlayerEmbed(
+      ctx,
+      league as HockeyTechLeague,
+      Number(playerId),
+    );
     return ctx.updateMessage({ embeds: [embed.toJSON()] });
   }
 };
 
-const getPwhlPlayerEmbed = async (
+const getHtPlayerEmbed = async (
   ctx: InteractionContext<APIInteraction>,
+  league: HockeyTechLeague,
   playerInput: number | RosterPlayer,
   db?: DBWithSchema,
 ) => {
   const locale = getHtLocale(ctx);
-  const client = getPwhlClient(locale);
+  const client = getHtClient(league, locale);
   const player =
     typeof playerInput === "number"
       ? (await client.getPlayerProfileBio(playerInput)).SiteKit.Player
@@ -260,14 +280,14 @@ const getPwhlPlayerEmbed = async (
   const teamName =
     "most_recent_team_name" in player
       ? player.most_recent_team_name
-      : allTeams.find((t) => t.id === teamId)?.name;
+      : getLeagueTeams(league).find((t) => t.id === teamId)?.name;
   const number =
     "jersey_number" in player ? player.jersey_number : player.tp_jersey_number;
 
   const playerDetails = await getEpHtPlayer(
     playerId,
     player,
-    "pwhl",
+    league,
     db ?? getDb(ctx.env.DB),
     teamName,
   );
@@ -275,7 +295,7 @@ const getPwhlPlayerEmbed = async (
     ? `https://www.eliteprospects.com/player/${playerDetails.epId}/${playerDetails.epSlug}`
     : undefined;
 
-  const currentSeason = allSeasons[0];
+  const currentSeason = allPwhlSeasons[0];
   const allStats = (
     await client.getPlayerProfileStatsBySeason(Number(playerId))
   ).SiteKit.Player;
@@ -284,19 +304,21 @@ const getPwhlPlayerEmbed = async (
     (_, i, a) => i === a.length - 1,
   );
 
+  const utils = getExternalUtils(league, locale);
   const embed = new EmbedBuilder()
     .setAuthor({
       name: `${player.name} ${number ? `#${number}` : ""}`,
-      url: `https://thepwhl.com/${locale}/stats/${
-        locale === "fr" ? "joueur" : "player"
-      }/${playerId}`,
-      iconURL: teamId ? pwhlTeamLogoUrl(teamId) : undefined,
+      url: utils.player(playerId),
+      iconURL: teamId ? getHtTeamLogoUrl(league, teamId) : undefined,
     })
-    .setColor(colors.pwhl)
+    .setColor(colors[league])
     .setThumbnail(
       ("primary_image" in player
         ? player.primary_image
-        : player.player_image) || null,
+        : player.player_image) ||
+        (playerDetails?.epImage
+          ? `https://files.eliteprospects.com/layout/players/${playerDetails?.epImage}`
+          : null),
     );
 
   let description = "";
@@ -310,7 +332,7 @@ const getPwhlPlayerEmbed = async (
       birthdate.getUTCMonth() === today.getUTCMonth() &&
       birthdate.getUTCDate() === today.getUTCDate();
     description += `${s(ctx, "born")} ${player.birthdate} (${age}${
-      birthdayToday ? " 🎉" : ""
+      birthdayToday ? " :tada:" : ""
     })\n`;
   }
   const hometown =
@@ -326,22 +348,75 @@ const getPwhlPlayerEmbed = async (
       player.shoots ? `(${player.shoots})` : ""
     }\n`;
   }
-  const height = playerDetails?.height ?? Number(player.height);
-  if (height && !Number.isNaN(height)) {
-    const inches = height * 0.39;
+  // Hockeytech returns imperial units but we also deal with metric units
+  if (playerDetails?.height) {
+    const inches = playerDetails.height * 0.39;
     const feet = Math.floor(inches / 12);
     const imperial = `${feet}' ${Math.floor(inches - feet * 12)}"`;
 
-    description += `${s(ctx, "height")} ${height} cm / ${imperial}\n`;
+    description += `${s(ctx, "height")} ${
+      playerDetails.height
+    } cm / ${imperial}\n`;
+  } else if (player.height && player.height !== "0") {
+    const [feet, inches] = player.height.split("-").map(Number);
+    const cm = Math.floor((feet * 12 + inches) / 0.39);
+
+    description += `${s(ctx, "height")} ${cm} cm / ${feet}' ${inches}"\n`;
   }
-  const weight = playerDetails?.weight ?? Number(player.weight);
-  if (weight && !Number.isNaN(weight)) {
-    const pounds = Math.floor(weight * 2.2);
+  if (playerDetails?.weight) {
+    const pounds = Math.floor(playerDetails.weight * 2.2);
     // const stones = Math.floor(player.weight * 0.15747);
-    description += `${s(ctx, "weight")} ${weight} kg / ${pounds} lb\n`;
+    description += `${s(ctx, "weight")} ${
+      playerDetails.weight
+    } kg / ${pounds} lb\n`;
+  } else if (player.weight && player.weight !== "0") {
+    const kilograms = Math.floor(Number(player.weight) / 2.2);
+    description += `${s(ctx, "weight")} ${kilograms} kg / ${
+      player.weight
+    } lb\n`;
   }
   if (epUrl) {
     description += `[Elite Prospects](${epUrl})`;
+  }
+
+  if ("draft" in player && player.draft[0]) {
+    const ordinal = (num: string | number) => {
+      const n = String(num);
+      return n.endsWith("1")
+        ? `${num}st`
+        : n.endsWith("2")
+          ? `${num}nd`
+          : n.endsWith("3")
+            ? `${num}rd`
+            : `${num}th`;
+    };
+    const draft = player.draft[0] as {
+      id: string;
+      draft_league: string;
+      draft_team: string;
+      draft_team_id: string;
+      draft_year: string;
+      draft_round: string;
+      draft_rank: string;
+      draft_junior_team: string;
+      draft_logo: string;
+      draft_logo_caption: string;
+      show_on_roster: NumericBoolean;
+      draft_text: string;
+    };
+    embed.addFields({
+      name: "Draft",
+      value: [
+        `${draft.draft_team} (${draft.draft_league}), ${draft.draft_year}`,
+        `Round ${draft.draft_round} - ${ordinal(draft.draft_rank)} overall`,
+      ].join("\n"),
+      inline: false,
+    });
+    if (draft.draft_team_id === teamId && draft.draft_logo) {
+      // We know this URL will work
+      // biome-ignore lint/style/noNonNullAssertion: Already set above
+      embed.setAuthor({ ...embed.data.author!, iconURL: draft.draft_logo });
+    }
   }
 
   if (currentStats && totalStats) {
@@ -398,7 +473,7 @@ const getPwhlPlayerEmbed = async (
       name: "Stats",
       value: `${
         teamId && teamName
-          ? `${pwhlTeamEmoji(ctx.env, teamId)} ${teamName}`
+          ? `${getTeamEmoji(ctx.env, league, teamId)} ${teamName}`
           : ""
       }\n\`\`\`apache\n${table(tableData, {
         border: getBorderCharacters("void"),
@@ -408,22 +483,26 @@ const getPwhlPlayerEmbed = async (
       inline: false,
     });
   } else if (teamId && teamName) {
-    description += `\n${pwhlTeamEmoji(ctx.env, teamId)} ${teamName}`;
+    description += `\n${getTeamEmoji(ctx.env, league, teamId)} ${teamName}`;
   }
 
   embed.setDescription(description.slice(0, 4096));
+  embed.setFooter({
+    text: "Some data shown may be from eliteprospects.com",
+  });
 
   return embed;
 };
 
-export const pwhlPlayerCallback: ChatInputAppCommandCallback = async (ctx) => {
+export const htPlayerCallback: ChatInputAppCommandCallback = async (ctx) => {
+  const league = ctx.getStringOption("league").value as HockeyTechLeague;
   const query = ctx.getStringOption("name").value.toLowerCase();
 
   return [
     ctx.defer(),
     async () => {
       const locale = getHtLocale(ctx);
-      const client = getPwhlClient(locale);
+      const client = getHtClient(league, locale);
       const data = await client.searchPerson(query);
       const players = data.SiteKit.Searchplayers.filter(
         (p) => p.role_name === "Player",
@@ -434,7 +513,11 @@ export const pwhlPlayerCallback: ChatInputAppCommandCallback = async (ctx) => {
         return;
       }
 
-      const embed = await getPwhlPlayerEmbed(ctx, Number(players[0].player_id));
+      const embed = await getHtPlayerEmbed(
+        ctx,
+        league,
+        Number(players[0].player_id),
+      );
       let components;
       if (players.length > 1) {
         components = [
@@ -448,7 +531,7 @@ export const pwhlPlayerCallback: ChatInputAppCommandCallback = async (ctx) => {
                         ? p.last_team_name.slice(0, 100)
                         : undefined,
                     })
-                      .setValue(`pwhl-${p.player_id}`)
+                      .setValue(`${league}-${p.player_id}`)
                       .setLabel(
                         `${p.first_name} ${p.last_name} ${
                           p.jersey_number ? `#${p.jersey_number}` : ""
@@ -474,12 +557,20 @@ export const pwhlPlayerCallback: ChatInputAppCommandCallback = async (ctx) => {
   ];
 };
 
-export const pwhlWhoisCallback: ChatInputAppCommandCallback = async (ctx) => {
+export const whoisCallback: ChatInputAppCommandCallback = async (ctx) => {
+  const league = ctx.getStringOption("league").value as League;
   const playerNumber = ctx.getIntegerOption("number").value;
   const teamId = Number(ctx.getStringOption("team").value);
 
-  const client = getPwhlClient();
-  const roster = (await client.getRoster(Number(allSeasons[0].id), teamId))
+  if (league === "khl") {
+    return ctx.reply({
+      content: "This league is not supported for this command.",
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
+  const client = getHtClient(league, getHtLocale(ctx));
+  const roster = (await client.getRoster(Number(allPwhlSeasons[0].id), teamId))
     .SiteKit.Roster;
   // We assume no duplicates
   const player = roster.find(
@@ -492,6 +583,6 @@ export const pwhlWhoisCallback: ChatInputAppCommandCallback = async (ctx) => {
     });
   }
 
-  const embed = await getPwhlPlayerEmbed(ctx, player);
+  const embed = await getHtPlayerEmbed(ctx, league, player);
   return ctx.reply({ embeds: [embed.toJSON()] });
 };

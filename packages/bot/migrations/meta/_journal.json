@@ -43,6 +43,41 @@
       "when": 1706834767044,
       "tag": "0005_solid_eternals",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1706910882512,
+      "tag": "0006_daffy_elektra",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1708468503747,
+      "tag": "0007_wonderful_rachel_grey",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "5",
+      "when": 1708468582665,
+      "tag": "0008_massive_harpoon",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "5",
+      "when": 1708484006449,
+      "tag": "0009_lyrical_nightcrawler",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "5",
+      "when": 1708486608177,
+      "tag": "0010_material_screwball",
+      "breakpoints": true
     }
   ]
 }

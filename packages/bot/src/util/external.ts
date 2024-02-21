@@ -43,6 +43,17 @@ export const getExternalUtils = <L = League>(league: L, locale_?: string) => {
           }/${gameId}`,
       };
     }
+    case "ahl": {
+      const site = "https://theahl.com";
+      return {
+        site,
+        player: (playerId: string | number) =>
+          `${site}/stats/player/${playerId}`,
+        teamRoster: (teamId: string | number, seasonId?: string | number) =>
+          `${site}/stats/roster/${teamId}/${seasonId ?? ""}`,
+        gameCenter: (gameId: string) => `${site}/stats/game-center/${gameId}`,
+      };
+    }
     default:
       throw Error("League not supported. No utilities are available.");
   }

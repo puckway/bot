@@ -479,10 +479,10 @@
   resolved "https://registry.npmjs.org/@discordjs/util/-/util-1.0.2.tgz"
   integrity sha512-IRNbimrmfb75GMNEjyznqM1tkI7HrZOf14njX7tCAAUetyZM1Pr8hX/EK2lxBCOgWDRmigbp24fD1hdMfQK5lw==
 
-"@drizzle-team/studio@^0.0.37":
-  version "0.0.37"
-  resolved "https://registry.npmjs.org/@drizzle-team/studio/-/studio-0.0.37.tgz"
-  integrity sha512-LZyAPGJBX43jsrVZh7+w1Jig/BC6PJx63ReHUYK+GRQYNY9UJNlPXmn1uC/LMRX+A7JwYM4Sr4Fg/hnJSqlfgA==
+"@drizzle-team/studio@^0.0.39":
+  version "0.0.39"
+  resolved "https://registry.yarnpkg.com/@drizzle-team/studio/-/studio-0.0.39.tgz#70e9155503f7343e8f1917d316f93e64c23760e1"
+  integrity sha512-c5Hkm7MmQC2n5qAsKShjQrHoqlfGslB8+qWzsGGZ+2dHMRTNG60UuzalF0h0rvBax5uzPXuGkYLGaQ+TUX3yMw==
   dependencies:
     superjson "^2.2.1"
 
@@ -2319,12 +2319,12 @@ dreamopt@~0.8.0:
   dependencies:
     wordwrap ">=0.0.2"
 
-drizzle-kit@^0.20.12:
-  version "0.20.12"
-  resolved "https://registry.npmjs.org/drizzle-kit/-/drizzle-kit-0.20.12.tgz"
-  integrity sha512-JWJposyEO6QvGIdvj0CmnJK5sMWW9j5HPiGnRIKvYNaAfZEHbmWlemxV2np7g2FZzSvuzwpa9EGmO20PaPeUmA==
+drizzle-kit@^0.20.14:
+  version "0.20.14"
+  resolved "https://registry.yarnpkg.com/drizzle-kit/-/drizzle-kit-0.20.14.tgz#bd9bdc01db6630292077d99ba6d2cee3a96e54de"
+  integrity sha512-0fHv3YIEaUcSVPSGyaaBfOi9bmpajjhbJNdPsRMIUvYdLVxBu9eGjH8mRc3Qk7HVmEidFc/lhG1YyJhoXrn5yA==
   dependencies:
-    "@drizzle-team/studio" "^0.0.37"
+    "@drizzle-team/studio" "^0.0.39"
     "@esbuild-kit/esm-loader" "^2.5.5"
     camelcase "^7.0.1"
     chalk "^5.2.0"

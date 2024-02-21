@@ -1,3 +1,5 @@
+import { League } from "../db/schema";
+
 export type PwhlTeamId = "1" | "2" | "3" | "4" | "5" | "6";
 
 export const colors = {
@@ -12,4 +14,8 @@ export const colors = {
     "6": 0x467ddb,
   } as Record<PwhlTeamId, number>,
   khl: 0x306da9,
+  ahl: 0xc9353c,
 };
+
+export const getTeamColor = (league: League, teamId: string) =>
+  league === "pwhl" ? colors.pwhlTeams[teamId as PwhlTeamId] : colors[league];

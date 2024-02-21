@@ -20,9 +20,11 @@ import {
   componentStore,
   modalStore,
 } from "./components";
-import { checkPosts } from "./cron";
+import { checkPosts, getPlaysWithPeriods } from "./cron";
 import { InteractionContext } from "./interactions";
 import { getErrorMessage, isDiscordError } from "./util/errors.js";
+import { getHtClient } from "./ht/client";
+import { GameStatus } from "hockeytech";
 
 export interface Env {
   DB: D1Database;
@@ -60,6 +62,44 @@ export interface Env {
   PWHL_TEAM_EMOJI_4: string;
   PWHL_TEAM_EMOJI_5: string;
   PWHL_TEAM_EMOJI_6: string;
+  AHL_LOGO: string;
+  AHL_TEAM_EMOJI_440: string;
+  AHL_TEAM_EMOJI_402: string;
+  AHL_TEAM_EMOJI_413: string;
+  AHL_TEAM_EMOJI_317: string;
+  AHL_TEAM_EMOJI_444: string;
+  AHL_TEAM_EMOJI_384: string;
+  AHL_TEAM_EMOJI_330: string;
+  AHL_TEAM_EMOJI_373: string;
+  AHL_TEAM_EMOJI_445: string;
+  AHL_TEAM_EMOJI_419: string;
+  AHL_TEAM_EMOJI_328: string;
+  AHL_TEAM_EMOJI_307: string;
+  AHL_TEAM_EMOJI_437: string;
+  AHL_TEAM_EMOJI_319: string;
+  AHL_TEAM_EMOJI_389: string;
+  AHL_TEAM_EMOJI_415: string;
+  AHL_TEAM_EMOJI_313: string;
+  AHL_TEAM_EMOJI_321: string;
+  AHL_TEAM_EMOJI_327: string;
+  AHL_TEAM_EMOJI_403: string;
+  AHL_TEAM_EMOJI_309: string;
+  AHL_TEAM_EMOJI_323: string;
+  AHL_TEAM_EMOJI_372: string;
+  AHL_TEAM_EMOJI_404: string;
+  AHL_TEAM_EMOJI_405: string;
+  AHL_TEAM_EMOJI_411: string;
+  AHL_TEAM_EMOJI_324: string;
+  AHL_TEAM_EMOJI_380: string;
+  AHL_TEAM_EMOJI_335: string;
+  AHL_TEAM_EMOJI_412: string;
+  AHL_TEAM_EMOJI_390: string;
+  AHL_TEAM_EMOJI_316: string;
+  AHL_TEAM_EMOJI_407: string;
+  AHL_TEAM_EMOJI_408: string;
+  AHL_TEAM_EMOJI_409: string;
+  AHL_TEAM_EMOJI_410: string;
+  AHL_TEAM_EMOJI_418: string;
 }
 
 const router = Router();
@@ -283,6 +323,16 @@ router
 
     console.error("Unknown Type");
     return respond({ error: "Unknown Type" });
+  })
+  .get("/t", async (request, env: Env, ctx: ExecutionContext) => {
+    const client = getHtClient("pwhl");
+    const pxp = (await client.getGamePlayByPlay(32)).GC.Pxpverbose;
+    return new Response(
+      JSON.stringify(getPlaysWithPeriods(pxp, GameStatus.Final)),
+      {
+        headers: { "Content-Type": "application/json" },
+      },
+    );
   })
   .all("*", () => new Response("Not Found.", { status: 404 }));
 

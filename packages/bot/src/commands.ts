@@ -1,6 +1,7 @@
 import {
   APIApplicationCommandAutocompleteInteraction,
   APIApplicationCommandAutocompleteResponse,
+  APIApplicationCommandStringOption,
   APIChatInputApplicationCommandInteraction,
   APIInteraction,
   APIInteractionResponse,
@@ -13,20 +14,12 @@ import {
 } from "discord-api-types/v10";
 import { PermissionFlags, PermissionsBitField } from "discord-bitflag";
 import { aboutCallback } from "./commands/about";
-import {
-  khlCalendarCallback,
-  pwhlGamedayCallback,
-  pwhlScheduleCallback,
-} from "./commands/calendar";
+import { htGamedayCallback, scheduleCallback } from "./commands/calendar";
 import { notificationsCallback } from "./commands/notifications";
-import {
-  khlPlayerCallback,
-  pwhlPlayerCallback,
-  pwhlWhoisCallback,
-} from "./commands/player";
+import { playerCallback, whoisCallback } from "./commands/player";
 import { teamAutocomplete } from "./commands/teamAutocomplete";
 import { InteractionContext } from "./interactions";
-import { allSeasons, allTeams } from "./pwhl/team";
+import { standingsCallback } from "./commands/standings";
 
 export type AppCommandCallbackT<T extends APIInteraction> = (
   ctx: InteractionContext<T>,
@@ -57,6 +50,70 @@ export type AppCommand = RESTPostAPIApplicationCommandsJSONBody & {
   autocompleteHandlers?: Record<string, AppCommandAutocompleteCallback>;
 };
 
+const getLeagueOption = ({
+  description,
+  description_localizations,
+  required,
+  noKhl,
+}: {
+  description: string;
+  description_localizations?: APIApplicationCommandStringOption["description_localizations"];
+  required?: boolean;
+  noKhl?: boolean;
+}): APIApplicationCommandStringOption => ({
+  type: ApplicationCommandOptionType.String,
+  name: "league",
+  name_localizations: {
+    fr: "ligue",
+    ru: "лига",
+  },
+  description,
+  description_localizations,
+  choices: [
+    {
+      name: "AHL",
+      name_localizations: {
+        fr: "LAH",
+        ru: "АХЛ",
+      },
+      value: "ahl",
+    },
+    {
+      name: "PWHL",
+      name_localizations: {
+        fr: "LPHF",
+      },
+      value: "pwhl",
+    },
+    ...(!noKhl
+      ? [
+          {
+            name: "KHL",
+            name_localizations: {
+              ru: "КХЛ",
+            },
+            value: "khl",
+          },
+          // {
+          //   name: "MHL",
+          //   name_localizations: {
+          //     ru: "МХЛ",
+          //   },
+          //   value: "mhl",
+          // },
+          // {
+          //   name: "ZhHL",
+          //   name_localizations: {
+          //     ru: "ЖХЛ",
+          //   },
+          //   value: "zhhl",
+          // },
+        ]
+      : []),
+  ],
+  required: required ?? true,
+});
+
 export const appCommands: Record<
   ApplicationCommandType,
   Record<string, AppCommand>
@@ -68,164 +125,33 @@ export const appCommands: Record<
         ru: "kалендарь",
         "zh-CN": "赛程",
       },
-      description: "...",
+      description:
+        "Get all games for a specific date, or today if not specified",
       options: [
+        getLeagueOption({
+          description: "The league to get games for",
+        }),
         {
-          type: ApplicationCommandOptionType.Subcommand,
-          name: "khl",
-          name_localizations: {
-            ru: "кхл",
-          },
-          description:
-            "Get all KHL games for a specific date, or today if not specified",
-          options: [
-            {
-              type: ApplicationCommandOptionType.String,
-              name: "date",
-              description: "YYYY-MM-DD",
-              max_length: 10,
-              required: false,
-            },
-            {
-              type: ApplicationCommandOptionType.String,
-              name: "team",
-              description: "The team to get games for",
-              required: false,
-              autocomplete: true,
-              // choices: api.allTeams.map((team) => {
-              //   // For some reason Discord doesn't like when you provide
-              //   // a localization that's the same as the `name`
-              //   const getName = (locale: keyof typeof team.names) =>
-              //     `${team.names[locale]} (${team.locations[locale]})`;
-              //   return {
-              //     name: getName("en"),
-              //     name_localizations: {
-              //       ru: getName("ru"),
-              //     },
-              //     value: String(team.id),
-              //   };
-              // }),
-            },
-          ],
+          type: ApplicationCommandOptionType.String,
+          name: "date",
+          description: "YYYY-MM-DD",
+          max_length: 10,
+          required: false,
         },
         {
-          type: ApplicationCommandOptionType.Subcommand,
-          name: "pwhl",
-          name_localizations: {
-            fr: "lphf",
-          },
-          description:
-            "Get the PWHL schedule. Defaults to today if not specified",
-          options: [
-            {
-              type: ApplicationCommandOptionType.String,
-              name: "season",
-              name_localizations: {
-                fr: "saison",
-              },
-              description: "Defaults to the current season",
-              // We can avoid using autocomplete for the first 8.3 years of this bot!
-              // 25 choices total; one pre-, regular-, and post-season per year.
-              // The only downside is that obviously we have to manually update this,
-              // but it's trivial to do so before the season begins.
-              choices: allSeasons.map((season) => ({
-                name: season.names.en,
-                name_localizations: {
-                  fr: season.names.fr,
-                },
-                value: season.id,
-              })),
-              required: false,
-            },
-            {
-              type: ApplicationCommandOptionType.String,
-              name: "month",
-              name_localizations: { fr: "mois" },
-              description: "Defaults to the current month",
-              required: false,
-              choices: [
-                {
-                  name: "January",
-                  name_localizations: { fr: "Janvier" },
-                  value: "0",
-                },
-                {
-                  name: "February",
-                  name_localizations: { fr: "Février" },
-                  value: "1",
-                },
-                {
-                  name: "March",
-                  name_localizations: { fr: "Mars" },
-                  value: "2",
-                },
-                {
-                  name: "April",
-                  name_localizations: { fr: "Avril" },
-                  value: "3",
-                },
-                {
-                  name: "May",
-                  name_localizations: { fr: "Mai" },
-                  value: "4",
-                },
-                {
-                  name: "June",
-                  name_localizations: { fr: "Juin" },
-                  value: "5",
-                },
-                {
-                  name: "July",
-                  name_localizations: { fr: "Juillet" },
-                  value: "6",
-                },
-                {
-                  name: "August",
-                  name_localizations: { fr: "Août" },
-                  value: "7",
-                },
-                {
-                  name: "September",
-                  name_localizations: { fr: "Septembre" },
-                  value: "8",
-                },
-                {
-                  name: "October",
-                  name_localizations: { fr: "Octobre" },
-                  value: "9",
-                },
-                {
-                  name: "November",
-                  name_localizations: { fr: "Novembre" },
-                  value: "10",
-                },
-                {
-                  name: "December",
-                  name_localizations: { fr: "Décembre" },
-                  value: "11",
-                },
-              ],
-            },
-            {
-              type: ApplicationCommandOptionType.String,
-              name: "team",
-              name_localizations: { fr: "equipe" },
-              description: "The team to get games for",
-              required: false,
-              choices: allTeams.map((team) => ({
-                name: team.nickname,
-                value: team.id,
-              })),
-            },
-          ],
+          type: ApplicationCommandOptionType.String,
+          name: "team",
+          name_localizations: { fr: "equipe" },
+          description: "The team to get games for",
+          required: false,
+          autocomplete: true,
         },
       ],
       handlers: {
-        khl: khlCalendarCallback,
-        pwhl: pwhlScheduleCallback,
+        BASE: scheduleCallback,
       },
       autocompleteHandlers: {
-        khl: teamAutocomplete,
+        BASE: teamAutocomplete,
       },
     },
     gameday: {
@@ -234,33 +160,26 @@ export const appCommands: Record<
         ru: "день-игры",
         fr: "jour-de-match",
       },
-      description: "...",
+      description: "A quick look at current, recent, and future games",
       options: [
+        getLeagueOption({
+          description: "The league to check games for",
+          noKhl: true,
+        }),
         {
-          type: ApplicationCommandOptionType.Subcommand,
-          name: "pwhl",
-          name_localizations: {
-            fr: "lphf",
-          },
-          description:
-            "A quick look at the current, recent, and future PWHL games.",
-          options: [
-            {
-              type: ApplicationCommandOptionType.String,
-              name: "team",
-              name_localizations: { fr: "equipe" },
-              description: "The team to get games for",
-              required: false,
-              choices: allTeams.map((team) => ({
-                name: team.nickname,
-                value: team.id,
-              })),
-            },
-          ],
+          type: ApplicationCommandOptionType.String,
+          name: "team",
+          name_localizations: { fr: "equipe" },
+          description: "The team to get games for",
+          autocomplete: true,
+          required: false,
         },
       ],
       handlers: {
-        pwhl: pwhlGamedayCallback,
+        BASE: htGamedayCallback,
+      },
+      autocompleteHandlers: {
+        BASE: teamAutocomplete,
       },
     },
     player: {
@@ -270,56 +189,71 @@ export const appCommands: Record<
         "zh-CN": "玩家",
         fr: "joueur",
       },
-      description: "...",
+      description: "Get info for a player",
       options: [
+        getLeagueOption({
+          description: "The league that the player is in",
+        }),
         {
-          type: ApplicationCommandOptionType.Subcommand,
-          name: "khl",
+          type: ApplicationCommandOptionType.String,
+          name: "name",
           name_localizations: {
-            ru: "кхл",
+            fr: "nom",
           },
-          description: "Get info for a player",
-          options: [
-            {
-              type: ApplicationCommandOptionType.String,
-              name: "name",
-              name_localizations: {
-                fr: "nom",
-              },
-              description: "The name of the player",
-              description_localizations: {
-                fr: "Le nom du joueur",
-              },
-              required: true,
-            },
-          ],
+          description: "The name of the player",
+          description_localizations: {
+            fr: "Le nom du joueur",
+          },
+          required: true,
         },
+      ],
+      handlers: {
+        BASE: playerCallback,
+      },
+    },
+    standings: {
+      name: "standings",
+      description: "Get league standings",
+      // dm_permission: false,
+      options: [
+        getLeagueOption({
+          description: "The league to get team standings for",
+        }),
         {
-          type: ApplicationCommandOptionType.Subcommand,
-          name: "pwhl",
-          name_localizations: {
-            fr: "lphf",
-          },
-          description: "Get info for a player",
-          options: [
+          type: ApplicationCommandOptionType.String,
+          name: "sort",
+          description: "Sort by the specified statistic",
+          required: false,
+          choices: [
             {
-              type: ApplicationCommandOptionType.String,
-              name: "name",
-              name_localizations: {
-                fr: "nom",
-              },
-              description: "The name of the player",
-              description_localizations: {
-                fr: "Le nom du joueur",
-              },
-              required: true,
+              name: "Games Played",
+              value: "games_played",
+            },
+            {
+              name: "Points",
+              value: "points",
+            },
+            {
+              name: "Wins",
+              value: "wins",
+            },
+            {
+              name: "Overtime Losses",
+              value: "ot_losses",
+            },
+            {
+              name: "Losses",
+              value: "losses",
+            },
+            {
+              name: "Percentage",
+              value: "percentage",
             },
           ],
         },
       ],
       handlers: {
-        khl: khlPlayerCallback,
-        pwhl: pwhlPlayerCallback,
+        BASE: standingsCallback,
       },
     },
     whois: {
@@ -328,7 +262,11 @@ export const appCommands: Record<
         ru: "кто",
         fr: "qui-est",
       },
-      description: "...",
+      description: "Find a player by their number",
+      description_localizations: {
+        fr: "Trouver un joueur par son numéro",
+        ru: "Найдите игрока по номеру",
+      },
       options: [
         // {
         //   type: ApplicationCommandOptionType.Subcommand,
@@ -366,81 +304,53 @@ export const appCommands: Record<
         //     }
         //   ],
         // },
+        getLeagueOption({
+          description: "The league that the player is in",
+          noKhl: true,
+        }),
         {
-          type: ApplicationCommandOptionType.Subcommand,
-          name: "pwhl",
+          type: ApplicationCommandOptionType.Integer,
+          min_value: 1,
+          max_value: 99,
+          name: "number",
           name_localizations: {
-            fr: "lphf",
+            fr: "numéro",
+            ru: "число",
           },
-          description: "Find a player by their number",
+          description: "The player's jersey number",
           description_localizations: {
-            fr: "Trouver un joueur par son numéro",
-            ru: "Найдите игрока по номеру",
+            fr: "Le numéro de maillot du joueur",
           },
-          options: [
-            {
-              type: ApplicationCommandOptionType.Integer,
-              min_value: 1,
-              max_value: 99,
-              name: "number",
-              name_localizations: {
-                fr: "numéro",
-                ru: "число",
-              },
-              description: "The player's jersey number",
-              description_localizations: {
-                fr: "Le numéro de maillot du joueur",
-              },
-              required: true,
-            },
-            {
-              type: ApplicationCommandOptionType.String,
-              name: "team",
-              name_localizations: { fr: "equipe" },
-              description: "The team to search",
-              required: true,
-              choices: allTeams.map((team) => ({
-                name: team.nickname,
-                value: team.id,
-              })),
-            },
-          ],
+          required: true,
+        },
+        {
+          type: ApplicationCommandOptionType.String,
+          name: "team",
+          name_localizations: { fr: "equipe" },
+          description: "The team to search",
+          required: true,
+          autocomplete: true,
         },
       ],
       handlers: {
-        // khl: khlWhoisCallback,
-        pwhl: pwhlWhoisCallback,
+        BASE: whoisCallback,
       },
       autocompleteHandlers: {
-        khl: teamAutocomplete,
+        BASE: teamAutocomplete,
       },
     },
     notifications: {
       name: "notifications",
       description: "Configure gameday notifications",
+      dm_permission: false,
       default_member_permissions: new PermissionsBitField(
         PermissionFlags.ManageGuild,
       ).toString(),
       options: [
-        {
-          type: ApplicationCommandOptionType.String,
-          name: "league",
+        getLeagueOption({
           description: "The league to configure notifications for",
-          choices: [
-            // {
-            //   name: "KHL",
-            //   value: "khl",
-            // },
-            {
-              name: "PWHL",
-              name_localizations: {
-                fr: "LPHF",
-              },
-              value: "pwhl",
-            },
-          ],
-          required: true,
-        },
+          noKhl: true,
+        }),
         {
           type: ApplicationCommandOptionType.Channel,
           name: "channel",

@@ -4,7 +4,7 @@ import { NotificationSendConfig } from "../commands/notifications";
 
 const snowflake = (name: string) => text(name).$type<Snowflake>();
 
-export const leagues = ["khl", "pwhl"] as const;
+export const leagues = ["khl", "pwhl", "ahl"] as const;
 export type League = (typeof leagues)[number];
 
 export const hypeMinutes = [5, 10, 20, 30, 60, 120] as const;
@@ -38,35 +38,6 @@ export const notifications = sqliteTable(
   }),
 );
 
-export const games = sqliteTable(
-  "games",
-  {
-    id: integer("id").primaryKey({ autoIncrement: true }),
-    league: text("league").$type<League>().notNull(),
-    nativeId: text("nativeId").notNull(),
-    lastKnownAwayGoals: integer("lastKnownAwayGoals").notNull().default(0),
-    lastKnownHomeGoals: integer("lastKnownHomeGoals").notNull().default(0),
-    lastKnownPenaltyCount: integer("lastKnownPenaltyCount")
-      .notNull()
-      .default(0),
-    lastKnownPeriodId: text("lastKnownPeriodId"),
-    lastPostedHypeMinutes: integer("lastPostedHypeMinutes").$type<HypeMinute>(),
-    postedPreview: integer("postedPreview", { mode: "boolean" })
-      .notNull()
-      .default(false),
-    /** We just pretend this doesn't exist for KHL games */
-    postedUnofficialFinal: integer("postedUnofficialFinal", { mode: "boolean" })
-      .notNull()
-      .default(false),
-    postedFinal: integer("postedFinal", { mode: "boolean" })
-      .notNull()
-      .default(false),
-  },
-  (table) => ({
-    unq: unique().on(table.league, table.nativeId),
-  }),
-);
-
 export const players = sqliteTable(
   "players",
   {
@@ -75,6 +46,7 @@ export const players = sqliteTable(
     nativeId: text("nativeId").notNull(),
     epId: text("epId"),
     epSlug: text("epSlug"),
+    epImage: text("epImage"),
     fullName: text("fullName").notNull(),
     country: text("country"),
     /** Centimeters */

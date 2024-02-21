@@ -2,6 +2,7 @@ import type { NumericBoolean, PlayerBio, RosterPlayer } from "hockeytech";
 import { DBWithSchema } from "../db";
 import { League, players } from "../db/schema";
 import { and, eq } from "drizzle-orm";
+import { HockeyTechLeague } from "../ht/client";
 
 export interface EliteProspectsSearchResult {
   id: string;
@@ -44,6 +45,7 @@ export const dbGetPlayer = async (
       fullName: true,
       epId: true,
       epSlug: true,
+      epImage: true,
       country: true,
       height: true,
       weight: true,
@@ -69,7 +71,7 @@ export const epSearchHtPlayer = async (
 export const getEpHtPlayer = async (
   playerId: string,
   player: RosterPlayer | PlayerBio,
-  league: League,
+  league: HockeyTechLeague,
   db: DBWithSchema,
   teamName?: string,
 ) => {
@@ -79,6 +81,7 @@ export const getEpHtPlayer = async (
       country: dbPlayer.country,
       epId: dbPlayer.epId,
       epSlug: dbPlayer.epSlug,
+      epImage: dbPlayer.epImage,
       height: dbPlayer.height,
       weight: dbPlayer.weight,
     };
@@ -94,12 +97,14 @@ export const getEpHtPlayer = async (
           country: searchResult.countryName,
           epId: searchResult.id,
           epSlug: searchResult.slug,
+          epImage: searchResult.photo,
           fullName: searchResult.fullname,
         })
         .returning({
           country: players.country,
           epId: players.epId,
           epSlug: players.epSlug,
+          epImage: players.epImage,
           height: players.height,
           weight: players.weight,
         })
