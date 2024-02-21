@@ -782,7 +782,7 @@ export const getPlayId = (play: Play, index: number): string => {
   // I can't trust event IDs to be unique outside of their scope
   switch (play.event) {
     case GamePlayByPlayEvent.GoalieChange:
-      return `${play.event}:${play.goalie_in_id}`;
+      return `${play.event}:${play.goalie_in_id}:${play.period_id}:${play.s}`;
     case GamePlayByPlayEvent.Faceoff:
       // faceoff.id seems to just be a mirror of the period ID
       return `${play.event}:${play.id}:${play.s}`;
