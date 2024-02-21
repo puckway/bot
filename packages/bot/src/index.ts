@@ -324,16 +324,6 @@ router
     console.error("Unknown Type");
     return respond({ error: "Unknown Type" });
   })
-  .get("/t", async (request, env: Env, ctx: ExecutionContext) => {
-    const client = getHtClient("pwhl");
-    const pxp = (await client.getGamePlayByPlay(32)).GC.Pxpverbose;
-    return new Response(
-      JSON.stringify(getPlaysWithPeriods(pxp, GameStatus.Final)),
-      {
-        headers: { "Content-Type": "application/json" },
-      },
-    );
-  })
   .all("*", () => new Response("Not Found.", { status: 404 }));
 
 async function verifyDiscordRequest(request: Request, env: Env) {
