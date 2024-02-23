@@ -28,7 +28,7 @@ import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
 import { getLeagueLogoUrl, getTeamEmoji } from "../util/emojis";
 import { League } from "../db/schema";
 import { GameStatus, GamesByDate } from "hockeytech";
-import { getOffset } from "../util/time";
+import { getOffset, sleep } from "../util/time";
 import { getLeagueTeams } from "../ht/team";
 
 export const DATE_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
@@ -484,14 +484,14 @@ export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
 
   return [
     ctx.reply({
-      content: `Importing ${newGames.length} events...`,
+      content: `Importing ${newGames.length} events, this might take a while!`,
     }),
     async () => {
-      const events: APIGuildScheduledEvent[] = [];
+      let imported = 0;
+      let failures = 0;
       for (const game of newGames) {
-        const event = (await ctx.rest.post(
-          Routes.guildScheduledEvents(guildId),
-          {
+        try {
+          await ctx.rest.post(Routes.guildScheduledEvents(guildId), {
             body: {
               name: game.title,
               privacy_level: GuildScheduledEventPrivacyLevel.GuildOnly,
@@ -503,13 +503,34 @@ export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
               entity_type: GuildScheduledEventEntityType.External,
               entity_metadata: { location: game.location },
             },
-          },
-        )) as RESTPostAPIGuildScheduledEventResult;
-        events.push(event);
+          });
+          imported += 1;
+        } catch (e) {
+          failures += 1;
+          console.error(e);
+        }
+        if (imported % 5 === 0) {
+          try {
+            await ctx.followup.editOriginalMessage({
+              content: `Imported ${imported}/${newGames.length} events, ${
+                newGames.length - imported <= 1
+                  ? "almost finished..."
+                  : "this might take a while. If it appears stuck, it probably isn't!"
+              }`,
+            });
+          } catch {
+            // We don't really care if this succeeds
+          }
+        }
+        // This can make it appear more consistent but ultimately
+        // it will take longer. Function > form?
+        // await sleep(5000);
       }
 
       await ctx.followup.editOriginalMessage({
-        content: `Imported ${events.length} events.`,
+        content: `Imported ${imported} events${
+          failures > 0 ? ` with ${failures} failures` : ""
+        }. Feel free to edit these, just don't change the last line of the description.`,
       });
     },
   ];
