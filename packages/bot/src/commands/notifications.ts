@@ -158,6 +158,7 @@ const getComponents = async (
         }));
 
   const optionGroups = [];
+  let selectIndex = 0;
   while (options.length > 0) {
     // Maximum 25 options per select
     const opts = options.splice(0, 25);
@@ -175,10 +176,12 @@ const getComponents = async (
             league,
             channelId,
             channelType,
+            selectIndex,
           },
         ]),
       ),
     );
+    selectIndex += 1;
   }
 
   return [
@@ -283,17 +286,54 @@ export const selectNotificationTeamCallback: SelectMenuCallback = async (
     league: League;
     channelId: string;
     channelType: ChannelType;
+    selectIndex: number;
   };
-  const teamIds = ctx.interaction.data.values;
 
   const db = getDb(ctx.env.DB);
   const settings = await db.query.notifications.findFirst({
-    where: eq(notifications.channelId, makeSnowflake(state.channelId)),
+    where: and(
+      eq(notifications.league, state.league),
+      eq(notifications.channelId, makeSnowflake(state.channelId)),
+    ),
     columns: {
       sendConfig: true,
       active: true,
+      teamIds: true,
     },
   });
+
+  const allTeamIds =
+    state.league === "khl"
+      ? api.allTeams.map((team) => String(team.id))
+      : getLeagueTeams(state.league).map((team) => team.id);
+
+  // This is a trimmed down mirror of what the user selected from.
+  // For leagues with more than 25 teams, this is necessary to determine
+  // which team group to overwrite and which to preserve.
+  // interaction.message can technically be used for this, but we would have
+  // to parse out the components, this is just easier.
+  const teamIdGroups: string[][] = [];
+  let curIndex = 0;
+  while (allTeamIds.length > 0) {
+    const opts = allTeamIds.splice(0, 25);
+    teamIdGroups.push(
+      // Use the user's selection (we have found our select menu), otherwise
+      // the team IDs for the group that were already selected
+      curIndex === state.selectIndex
+        ? ctx.interaction.data.values
+        : opts.filter((id) =>
+            settings ? settings.teamIds.includes(id) : false,
+          ),
+    );
+    curIndex += 1;
+  }
+
+  // Re-combine all team IDs for storage
+  const teamIds = teamIdGroups.reduce((a, b) => {
+    a.push(...b);
+    return a;
+  }, []);
+
   await db
     .update(notifications)
     .set({ teamIds })

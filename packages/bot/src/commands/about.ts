@@ -7,7 +7,7 @@ import { transformLocalizations } from "../util/l10n";
 const s = transformLocalizations({
   en: {
     about: "About",
-    description: "This bot covers various aspects of the PWHL and KHL.",
+    description: "This bot covers various aspects of the PWHL, AHL, and KHL.",
     site: "Website",
     // site: "Site (+ Mac/iOS app!)",
   },
