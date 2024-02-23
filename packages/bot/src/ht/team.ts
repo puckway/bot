@@ -15,28 +15,6 @@ type HockeyTechTeam = Pick<
   "id" | "name" | "city" | "code" | "nickname"
 >;
 
-type HockeyTechSeason = {
-  id: string;
-  names: {
-    en: string;
-    fr?: string;
-  };
-  type: "regular" | "exhibition" | "playoff";
-};
-
-export const allPwhlSeasons: HockeyTechSeason[] = [
-  {
-    id: "1",
-    names: { en: "2024 Regular Season", fr: "Saison Régulière 2024" },
-    type: "regular",
-  },
-  {
-    id: "2",
-    names: { en: "2024 Preseason" },
-    type: "exhibition",
-  },
-];
-
 export const allPwhlTeams: HockeyTechTeam[] = [
   {
     id: "1",

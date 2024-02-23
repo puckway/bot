@@ -11,7 +11,6 @@ import {
   NumericBoolean,
   PlayerSeasonStat,
   PlayerSeasonStatTotal,
-  PlayerStatsBySeason,
   RosterPlayer,
 } from "hockeytech";
 import type { APILightPlayer } from "khl-api-types";
@@ -20,7 +19,7 @@ import { ChatInputAppCommandCallback } from "../commands";
 import { SelectMenuCallback } from "../components";
 import { InteractionContext } from "../interactions";
 import { HockeyTechLeague, getHtClient } from "../ht/client";
-import { allPwhlSeasons, getHtTeamLogoUrl, getLeagueTeams } from "../ht/team";
+import { getHtTeamLogoUrl, getLeagueTeams } from "../ht/team";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { countryCodeEmoji, getTeamEmoji } from "../util/emojis";
@@ -593,7 +592,10 @@ export const whoisCallback: ChatInputAppCommandCallback = async (ctx) => {
   }
 
   const client = getHtClient(league, getHtLocale(ctx));
-  const roster = (await client.getRoster(Number(allPwhlSeasons[0].id), teamId))
+  const seasons = (await client.getSeasonList()).SiteKit.Seasons;
+  // All star seasons can behave weirdly
+  const season = seasons.find((s) => s.career === "1") ?? seasons[0];
+  const roster = (await client.getRoster(Number(season.season_id), teamId))
     .SiteKit.Roster;
   // We assume no duplicates
   const player = roster.find(
