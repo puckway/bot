@@ -8,13 +8,11 @@ import * as api from "api";
 import {
   APIActionRowComponent,
   APIButtonComponent,
-  APIGuildScheduledEvent,
   ButtonStyle,
   GuildScheduledEventEntityType,
   GuildScheduledEventPrivacyLevel,
   MessageFlags,
   RESTGetAPIGuildScheduledEventsResult,
-  RESTPostAPIGuildScheduledEventResult,
   Routes,
 } from "discord-api-types/v10";
 import { PermissionFlags } from "discord-bitflag";
@@ -28,7 +26,7 @@ import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
 import { getLeagueLogoUrl, getTeamEmoji } from "../util/emojis";
 import { League } from "../db/schema";
 import { GameStatus, GamesByDate } from "hockeytech";
-import { getOffset, sleep } from "../util/time";
+import { getOffset } from "../util/time";
 import { getLeagueTeams } from "../ht/team";
 
 export const DATE_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
