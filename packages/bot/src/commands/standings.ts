@@ -131,6 +131,16 @@ export const standingsCallback: ChatInputAppCommandCallback = async (ctx) => {
     // biome-ignore lint/style/noNonNullAssertion: Present for KHL leagues
     return ctx.reply(utils.standings!());
   }
+  const sort = (ctx.getStringOption("sort").value || undefined) as
+    | "games_played"
+    | "games_remaining"
+    | "points"
+    | "wins"
+    | "ot_wins"
+    | "ot_losses"
+    | "losses"
+    | "percentage"
+    | undefined;
 
   const client = getHtClient(league, getHtLocale(ctx));
   const seasons = (await client.getSeasonList()).SiteKit.Seasons;
@@ -149,7 +159,10 @@ export const standingsCallback: ChatInputAppCommandCallback = async (ctx) => {
         "standings",
       )
     ).SiteKit.Statviewtype as HockeyTechTeamStanding[]
-  ).filter((team) => !!team.team_code);
+  )
+    .filter((team) => !!team.team_code)
+    .sort((a, b) => (sort ? Number(b[sort] ?? 0) - Number(a[sort] ?? 0) : 0));
+
   const embed = getStandingsEmbed(
     ctx,
     league,
@@ -163,7 +176,9 @@ export const standingsCallback: ChatInputAppCommandCallback = async (ctx) => {
       "L",
       "PCT",
     ],
-    standings.map((team) => ({
+    standings
+
+    .map((team) => ({
       teamCode: team.team_code,
       values: [
         team.games_played,
