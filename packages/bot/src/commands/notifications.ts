@@ -20,7 +20,7 @@ import { InteractionContext } from "../interactions";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { transformLocalizations, uni } from "../util/l10n";
-import { getLeagueLogoUrl } from "../util/emojis";
+import { getLeagueLogoUrl, getTeamPartialEmoji } from "../util/emojis";
 import { getLeagueTeams } from "../ht/team";
 
 export interface NotificationSendConfig {
@@ -140,25 +140,13 @@ const getComponents = async (
           label: team.names.en,
           value: String(team.id),
           default: teamIds?.includes(String(team.id)),
-          emoji: {
-            id: ctx.env[
-              `${league.toUpperCase()}_TEAM_EMOJI_${
-                team.id
-              }` as keyof typeof ctx.env
-            ] as string,
-          },
+          emoji: getTeamPartialEmoji(league, team.id),
         }))
       : getLeagueTeams(league).map((team) => ({
           label: team.name,
           value: team.id,
           default: teamIds?.includes(team.id),
-          emoji: {
-            id: ctx.env[
-              `${league.toUpperCase()}_TEAM_EMOJI_${
-                team.id
-              }` as keyof typeof ctx.env
-            ] as string,
-          },
+          emoji: getTeamPartialEmoji(league, team.id),
         }));
 
   const optionGroups = [];

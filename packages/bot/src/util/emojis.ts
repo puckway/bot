@@ -1,3 +1,7 @@
+import {
+  APIMessageComponentEmoji,
+  APIPartialEmoji,
+} from "discord-api-types/v10";
 import { League } from "../db/schema";
 
 export const leagueAssets: Record<
@@ -90,15 +94,24 @@ export const leagueAssets: Record<
   },
 };
 
-export const getTeamEmoji = (league: League, teamId: string | number) => {
+export const getTeamPartialEmoji = (
+  league: League,
+  teamId: string | number,
+): APIMessageComponentEmoji => {
   const emojiId = leagueAssets[league].teamEmojis[Number(teamId)];
   if (emojiId) {
-    return `<:_:${emojiId}>`;
+    return { id: emojiId };
   }
 
   // A question mark default looked pretty bad. Players that have been transferred
   // to other leagues may still show up, so we want to compensate for them.
-  return "📃";
+  return { name: "📃" };
+};
+
+export const getTeamEmoji = (league: League, teamId: string | number) => {
+  const emoji = getTeamPartialEmoji(league, teamId);
+  // biome-ignore lint/style/noNonNullAssertion:
+  return emoji.id ? `<:_:${emoji.id}>` : emoji.name!;
 };
 
 export const getLeagueLogoUrl = (league: League) => {
