@@ -39,7 +39,7 @@ export const getExternalUtils = <L = League>(league: L, locale_?: string) => {
         teamSite: (subdomain: string) => `https://${subdomain}.thepwhl.com`,
         gameCenter: (gameId: string) =>
           `${site}/stats/${
-            locale === "fr" ? "game-center" : "game-centre"
+            locale === "fr" ? "game-centre" : "game-center"
           }/${gameId}`,
       };
     }
