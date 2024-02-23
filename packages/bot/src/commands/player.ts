@@ -7,19 +7,20 @@ import {
 } from "@discordjs/builders";
 import * as api from "api";
 import { APIInteraction, MessageFlags } from "discord-api-types/v10";
-import { NumericBoolean, RosterPlayer } from "hockeytech";
+import {
+  NumericBoolean,
+  PlayerSeasonStat,
+  PlayerSeasonStatTotal,
+  PlayerStatsBySeason,
+  RosterPlayer,
+} from "hockeytech";
 import type { APILightPlayer } from "khl-api-types";
 import { getBorderCharacters, table } from "table";
 import { ChatInputAppCommandCallback } from "../commands";
 import { SelectMenuCallback } from "../components";
 import { InteractionContext } from "../interactions";
 import { HockeyTechLeague, getHtClient } from "../ht/client";
-import {
-  allAhlTeams,
-  allPwhlSeasons,
-  getHtTeamLogoUrl,
-  getLeagueTeams,
-} from "../ht/team";
+import { allPwhlSeasons, getHtTeamLogoUrl, getLeagueTeams } from "../ht/team";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { countryCodeEmoji, getTeamEmoji } from "../util/emojis";
@@ -295,13 +296,37 @@ const getHtPlayerEmbed = async (
     ? `https://www.eliteprospects.com/player/${playerDetails.epId}/${playerDetails.epSlug}`
     : undefined;
 
-  const currentSeason = allPwhlSeasons[0];
   const allStats = (
     await client.getPlayerProfileStatsBySeason(Number(playerId))
   ).SiteKit.Player;
-  const currentStats = allStats[currentSeason.type]?.find((_, i) => i === 0);
-  const totalStats = allStats[currentSeason.type]?.find(
-    (_, i, a) => i === a.length - 1,
+
+  // To avoid storing every season for every league, we find the season with
+  // the latest start date, determine what type it is, then get the correct pair
+  // of season and total columns with that type.
+  const statSeasons: Array<PlayerSeasonStat | PlayerSeasonStatTotal> =
+    Object.values(allStats).reduce((a, b) => {
+      a.push(...b);
+      return a;
+    });
+  const latest = [...statSeasons].sort(
+    (a, b) =>
+      new Date(b.max_start_date).getTime() -
+      new Date(a.max_start_date).getTime(),
+  )[0];
+  const type = latest
+    ? String(latest.playoff) === "1"
+      ? "playoff"
+      : String(latest.career) === "0"
+        ? "exhibition"
+        : "regular"
+    : "regular";
+
+  const currentStats = allStats[type]?.[0];
+  const totalStats = allStats[type]?.find(
+    (s, i, a) =>
+      typeof s.season_id === "number" ||
+      s.season_name === "Total" ||
+      i === a.length - 1,
   );
 
   const utils = getExternalUtils(league, locale);
