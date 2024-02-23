@@ -26,6 +26,7 @@ import { getLeagueTeams } from "../ht/team";
 export interface NotificationSendConfig {
   preview?: boolean;
   threads?: boolean;
+  lineups?: boolean;
   hype?: boolean;
   start?: boolean;
   periods?: boolean;
@@ -49,6 +50,9 @@ const s = transformLocalizations({
       "Sent 6 hours before game time. Shows location, tickets, & records",
     threads: "Threads",
     threadsDescription: "Public chat thread under the preview or start message",
+    lineups: "Lineups",
+    lineupsDescription:
+      "Projected lineups for applicable teams. Sent 1 hour before game time",
     hype: "Hype messages",
     hypeDescription: "Sent at intervals before the game starts",
     start: "Game start",
@@ -75,6 +79,9 @@ const s = transformLocalizations({
     channel: "Salon",
     preview: "Aperçu",
     threads: "Fils de discussion",
+    lineups: "Formations",
+    lineupsDescription:
+      "Alignements projetés pour certaines équipes. Envoyé 1 heure avant le match",
     hype: "Messages d'enthousiasme",
     start: "Début du jeu",
     periods: "Périodes",
@@ -117,13 +124,14 @@ const getComponents = async (
   const allFeatures = [
     "preview",
     "threads",
+    "lineups",
     "start",
     "periods",
     "goals",
     "penalties",
     "end",
     "final",
-  ] as (keyof NotificationSendConfig)[];
+  ] satisfies (keyof NotificationSendConfig)[];
   const features = allFeatures;
   // I was going to do this in order to allow announcement channels but I decided
   // against it because the type can be swapped with the same channel ID, rendering
@@ -319,15 +327,7 @@ export const selectNotificationFeaturesCallback: SelectMenuCallback = async (
   const featureValues = ctx.interaction.data
     .values as (keyof NotificationSendConfig)[];
 
-  const sendConfig: NotificationSendConfig = {
-    preview: false,
-    hype: false,
-    start: false,
-    goals: false,
-    penalties: false,
-    end: false,
-    final: false,
-  };
+  const sendConfig: NotificationSendConfig = {};
   for (const f of featureValues) {
     sendConfig[f] = true;
   }

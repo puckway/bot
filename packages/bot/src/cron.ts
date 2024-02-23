@@ -1,6 +1,16 @@
-import { EmbedBuilder, time } from "@discordjs/builders";
+import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  EmbedBuilder,
+  time,
+} from "@discordjs/builders";
 import { REST } from "@discordjs/rest";
-import { APIMessage, ChannelType, Routes } from "discord-api-types/v10";
+import {
+  APIMessage,
+  ButtonStyle,
+  ChannelType,
+  Routes,
+} from "discord-api-types/v10";
 import { eq } from "drizzle-orm";
 import {
   GCGamePlayByPlay,
@@ -31,10 +41,16 @@ import {
 import { HockeyTechLeague, getHtClient } from "./ht/client";
 import { htPlayerImageUrl } from "./ht/player";
 import { getHtTeamLogoUrl } from "./ht/team";
-import { PwhlTeamId, colors, getTeamColor } from "./util/colors";
+import { colors, getTeamColor } from "./util/colors";
 import { getTeamEmoji } from "./util/emojis";
 import { toHMS } from "./util/time";
 import { ExternalUtils, getExternalUtils } from "./util/external";
+import {
+  THREADS_BASE,
+  findLatestLineupPost,
+  getThreadsPostEmbed,
+} from "./social/threads";
+import { ThreadsItemPost } from "./types/threads";
 
 const logErrors = async (promise: Promise<any>) => {
   try {
@@ -428,7 +444,7 @@ export const getHtStatusEmbed = (
       text: [
         `${game.visitor.code} @ ${game.home.code} - Game #${game.meta.game_number}`,
         status === GameStatus.UnofficialFinal
-          ? "This is an unofficial final. Details like shot totals may change before the final is posted."
+          ? "This is an unofficial final. Some details may change before the final."
           : "",
       ]
         .join("\n")
@@ -911,18 +927,20 @@ export const checkPosts = async (
 
           interface EventData {
             postedPreview?: boolean;
+            postedLineups?: boolean;
             postedPbpEventIds?: string[];
           }
 
           const kvKey = `${league}-${game.ID}-eventData`;
           const kvData = await env.KV.get<EventData>(kvKey, "json");
-          console.log(kvData);
 
           const channelConfigs = [
             ...Object.entries(channelIds[league][game.HomeID] ?? {}),
             ...Object.entries(channelIds[league][game.VisitorID] ?? {}),
           ];
 
+          let postedPreview = kvData?.postedPreview ?? false;
+          let postedLineups = kvData?.postedLineups ?? false;
           if (game.GameStatus === GameStatus.NotStarted) {
             if (!kvData?.postedPreview) {
               const previewChannelIds = filterConfigChannels(
@@ -989,11 +1007,116 @@ export const checkPosts = async (
               //   }
               // }
 
+              postedPreview = true;
+            }
+            if (
+              // Check for lineups an hour before start
+              !kvData?.postedLineups &&
+              start.getTime() - now.getTime() <= 3600000
+            ) {
+              const channelIds = filterConfigChannels(
+                channelConfigs,
+                (c) => c.lineups,
+              );
+
+              if (channelIds.length !== 0) {
+                // I'm figuring that the home team is more likely to post their
+                // lineup, but this isn't really based on anything. We just need
+                // someone to check first.
+                let teamId = game.HomeID;
+                let lineupPosts: ThreadsItemPost[] | undefined;
+                lineupPosts = await findLatestLineupPost(league, teamId);
+                if (!lineupPosts || lineupPosts.length === 0) {
+                  teamId = game.VisitorID;
+                  lineupPosts = await findLatestLineupPost(league, teamId);
+                }
+                lineupPosts = lineupPosts ?? [];
+
+                if (lineupPosts.length !== 0) {
+                  for (const channelId of channelIds) {
+                    ctx.waitUntil(
+                      logErrors(
+                        rest.post(Routes.channelMessages(channelId), {
+                          body: {
+                            content: `**Projected lineups - ${game.VisitorCode} @ ${game.HomeCode}**`,
+                            embeds: [
+                              ...getThreadsPostEmbed(
+                                lineupPosts[0],
+                                league,
+                                teamId,
+                              ).map((e) => e.toJSON()),
+                              ...(lineupPosts.length > 1
+                                ? [
+                                    new EmbedBuilder()
+                                      .setColor(
+                                        league && teamId
+                                          ? getTeamColor(league, teamId)
+                                          : league
+                                            ? colors[league]
+                                            : colors.main,
+                                      )
+                                      .setAuthor({
+                                        name: "Other potential lineup posts",
+                                        iconURL:
+                                          lineupPosts[0].user.profile_pic_url ||
+                                          undefined,
+                                      })
+                                      .setDescription(
+                                        lineupPosts
+                                          .slice(1)
+                                          .map((post) => {
+                                            const caption = (
+                                              post.caption?.text ?? "No caption"
+                                            ).replace(/\n/g, " ");
+                                            return `- [${caption.slice(0, 47)}${
+                                              caption.length > 47 ? "..." : ""
+                                            }](${THREADS_BASE}/@${
+                                              post.user.username
+                                            }/post/${post.code}) - ${time(
+                                              post.taken_at,
+                                              "d",
+                                            )}`;
+                                          })
+                                          .join("\n")
+                                          .slice(0, 4096),
+                                      )
+                                      .toJSON(),
+                                  ]
+                                : []),
+                            ],
+                            components: [
+                              new ActionRowBuilder()
+                                .addComponents(
+                                  new ButtonBuilder()
+                                    .setStyle(ButtonStyle.Link)
+                                    .setLabel("View post")
+                                    .setURL(
+                                      `${THREADS_BASE}/@${lineupPosts[0].user.username}/post/${lineupPosts[0].code}`,
+                                    ),
+                                )
+                                .toJSON(),
+                            ],
+                          },
+                        }),
+                      ),
+                    );
+                  }
+                }
+              }
+              postedLineups = true;
+            }
+
+            if (
+              !kvData ||
+              kvData.postedPreview !== postedPreview ||
+              kvData.postedLineups !== postedLineups
+            ) {
               await env.KV.put(
                 kvKey,
                 JSON.stringify({
                   ...kvData,
-                  postedPreview: true,
+                  postedPreview,
+                  postedLineups,
                 } satisfies EventData),
                 {
                   // 2 weeks
@@ -1001,6 +1124,7 @@ export const checkPosts = async (
                 },
               );
             }
+
             continue;
           }
 
