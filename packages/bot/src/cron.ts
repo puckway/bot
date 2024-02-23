@@ -196,6 +196,58 @@ export const getHtGoalEmbed = (
     .toJSON();
 };
 
+export enum PenaltyOffence {
+  Boarding = "3",
+  CrossChecking = "8",
+  DelayOfGame = "9",
+  // The signal for this is just the official holding their elbow, like kneeing
+  // Unfortunately Hockey Canada didn't have an image for it :(
+  Elbowing = "10",
+  HighSticking = "15",
+  Holding = "16",
+  HoldingTheStick = "17",
+  Hooking = "18",
+  Interference = "22",
+  GoalieInterference = "23",
+  Kneeing = "24",
+  Roughing = "30",
+  Slashing = "31",
+  TooManyPlayers = "34",
+  Tripping = "35",
+  UnsportsmanlikeConduct = "37",
+  ObInterference = "82",
+  ObTripping = "83",
+  HeadChecking = "92",
+  BodyChecking = "94",
+}
+
+export const offenceSignalImages: Partial<Record<PenaltyOffence, string>> = {
+  [PenaltyOffence.Boarding]: "boarding.jpg",
+  // [PenaltyOffence.ButtEnding]: "butt-ending.jpg",
+  // [PenaltyOffence.Charging]: "charging.jpg",
+  [PenaltyOffence.HeadChecking]: "checking-to-head.jpg",
+  [PenaltyOffence.CrossChecking]: "cross-checking.jpg",
+  [PenaltyOffence.BodyChecking]: "body-checking.jpg",
+  [PenaltyOffence.HighSticking]: "high-sticking.jpg",
+  [PenaltyOffence.Holding]: "holding.jpg",
+  [PenaltyOffence.HoldingTheStick]: "Holding-stick.jpg",
+  [PenaltyOffence.Hooking]: "hooking.jpg",
+  // Not actually sure what "Ob-Interference" is
+  [PenaltyOffence.ObInterference]: "interference.jpg",
+  [PenaltyOffence.Interference]: "interference.jpg",
+  [PenaltyOffence.GoalieInterference]: "interference.jpg",
+  // [PenaltyOffence.Icing]: "delayed-icing.jpg",
+  [PenaltyOffence.Kneeing]: "kneeing.jpg",
+  // [PenaltyOffence.Misconduct]: "misconduct.jpg",
+  [PenaltyOffence.TooManyPlayers]: "too-many-players.jpg",
+  [PenaltyOffence.Roughing]: "roughing.jpg",
+  [PenaltyOffence.Slashing]: "slashing.jpg",
+  // [PenaltyOffence.Spearing]: "spearing.jpg",
+  [PenaltyOffence.ObTripping]: "tripping.jpg",
+  [PenaltyOffence.Tripping]: "tripping.jpg",
+  [PenaltyOffence.UnsportsmanlikeConduct]: "unsportsmanlike.jpg",
+};
+
 export const getHtPenaltyEmbed = (
   league: HockeyTechLeague,
   game: GameSummary,
@@ -205,16 +257,22 @@ export const getHtPenaltyEmbed = (
   const otherTeam = penalty.home === "1" ? game.visitor : game.home;
   // const period = game.periods[Number(penalty.period_id) as 1 | 2 | 3];
   const utils = getExternalUtils(league);
+  const offenceImage = offenceSignalImages[penalty.offence as PenaltyOffence];
   return new EmbedBuilder()
     .setAuthor({
       name: `💢 ${team.name} ${penalty.penalty_class.toLowerCase()} penalty${
         penalty.penalty_shot === "1" ? " (penalty shot)" : ""
       } (${penalty.minutes_formatted}) 💢`,
       url: utils.gameCenter(game.meta.id),
-      iconURL: getHtTeamLogoUrl(league, team.id),
+      iconURL: htPlayerImageUrl(
+        league,
+        penalty.player_penalized_info.player_id,
+      ),
     })
     .setThumbnail(
-      htPlayerImageUrl(league, penalty.player_penalized_info.player_id),
+      offenceImage
+        ? `http://rulebook.hockeycanada.ca/assets/en/${offenceImage}`
+        : null,
     )
     .setColor(getTeamColor(league, team.id))
     .setDescription(
@@ -230,29 +288,36 @@ export const getHtPenaltyEmbed = (
     )
     .addFields(
       {
-        name: "Penalty Minutes",
-        value: `${getTeamEmoji(league, team.id)} ${team.code} **${
+        name: `${getTeamEmoji(league, team.id)} ${team.code}`,
+        value: `PIM **${
           game.pimTotal[penalty.home === "1" ? "visitor" : "home"]
-        }**`,
+        }**\nPK ${pctStat(
+          // (team penalties - opposition's pp goals) / team penalties
+          game.penalties.filter((p) => p.team_id === team.id).length -
+            game.goals.filter(
+              (g) => g.power_play === "1" && g.team_id === otherTeam.id,
+            ).length,
+          game.penalties.filter((p) => p.team_id === team.id).length,
+        )}`,
         inline: true,
       },
       {
-        name: "Power Play",
-        value: `${getTeamEmoji(league, otherTeam.id)} ${
-          otherTeam.code
-        } ${pctStat(
+        name: `${getTeamEmoji(league, otherTeam.id)} ${otherTeam.code}`,
+        value: `PP ${pctStat(
           game.powerPlayGoals[penalty.home === "1" ? "visitor" : "home"],
           game.powerPlayCount[penalty.home === "1" ? "visitor" : "home"],
         )}`,
         inline: true,
       },
-      // {
-      //   name: "Period",
-      //   inline: true,
-      // },
     )
     .setFooter({
-      text: `${game.visitor.code} @ ${game.home.code} - Game #${game.meta.game_number}`,
+      text: `${game.visitor.code} @ ${game.home.code} - Game #${
+        game.meta.game_number
+      }${
+        offenceImage
+          ? "\nReferee signal image from rulebook.hockeycanada.ca"
+          : ""
+      }`,
     })
     .toJSON();
 };
