@@ -81,8 +81,8 @@ export const getHtGamePreviewEmbed = (
         name: "Season Records",
         value: `${getTeamEmoji(league, game.VisitorID)} ${game.VisitorCode} **${
           game.VisitorWins
-        }-${game.VisitorRegulationLosses}-${game.VisitorOTLosses}-${
-          game.VisitorShootoutLosses
+        }-${game.VisitorRegulationLosses}-${
+          Number(game.VisitorOTLosses) + Number(game.VisitorShootoutLosses)
         }**`,
         inline: true,
       },
@@ -90,14 +90,14 @@ export const getHtGamePreviewEmbed = (
         name: "_ _",
         value: `${getTeamEmoji(league, game.HomeID)} ${game.HomeCode} **${
           game.HomeWins
-        }-${game.HomeRegulationLosses}-${game.HomeOTLosses}-${
-          game.HomeShootoutLosses
+        }-${game.HomeRegulationLosses}-${
+          Number(game.HomeOTLosses) + Number(game.HomeShootoutLosses)
         }**`,
         inline: true,
       },
     )
     .setFooter({
-      text: "Wins - Reg. Losses - OT Losses - SO Losses",
+      text: "Wins - Reg. Losses - OT Losses",
     })
     .toJSON();
 };
