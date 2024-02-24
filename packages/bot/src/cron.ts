@@ -304,7 +304,7 @@ export const getHtPenaltyEmbed = (
     )
     .addFields(
       {
-        name: `${getTeamEmoji(league, team.id)} ${team.code}`,
+        name: `${getTeamEmoji(league, team.id)} ${team.nickname}`,
         value: `PIM **${
           game.pimTotal[penalty.home === "1" ? "visitor" : "home"]
         }**\nPK ${pctStat(
@@ -318,7 +318,7 @@ export const getHtPenaltyEmbed = (
         inline: true,
       },
       {
-        name: `${getTeamEmoji(league, otherTeam.id)} ${otherTeam.code}`,
+        name: `${getTeamEmoji(league, otherTeam.id)} ${otherTeam.nickname}`,
         value: `PP ${pctStat(
           game.powerPlayGoals[penalty.home === "1" ? "visitor" : "home"],
           game.powerPlayCount[penalty.home === "1" ? "visitor" : "home"],
