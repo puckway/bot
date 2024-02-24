@@ -309,11 +309,11 @@ export const getHtPenaltyEmbed = (
           game.pimTotal[penalty.home === "1" ? "visitor" : "home"]
         }**\nPK ${pctStat(
           // (team penalties - opposition's pp goals) / team penalties
-          game.penalties.filter((p) => p.team_id === team.id).length -
-            game.goals.filter(
+          (game.penalties ?? []).filter((p) => p.team_id === team.id).length -
+            (game.goals ?? []).filter(
               (g) => g.power_play === "1" && g.team_id === otherTeam.id,
             ).length,
-          game.penalties.filter((p) => p.team_id === team.id).length,
+          (game.penalties ?? []).filter((p) => p.team_id === team.id).length,
         )}`,
         inline: true,
       },
