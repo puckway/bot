@@ -966,7 +966,16 @@ export const checkPosts = async (
                       if (threadChannelIds.includes(channelId)) {
                         await rest.post(Routes.threads(channelId, message.id), {
                           body: {
-                            name: `${game.VisitorCode} @ ${game.HomeCode} - ${game.GameDate}`,
+                            name: `${game.VisitorCode} @ ${
+                              game.HomeCode
+                            } - ${new Date(
+                              game.GameDateISO8601,
+                            ).toLocaleDateString(undefined, {
+                              weekday: "short",
+                              month: "short",
+                              day: "numeric",
+                              year: "numeric",
+                            })}`,
                           },
                         });
                       }
