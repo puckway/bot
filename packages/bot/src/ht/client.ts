@@ -28,3 +28,15 @@ export const getHtClient = (league: HockeyTechLeague, locale?: "en" | "fr") => {
     adapter: fetchAdapter,
   });
 };
+
+export const getPointsPct = (
+  league: HockeyTechLeague,
+  points: number,
+  gamesPlayed: number,
+): string => {
+  // The number of points that a team gets for a regulation win; this is how
+  // much an individual game is "worth". Hockeytech uses a static value for
+  // this and doesn't account for the PWHL's max 3 points per game.
+  const gamesWorth = league === "pwhl" ? 3 : 2;
+  return (points / (gamesPlayed * (gamesWorth ?? 1))).toPrecision(3);
+};

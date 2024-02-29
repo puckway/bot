@@ -41,6 +41,7 @@ export const getExternalUtils = <L = League>(league: L, locale_?: string) => {
           `${site}/stats/${
             locale === "fr" ? "game-centre" : "game-center"
           }/${gameId}`,
+        standings: () => `${site}/stats/standings`,
       };
     }
     case "ahl": {
@@ -52,6 +53,7 @@ export const getExternalUtils = <L = League>(league: L, locale_?: string) => {
         teamRoster: (teamId: string | number, seasonId?: string | number) =>
           `${site}/stats/roster/${teamId}/${seasonId ?? ""}`,
         gameCenter: (gameId: string) => `${site}/stats/game-center/${gameId}`,
+        standings: () => `${site}/stats/standings`,
       };
     }
     default:

@@ -9,7 +9,7 @@ import {
 } from "../util/l10n";
 import { InteractionContext } from "../interactions";
 import { getLeagueLogoUrl } from "../util/emojis";
-import { getHtClient } from "../ht/client";
+import { HockeyTechLeague, getHtClient, getPointsPct } from "../ht/client";
 import { getBorderCharacters, table } from "table";
 import { getExternalUtils } from "../util/external";
 import { colors } from "../util/colors";
@@ -91,7 +91,7 @@ const s = transformLocalizations({
 
 const getStandingsEmbed = (
   ctx: InteractionContext,
-  league: League,
+  league: HockeyTechLeague,
   headers: string[],
   stats: {
     teamCode: string;
@@ -102,6 +102,7 @@ const getStandingsEmbed = (
     .setAuthor({
       name: `${uni(ctx, league)} Standings`,
       iconURL: getLeagueLogoUrl(league),
+      url: getExternalUtils(league).standings(),
     })
     .setColor(colors[league]);
 
@@ -188,7 +189,11 @@ export const standingsCallback: ChatInputAppCommandCallback = async (ctx) => {
         // team.ot_wins,
         team.ot_losses,
         team.losses,
-        team.percentage,
+        getPointsPct(
+          league as HockeyTechLeague,
+          Number(team.points),
+          Number(team.games_played),
+        ),
       ],
     })),
   );
