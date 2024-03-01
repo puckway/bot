@@ -45,11 +45,6 @@ import { colors, getTeamColor } from "./util/colors";
 import { getTeamEmoji } from "./util/emojis";
 import { toHMS } from "./util/time";
 import { ExternalUtils, getExternalUtils } from "./util/external";
-import {
-  THREADS_BASE,
-  findLatestLineupPost,
-  getThreadsPostEmbed,
-} from "./social/threads";
 import { ThreadsItemPost } from "./types/threads";
 
 const logErrors = async (promise: Promise<any>) => {
@@ -167,10 +162,21 @@ const htPlayerName = (
     "jersey_number" | "first_name" | "last_name" | "player_id"
   >,
   utils: ExternalUtils,
-) =>
-  `#${player.jersey_number} [${player.first_name} ${
-    player.last_name
-  }](${utils.player(player.player_id)})`;
+  opts?: {
+    noNumber?: boolean;
+    noFirstName?: boolean;
+    noLastName?: boolean;
+  },
+) => {
+  let str = "";
+  if (!opts?.noNumber) str += `#${player.jersey_number}`;
+  str += " [";
+  if (!opts?.noFirstName) str += `${player.first_name} `;
+  if (!opts?.noLastName) str += player.last_name;
+  str = str.trim();
+  str += `](${utils.player(player.player_id)})`;
+  return str;
+};
 
 export const getHtGoalEmbed = (
   league: HockeyTechLeague,
@@ -704,6 +710,81 @@ export const getHtPeriodStatusEmbed = (
     .toJSON();
 };
 
+export const getHtLineupEmbed = (
+  league: HockeyTechLeague,
+  game: GameSummary,
+) => {
+  const lines = {
+    visitor: {
+      f: game.visitor_team_lineup.players.filter((p) => p.position === "8"),
+      d: game.visitor_team_lineup.players.filter((p) => p.position === "1"),
+      g: game.visitor_team_lineup.goalies,
+    },
+    home: {
+      f: game.home_team_lineup.players.filter((p) => p.position === "8"),
+      d: game.home_team_lineup.players.filter((p) => p.position === "1"),
+      g: game.home_team_lineup.goalies,
+    },
+  };
+  const utils = getExternalUtils(league);
+
+  return new EmbedBuilder()
+    .setAuthor({
+      name: `${game.visitor.name} @ ${game.home.name} - Game Roster`,
+      url: utils.gameCenter(game.meta.id),
+    })
+    .setColor(getTeamColor(league, game.home.id))
+    .addFields(
+      // TODO sort this by position
+      {
+        name: `${getTeamEmoji(league, game.visitor.id)} ${
+          game.visitor.nickname
+        }`,
+        value: [
+          "**Forwards**",
+          ...lines.visitor.f.map(
+            (player) => `#${player.jersey_number} ${player.last_name}`,
+          ),
+          "\n**Defense**",
+          ...lines.visitor.d.map(
+            (player) => `#${player.jersey_number} ${player.last_name}`,
+          ),
+          "\n**Goalie**",
+          ...lines.visitor.g.map(
+            (player) => `#${player.jersey_number} ${player.last_name}`,
+          ),
+        ]
+          .join("\n")
+          .slice(0, 1024),
+        inline: true,
+      },
+      {
+        name: `${getTeamEmoji(league, game.home.id)} ${game.home.nickname}`,
+        value: [
+          "**Forwards**",
+          ...lines.home.f.map(
+            (player) => `#${player.jersey_number} ${player.last_name}`,
+          ),
+          "\n**Defense**",
+          ...lines.home.d.map(
+            (player) => `#${player.jersey_number} ${player.last_name}`,
+          ),
+          "\n**Goalie**",
+          ...lines.home.g.map(
+            (player) => `#${player.jersey_number} ${player.last_name}`,
+          ),
+        ]
+          .join("\n")
+          .slice(0, 1024),
+        inline: true,
+      },
+    )
+    .setFooter({
+      text: `${game.visitor.code} @ ${game.home.code} - Game #${game.meta.game_number}\nPlayers are sorted by number. Actual line position is not shown.`,
+    })
+    .toJSON();
+};
+
 const filterConfigChannels = (
   configs: [string, NotificationSendConfig][],
   filter: (config: NotificationSendConfig) => unknown,
@@ -1061,7 +1142,7 @@ export const checkPosts = async (
               postedPreview = true;
             }
             if (
-              // Check for lineups an hour before start
+              // Post lineups an hour before start
               !kvData?.postedLineups &&
               start.getTime() - now.getTime() <= 3600000
             ) {
@@ -1071,82 +1152,19 @@ export const checkPosts = async (
               );
 
               if (channelIds.length !== 0) {
-                // I'm figuring that the home team is more likely to post their
-                // lineup, but this isn't really based on anything. We just need
-                // someone to check first.
-                let teamId = game.HomeID;
-                let lineupPosts: ThreadsItemPost[] | undefined;
-                lineupPosts = await findLatestLineupPost(league, teamId);
-                if (!lineupPosts || lineupPosts.length === 0) {
-                  teamId = game.VisitorID;
-                  lineupPosts = await findLatestLineupPost(league, teamId);
-                }
-                lineupPosts = lineupPosts ?? [];
+                const summary = (await client.getGameSummary(Number(game.ID)))
+                  .GC.Gamesummary;
 
-                if (lineupPosts.length !== 0) {
+                if (
+                  summary.home_team_lineup.players.length !== 0 &&
+                  summary.visitor_team_lineup.players.length !== 0
+                ) {
                   for (const channelId of channelIds) {
                     ctx.waitUntil(
                       logErrors(
                         rest.post(Routes.channelMessages(channelId), {
                           body: {
-                            content: `**Projected lineups - ${game.VisitorCode} @ ${game.HomeCode}**`,
-                            embeds: [
-                              ...getThreadsPostEmbed(
-                                lineupPosts[0],
-                                league,
-                                teamId,
-                              ).map((e) => e.toJSON()),
-                              ...(lineupPosts.length > 1
-                                ? [
-                                    new EmbedBuilder()
-                                      .setColor(
-                                        league && teamId
-                                          ? getTeamColor(league, teamId)
-                                          : league
-                                            ? colors[league]
-                                            : colors.main,
-                                      )
-                                      .setAuthor({
-                                        name: "Other potential lineup posts",
-                                        iconURL:
-                                          lineupPosts[0].user.profile_pic_url ||
-                                          undefined,
-                                      })
-                                      .setDescription(
-                                        lineupPosts
-                                          .slice(1)
-                                          .map((post) => {
-                                            const caption = (
-                                              post.caption?.text ?? "No caption"
-                                            ).replace(/\n/g, " ");
-                                            return `- [${caption.slice(0, 47)}${
-                                              caption.length > 47 ? "..." : ""
-                                            }](${THREADS_BASE}/@${
-                                              post.user.username
-                                            }/post/${post.code}) - ${time(
-                                              post.taken_at,
-                                              "d",
-                                            )}`;
-                                          })
-                                          .join("\n")
-                                          .slice(0, 4096),
-                                      )
-                                      .toJSON(),
-                                  ]
-                                : []),
-                            ],
-                            components: [
-                              new ActionRowBuilder()
-                                .addComponents(
-                                  new ButtonBuilder()
-                                    .setStyle(ButtonStyle.Link)
-                                    .setLabel("View post")
-                                    .setURL(
-                                      `${THREADS_BASE}/@${lineupPosts[0].user.username}/post/${lineupPosts[0].code}`,
-                                    ),
-                                )
-                                .toJSON(),
-                            ],
+                            embeds: [getHtLineupEmbed(league, summary)],
                           },
                         }),
                       ),
