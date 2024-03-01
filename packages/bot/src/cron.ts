@@ -347,22 +347,17 @@ export const getHtPenaltyEmbed = (
     )
     .addFields(
       {
-        name: `${getTeamEmoji(league, team.id)} ${team.nickname}`,
-        value: `PIM **${
+        name: "Penalty Minutes",
+        value: `${getTeamEmoji(league, team.id)} ${team.code} **${
           game.pimTotal[penalty.home === "1" ? "visitor" : "home"]
-        }**\nPK ${pctStat(
-          // (team penalties - opposition's pp goals) / team penalties
-          (game.penalties ?? []).filter((p) => p.team_id === team.id).length -
-            (game.goals ?? []).filter(
-              (g) => g.power_play === "1" && g.team_id === otherTeam.id,
-            ).length,
-          (game.penalties ?? []).filter((p) => p.team_id === team.id).length,
-        )}`,
+        }m**`,
         inline: true,
       },
       {
-        name: `${getTeamEmoji(league, otherTeam.id)} ${otherTeam.nickname}`,
-        value: `PP ${pctStat(
+        name: "Power Play",
+        value: `${getTeamEmoji(league, otherTeam.id)} ${
+          otherTeam.code
+        } ${pctStat(
           game.powerPlayGoals[penalty.home === "1" ? "visitor" : "home"],
           game.powerPlayCount[penalty.home === "1" ? "visitor" : "home"],
         )}`,
