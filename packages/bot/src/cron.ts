@@ -113,7 +113,50 @@ export const getHtGamePreviewEmbed = (
       },
     )
     .setFooter({
-      text: "Wins - Reg. Losses - OT Losses",
+      text: `Wins - Reg. Losses - OT Losses\n🆔 ${league}:${game.ID}`,
+    })
+    .toJSON();
+};
+
+export const getHtGamePreviewFinalEmbed = (
+  league: HockeyTechLeague,
+  game: GameSummary,
+  spoilerScores = false,
+) => {
+  const utils = getExternalUtils(league);
+  const embed = getHtStatusEmbed(league, game, spoilerScores);
+
+  let startDate = new Date(game.game_date_iso_8601);
+  let endDate: Date | undefined;
+  const offsetMatch = String(game.game_date_iso_8601).match(
+    /([-+]\d{1,2}:\d{1,2})$/,
+  );
+  if (offsetMatch) {
+    const offset = offsetMatch[1];
+    const day = game.meta.date_played;
+    if (game.meta.start_time) {
+      startDate = new Date(`${day}T${game.meta.start_time}${offset}`);
+    }
+    if (game.meta.end_time) {
+      endDate = new Date(`${day}T${game.meta.end_time}${offset}`);
+    }
+  }
+
+  return new EmbedBuilder(embed)
+    .setAuthor({
+      name: `Game #${game.meta.game_number} - ${game.visitor.name} @ ${game.home.name}`,
+      url: utils.gameCenter(game.meta.id),
+    })
+    .setDescription(
+      [
+        `🏒 ${time(startDate, "t")}${
+          endDate ? ` - ${time(endDate, "t")}` : ""
+        }`,
+        `🏟️ ${game.venue}`,
+      ].join("\n"),
+    )
+    .setFooter({
+      text: `🆔 ${league}:${game.meta.id}`,
     })
     .toJSON();
 };
@@ -354,8 +397,10 @@ const pctStat = (left: number, right: number, showPercent = true) =>
 export const getHtStatusEmbed = (
   league: HockeyTechLeague,
   game: GameSummary,
-  status?: GameStatus,
+  spoilerScores = false,
 ) => {
+  const bar = spoilerScores ? "||" : "";
+  const status = game.meta.status;
   const mvps = game.mvps[0] !== null ? game.mvps : undefined;
   // const period =
   //   game.periods[
@@ -399,11 +444,13 @@ export const getHtStatusEmbed = (
         name: "Score",
         value: `${getTeamEmoji(league, game.visitor.id)} ${
           game.visitor.code
-        } **${game.totalGoals.visitor}** (${
+        } ${bar}**${game.totalGoals.visitor}** (${
           game.totalShots.visitor
-        } shots)\n${getTeamEmoji(league, game.home.id)} ${game.home.code} **${
-          game.totalGoals.home
-        }** (${game.totalShots.home} shots)`,
+        } shots)${bar}\n${getTeamEmoji(league, game.home.id)} ${
+          game.home.code
+        } ${bar}**${game.totalGoals.home}** (${
+          game.totalShots.home
+        } shots)${bar}`,
         inline: true,
       },
       {
@@ -657,7 +704,7 @@ export const getHtPeriodStatusEmbed = (
           },
     )
     .setFooter({
-      text: `${game.VisitorCode} @ ${game.HomeCode} - Game #${game.game_number}`,
+      text: `${game.VisitorCode} @ ${game.HomeCode} - Game #${game.game_number}\n🆔 ${league}:${game.ID}`,
     })
     .toJSON();
 };
@@ -1298,7 +1345,7 @@ export const checkPosts = async (
                       rest.post(Routes.channelMessages(channelId), {
                         body: {
                           embeds: [
-                            getHtStatusEmbed(league, summary, game.GameStatus),
+                            getHtStatusEmbed(league, summary),
                             getHtGoalsEmbed(league, summary),
                           ],
                         },

@@ -40,3 +40,5 @@ export const getPointsPct = (
   const gamesWorth = league === "pwhl" ? 3 : 2;
   return (points / (gamesPlayed * (gamesWorth ?? 1))).toPrecision(3);
 };
+
+export const GLOBAL_GAME_ID_REGEX = /^🆔 (pwhl|ahl):(\d+)$/m;

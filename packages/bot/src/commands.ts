@@ -20,6 +20,7 @@ import { playerCallback, whoisCallback } from "./commands/player";
 import { teamAutocomplete } from "./commands/teamAutocomplete";
 import { InteractionContext } from "./interactions";
 import { standingsCallback } from "./commands/standings";
+import { threadCloseCallback } from "./commands/thread";
 
 export type AppCommandCallbackT<T extends APIInteraction> = (
   ctx: InteractionContext<T>,
@@ -371,6 +372,32 @@ export const appCommands: Record<
       description: "About this bot",
       handlers: {
         BASE: aboutCallback,
+      },
+    },
+    thread: {
+      name: "thread",
+      name_localizations: {
+        fr: "fils-de-discussion",
+      },
+      description: "Manage gameday threads",
+      default_member_permissions: new PermissionsBitField(
+        PermissionFlags.ManageChannels | PermissionFlags.ManageThreads,
+      ).toString(),
+      dm_permission: false,
+      options: [
+        // {
+        //   type: ApplicationCommandOptionType.Subcommand,
+        //   name: "create",
+        // }
+        {
+          type: ApplicationCommandOptionType.Subcommand,
+          name: "close",
+          description:
+            "Close this gameday thread and send a summary message. This will reveal the score in the parent channel.",
+        },
+      ],
+      handlers: {
+        close: threadCloseCallback,
       },
     },
   },
