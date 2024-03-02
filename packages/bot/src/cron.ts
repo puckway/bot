@@ -1263,10 +1263,23 @@ export const checkPosts = async (
 
           for (const play of newPlays) {
             switch (play.event) {
-              case ExtraPXPEvent.PeriodStart: {
+              case GamePlayByPlayEvent.Faceoff: {
+                if (play.s !== 0) break;
+
+                const period = allPlays.find(
+                  (p): p is GamePlayByPlayEventPeriodStart =>
+                    p.event === ExtraPXPEvent.PeriodStart &&
+                    p.period_id === play.period,
+                );
+                if (!period) break;
+                // We have now confirmed that the period has started.
+                // Some leagues tend to "begin" the game prematurely, so using
+                // a `PeriodStart` case would result in period start messages
+                // being sent as much as 20 minutes too soon.
+
                 const channelIds = filterConfigChannels(
                   channelConfigs,
-                  (c) => c.periods || (c.start && play.period_id === "1"),
+                  (c) => c.periods || (c.start && period.period_id === "1"),
                 );
                 const threadChannelIds = filterConfigChannels(
                   channelConfigs,
@@ -1289,7 +1302,7 @@ export const checkPosts = async (
                           Routes.channelMessages(channelId),
                           {
                             body: {
-                              content: `**${play.period_name} Period Starting - ${game.VisitorCode} @ ${game.HomeCode}**`,
+                              content: `**${period.period_name} Period Starting - ${game.VisitorCode} @ ${game.HomeCode}**`,
                               embeds: [
                                 getHtPeriodStatusEmbed(league, game, allPlays),
                               ],
@@ -1298,7 +1311,7 @@ export const checkPosts = async (
                         )) as APIMessage;
                         if (
                           threadChannelIds.includes(channelId) &&
-                          play.period_id === "1"
+                          period.period_id === "1"
                         ) {
                           await rest.post(
                             Routes.threads(channelId, message.id),
@@ -1315,7 +1328,7 @@ export const checkPosts = async (
                   );
                 }
 
-                if (play.period_id === "1") {
+                if (period.period_id === "1") {
                   for (const channelId of threadChannelIds.filter(
                     // Assume threads for the other configs have already been created
                     (id) =>
