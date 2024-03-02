@@ -292,7 +292,7 @@ export const getHtGoalEmbed = (
       {
         name: "Period",
         value: `${toHMS(Number(period.length) - goal.s)} left in the ${
-          period?.long_name
+          period.long_name
         } period`,
         inline: true,
       },
@@ -362,7 +362,7 @@ export const getHtPenaltyEmbed = (
 ) => {
   const team = penalty.home === "1" ? game.home : game.visitor;
   const otherTeam = penalty.home === "1" ? game.visitor : game.home;
-  // const period = game.periods[Number(penalty.period_id) as 1 | 2 | 3];
+  const period = game.periods[Number(penalty.period_id) as 1 | 2 | 3];
   const utils = getExternalUtils(league);
   const offenceImage = offenceSignalImages[penalty.offence as PenaltyOffence];
   return new EmbedBuilder()
@@ -409,6 +409,13 @@ export const getHtPenaltyEmbed = (
           game.powerPlayGoals[penalty.home === "1" ? "visitor" : "home"],
           game.powerPlayCount[penalty.home === "1" ? "visitor" : "home"],
         )}`,
+        inline: true,
+      },
+      {
+        name: "Period",
+        value: `${toHMS(
+          Number(period?.length ?? 1200) - penalty.s,
+        )} left in the ${penalty.period} period`,
         inline: true,
       },
     )
