@@ -17,21 +17,21 @@ import type { APILightPlayer } from "khl-api-types";
 import { getBorderCharacters, table } from "table";
 import { ChatInputAppCommandCallback } from "../commands";
 import { SelectMenuCallback } from "../components";
-import { InteractionContext } from "../interactions";
+import { DBWithSchema, getDb } from "../db";
+import { League } from "../db/schema";
+import { getEpHtPlayer } from "../ep/rest";
 import { HockeyTechLeague, getHtClient } from "../ht/client";
 import { getHtTeamLogoUrl, getLeagueTeams } from "../ht/team";
+import { InteractionContext } from "../interactions";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { countryCodeEmoji, getTeamEmoji } from "../util/emojis";
+import { getExternalUtils } from "../util/external";
 import {
   getHtLocale,
   getKhlLocale,
   transformLocalizations,
 } from "../util/l10n";
-import { getEpHtPlayer } from "../ep/rest";
-import { DBWithSchema, getDb } from "../db";
-import { League } from "../db/schema";
-import { getExternalUtils } from "../util/external";
 
 type KhlPartialPlayer = Pick<APILightPlayer, "id" | "name" | "shirt_number"> & {
   team: { name: string } | null;

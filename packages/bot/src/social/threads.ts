@@ -1,8 +1,8 @@
 import { EmbedBuilder } from "@discordjs/builders";
+import { Env } from "..";
 import { League } from "../db/schema";
 import { ThreadsAPIGetPosts, ThreadsItemPost } from "../types/threads";
 import { colors, getTeamColor } from "../util/colors";
-import { Env } from "..";
 
 // I'm using Threads because my options are basically between Twitter and
 // Threads, and I don't want to use Twitter.

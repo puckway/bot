@@ -17,10 +17,10 @@ import { aboutCallback } from "./commands/about";
 import { htGamedayCallback, scheduleCallback } from "./commands/calendar";
 import { notificationsCallback } from "./commands/notifications";
 import { playerCallback, whoisCallback } from "./commands/player";
-import { teamAutocomplete } from "./commands/teamAutocomplete";
-import { InteractionContext } from "./interactions";
 import { standingsCallback } from "./commands/standings";
+import { teamAutocomplete } from "./commands/teamAutocomplete";
 import { threadCloseCallback } from "./commands/thread";
+import { InteractionContext } from "./interactions";
 
 export type AppCommandCallbackT<T extends APIInteraction> = (
   ctx: InteractionContext<T>,

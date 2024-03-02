@@ -1,7 +1,7 @@
+import { and, eq } from "drizzle-orm";
 import type { NumericBoolean, PlayerBio, RosterPlayer } from "hockeytech";
 import { DBWithSchema } from "../db";
 import { League, players } from "../db/schema";
-import { and, eq } from "drizzle-orm";
 import { HockeyTechLeague } from "../ht/client";
 
 export interface EliteProspectsSearchResult {

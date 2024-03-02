@@ -8,16 +8,16 @@ import {
 } from "discord-api-types/v10";
 import { ChatInputAppCommandCallback } from "../commands";
 import {
+  getHtGamePreviewFinalEmbed,
+  getHtGoalsEmbed,
+  getHtStatusEmbed,
+} from "../cron";
+import {
   GLOBAL_GAME_ID_REGEX,
   HockeyTechLeague,
   getHtClient,
 } from "../ht/client";
 import { getHtLocale } from "../util/l10n";
-import {
-  getHtGamePreviewFinalEmbed,
-  getHtGoalsEmbed,
-  getHtStatusEmbed,
-} from "../cron";
 
 export const threadCloseCallback: ChatInputAppCommandCallback = async (ctx) => {
   const { channel } = ctx.interaction;

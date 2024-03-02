@@ -28,8 +28,10 @@ import {
   PlayerInfo,
   ScorebarMatch,
 } from "hockeytech";
+import { getBorderCharacters, table } from "table";
 import { Env } from ".";
 import { NotificationSendConfig } from "./commands/notifications";
+import { HockeyTechTeamStanding, getHtStandings } from "./commands/standings";
 import { getDb } from "./db";
 import {
   HypeMinute,
@@ -41,13 +43,11 @@ import {
 import { HockeyTechLeague, getHtClient, getPointsPct } from "./ht/client";
 import { htPlayerImageUrl } from "./ht/player";
 import { getHtTeamLogoUrl } from "./ht/team";
+import { ThreadsItemPost } from "./types/threads";
 import { colors, getTeamColor } from "./util/colors";
 import { getTeamEmoji } from "./util/emojis";
-import { toHMS } from "./util/time";
 import { ExternalUtils, getExternalUtils } from "./util/external";
-import { ThreadsItemPost } from "./types/threads";
-import { HockeyTechTeamStanding, getHtStandings } from "./commands/standings";
-import { getBorderCharacters, table } from "table";
+import { toHMS } from "./util/time";
 
 const logErrors = async (promise: Promise<any>) => {
   try {
