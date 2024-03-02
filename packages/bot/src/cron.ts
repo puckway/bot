@@ -38,7 +38,7 @@ import {
   leagues,
   notifications,
 } from "./db/schema";
-import { HockeyTechLeague, getHtClient } from "./ht/client";
+import { HockeyTechLeague, getHtClient, getPointsPct } from "./ht/client";
 import { htPlayerImageUrl } from "./ht/player";
 import { getHtTeamLogoUrl } from "./ht/team";
 import { colors, getTeamColor } from "./util/colors";
@@ -46,6 +46,8 @@ import { getTeamEmoji } from "./util/emojis";
 import { toHMS } from "./util/time";
 import { ExternalUtils, getExternalUtils } from "./util/external";
 import { ThreadsItemPost } from "./types/threads";
+import { HockeyTechTeamStanding, getHtStandings } from "./commands/standings";
+import { getBorderCharacters, table } from "table";
 
 const logErrors = async (promise: Promise<any>) => {
   try {
@@ -71,8 +73,13 @@ const roundToHypeMinute = (minutes: number): HypeMinute | undefined => {
 export const getHtGamePreviewEmbed = (
   league: HockeyTechLeague,
   game: ScorebarMatch,
+  standings?: HockeyTechTeamStanding[],
 ) => {
   const utils = getExternalUtils(league);
+  const visitorStd = standings?.find((t) => t.team_id === game.VisitorID);
+  const homeStd = standings?.find((t) => t.team_id === game.HomeID);
+  const showingStandings = !!visitorStd && !!homeStd;
+
   return new EmbedBuilder()
     .setAuthor({
       name: `Game #${game.game_number} - ${game.VisitorLongName} @ ${game.HomeLongName}`,
@@ -88,27 +95,64 @@ export const getHtGamePreviewEmbed = (
       ].join("\n"),
     )
     .addFields(
-      {
-        name: "Season Records",
-        value: `${getTeamEmoji(league, game.VisitorID)} ${game.VisitorCode} **${
-          game.VisitorWins
-        }-${game.VisitorRegulationLosses}-${
-          Number(game.VisitorOTLosses) + Number(game.VisitorShootoutLosses)
-        }**`,
-        inline: true,
-      },
-      {
-        name: "_ _",
-        value: `${getTeamEmoji(league, game.HomeID)} ${game.HomeCode} **${
-          game.HomeWins
-        }-${game.HomeRegulationLosses}-${
-          Number(game.HomeOTLosses) + Number(game.HomeShootoutLosses)
-        }**`,
-        inline: true,
-      },
+      visitorStd && homeStd
+        ? [visitorStd, homeStd]
+            .sort((a, b) => a.rank - b.rank)
+            .map((std) => ({
+              name: `#${std.rank} - ${getTeamEmoji(league, std.team_id)} ${
+                std.team_name
+              }`,
+              value: `\`\`\`apache\n${table(
+                [
+                  ["GP", "PTS", "W", "OTL", "L", "PCT"],
+                  ["---", "----", "--", "----", "--", "----"],
+                  [
+                    std.games_played,
+                    std.points,
+                    std.wins,
+                    std.ot_losses,
+                    std.losses,
+                    getPointsPct(
+                      league,
+                      Number(std.points),
+                      Number(std.games_played),
+                    ),
+                  ],
+                ],
+                {
+                  border: getBorderCharacters("void"),
+                  columnDefault: { paddingLeft: 0, paddingRight: 1 },
+                  drawHorizontalLine: () => false,
+                },
+              )}\`\`\``,
+              inline: false,
+            }))
+        : [
+            {
+              name: "Season Records",
+              value: `${getTeamEmoji(league, game.VisitorID)} ${
+                game.VisitorCode
+              } **${game.VisitorWins}-${game.VisitorRegulationLosses}-${
+                Number(game.VisitorOTLosses) +
+                Number(game.VisitorShootoutLosses)
+              }**`,
+              inline: true,
+            },
+            {
+              name: "_ _",
+              value: `${getTeamEmoji(league, game.HomeID)} ${game.HomeCode} **${
+                game.HomeWins
+              }-${game.HomeRegulationLosses}-${
+                Number(game.HomeOTLosses) + Number(game.HomeShootoutLosses)
+              }**`,
+              inline: true,
+            },
+          ],
     )
     .setFooter({
-      text: `Wins - Reg. Losses - OT Losses\n🆔 ${league}:${game.ID}`,
+      text: `${
+        showingStandings ? "" : "Wins - Reg. Losses - OT Losses\n"
+      }🆔 ${league}:${game.ID}`,
     })
     .toJSON();
 };
@@ -1074,6 +1118,7 @@ export const checkPosts = async (
                 channelConfigs,
                 (c) => c.threads,
               );
+              const standings = await getHtStandings(client);
               for (const channelId of previewChannelIds) {
                 ctx.waitUntil(
                   logErrors(
@@ -1082,7 +1127,13 @@ export const checkPosts = async (
                         Routes.channelMessages(channelId),
                         {
                           body: {
-                            embeds: [getHtGamePreviewEmbed(league, game)],
+                            embeds: [
+                              getHtGamePreviewEmbed(
+                                league,
+                                game,
+                                standings ?? undefined,
+                              ),
+                            ],
                           },
                         },
                       )) as APIMessage;

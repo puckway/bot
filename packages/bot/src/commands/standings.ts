@@ -14,8 +14,9 @@ import { getBorderCharacters, table } from "table";
 import { getExternalUtils } from "../util/external";
 import { colors } from "../util/colors";
 import { MessageFlags } from "discord-api-types/v10";
+import HockeyTech from "hockeytech";
 
-interface HockeyTechTeamStanding {
+export interface HockeyTechTeamStanding {
   team_id: string;
   name: string;
   nickname: string;
@@ -125,14 +126,25 @@ const getStandingsEmbed = (
   return embed.toJSON();
 };
 
-export const standingsCallback: ChatInputAppCommandCallback = async (ctx) => {
-  const league = ctx.getStringOption("league").value as League;
-  if (league === "khl") {
-    const utils = getExternalUtils(league, getKhlLocale(ctx));
-    // biome-ignore lint/style/noNonNullAssertion: Present for KHL leagues
-    return ctx.reply(utils.standings!());
+export const getHtStandings = async (
+  client: HockeyTech,
+  sort?: string,
+  seasonId?: number,
+) => {
+  let sid = seasonId;
+  const seasons = (await client.getSeasonList()).SiteKit.Seasons;
+  if (seasons.length === 0 && seasonId === undefined) {
+    return null;
+  } else if (seasons.length) {
+    sid = Number(
+      (seasons.find((s) => s.career !== "0") ?? seasons[0]).season_id,
+    );
   }
-  const sort = (ctx.getStringOption("sort").value || undefined) as
+  if (!sid) {
+    return null;
+  }
+
+  const sortVal = sort as
     | "games_played"
     | "games_remaining"
     | "points"
@@ -143,26 +155,34 @@ export const standingsCallback: ChatInputAppCommandCallback = async (ctx) => {
     | "percentage"
     | undefined;
 
+  const standings = (
+    (await client.getStandings(sid, "conference", "standings")).SiteKit
+      .Statviewtype as HockeyTechTeamStanding[]
+  )
+    .filter((team) => !!team.team_code)
+    .sort((a, b) =>
+      sortVal ? Number(b[sortVal] ?? 0) - Number(a[sortVal] ?? 0) : 0,
+    );
+  return standings;
+};
+
+export const standingsCallback: ChatInputAppCommandCallback = async (ctx) => {
+  const league = ctx.getStringOption("league").value as League;
+  if (league === "khl") {
+    const utils = getExternalUtils(league, getKhlLocale(ctx));
+    // biome-ignore lint/style/noNonNullAssertion: Present for KHL leagues
+    return ctx.reply(utils.standings!());
+  }
+  const sort = ctx.getStringOption("sort").value || undefined;
+
   const client = getHtClient(league, getHtLocale(ctx));
-  const seasons = (await client.getSeasonList()).SiteKit.Seasons;
-  if (seasons.length === 0) {
+  const standings = await getHtStandings(client, sort);
+  if (!standings) {
     return ctx.reply({
       content: s(ctx, "noSeasons"),
       flags: MessageFlags.Ephemeral,
     });
   }
-
-  const standings = (
-    (
-      await client.getStandings(
-        Number((seasons.find((s) => s.career !== "0") ?? seasons[0]).season_id),
-        "conference",
-        "standings",
-      )
-    ).SiteKit.Statviewtype as HockeyTechTeamStanding[]
-  )
-    .filter((team) => !!team.team_code)
-    .sort((a, b) => (sort ? Number(b[sort] ?? 0) - Number(a[sort] ?? 0) : 0));
 
   const embed = getStandingsEmbed(
     ctx,
