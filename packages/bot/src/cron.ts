@@ -307,8 +307,6 @@ export enum PenaltyOffence {
   Boarding = "3",
   CrossChecking = "8",
   DelayOfGame = "9",
-  // The signal for this is just the official holding their elbow, like kneeing
-  // Unfortunately Hockey Canada didn't have an image for it :(
   Elbowing = "10",
   HighSticking = "15",
   Holding = "16",
@@ -329,30 +327,30 @@ export enum PenaltyOffence {
 }
 
 export const offenceSignalImages: Partial<Record<PenaltyOffence, string>> = {
-  [PenaltyOffence.Boarding]: "boarding.jpg",
-  // [PenaltyOffence.ButtEnding]: "butt-ending.jpg",
-  // [PenaltyOffence.Charging]: "charging.jpg",
-  [PenaltyOffence.HeadChecking]: "checking-to-head.jpg",
-  [PenaltyOffence.CrossChecking]: "cross-checking.jpg",
-  [PenaltyOffence.BodyChecking]: "body-checking.jpg",
-  [PenaltyOffence.HighSticking]: "high-sticking.jpg",
-  [PenaltyOffence.Holding]: "holding.jpg",
-  [PenaltyOffence.HoldingTheStick]: "Holding-stick.jpg",
-  [PenaltyOffence.Hooking]: "hooking.jpg",
+  [PenaltyOffence.Boarding]: "boarding.png",
+  // [PenaltyOffence.ButtEnding]: "butt-ending.png",
+  // [PenaltyOffence.Charging]: "charging.png",
+  [PenaltyOffence.DelayOfGame]: "delaying-the-game.png",
+  [PenaltyOffence.HeadChecking]: "illegal-check-to-head.png",
+  [PenaltyOffence.CrossChecking]: "cross-checking.png",
+  [PenaltyOffence.BodyChecking]: "checking-from-behind.png",
+  [PenaltyOffence.HighSticking]: "high-sticking.png",
+  [PenaltyOffence.Holding]: "holding.png",
+  // [PenaltyOffence.HoldingTheStick]: "Holding-stick.jpg",
+  [PenaltyOffence.Hooking]: "hooking.png",
   // Not actually sure what "Ob-Interference" is
-  [PenaltyOffence.ObInterference]: "interference.jpg",
-  [PenaltyOffence.Interference]: "interference.jpg",
-  [PenaltyOffence.GoalieInterference]: "interference.jpg",
-  // [PenaltyOffence.Icing]: "delayed-icing.jpg",
-  [PenaltyOffence.Kneeing]: "kneeing.jpg",
-  // [PenaltyOffence.Misconduct]: "misconduct.jpg",
-  [PenaltyOffence.TooManyPlayers]: "too-many-players.jpg",
-  [PenaltyOffence.Roughing]: "roughing.jpg",
-  [PenaltyOffence.Slashing]: "slashing.jpg",
-  // [PenaltyOffence.Spearing]: "spearing.jpg",
-  [PenaltyOffence.ObTripping]: "tripping.jpg",
-  [PenaltyOffence.Tripping]: "tripping.jpg",
-  [PenaltyOffence.UnsportsmanlikeConduct]: "unsportsmanlike.jpg",
+  [PenaltyOffence.ObInterference]: "interference.png",
+  [PenaltyOffence.Interference]: "interference.png",
+  [PenaltyOffence.GoalieInterference]: "interference.png",
+  [PenaltyOffence.Elbowing]: "elbowing.png",
+  [PenaltyOffence.Kneeing]: "kneeing.png",
+  // [PenaltyOffence.Misconduct]: "misconduct.png",
+  [PenaltyOffence.Roughing]: "roughing.png",
+  [PenaltyOffence.Slashing]: "slashing.png",
+  // [PenaltyOffence.Spearing]: "spearing.png",
+  [PenaltyOffence.ObTripping]: "tripping.png",
+  [PenaltyOffence.Tripping]: "tripping.png",
+  [PenaltyOffence.UnsportsmanlikeConduct]: "unsportsmanlike-conduct.png",
 };
 
 export const getHtPenaltyEmbed = (
@@ -377,9 +375,7 @@ export const getHtPenaltyEmbed = (
       ),
     })
     .setThumbnail(
-      offenceImage
-        ? `http://rulebook.hockeycanada.ca/assets/en/${offenceImage}`
-        : null,
+      offenceImage ? `https://puckway.shay.cat/signals/${offenceImage}` : null,
     )
     .setColor(getTeamColor(league, team.id))
     .setDescription(
@@ -424,7 +420,7 @@ export const getHtPenaltyEmbed = (
         game.meta.game_number
       }${
         offenceImage
-          ? "\nReferee signal image from rulebook.hockeycanada.ca"
+          ? "\nReferee signal image from the PWHL rulebook (Jan. 2024, #29)"
           : ""
       }`,
     })
