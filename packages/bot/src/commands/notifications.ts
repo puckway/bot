@@ -52,7 +52,7 @@ const s = transformLocalizations({
     threadsDescription: "Public chat thread under the preview or start message",
     lineups: "Lineups",
     lineupsDescription:
-      "Projected lineups for applicable teams. Sent 1 hour before game time",
+      "Projected roster for the game. Sent 1 hour before game time",
     hype: "Hype messages",
     hypeDescription: "Sent at intervals before the game starts",
     start: "Game start",
@@ -81,7 +81,7 @@ const s = transformLocalizations({
     threads: "Fils de discussion",
     lineups: "Formations",
     lineupsDescription:
-      "Alignements projetés pour certaines équipes. Envoyé 1 heure avant le match",
+      "Liste projetée pour le match. Envoyé 1 heure avant le match",
     hype: "Messages d'enthousiasme",
     start: "Début du jeu",
     periods: "Périodes",
