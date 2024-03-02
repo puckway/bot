@@ -393,7 +393,7 @@ export const appCommands: Record<
           type: ApplicationCommandOptionType.Subcommand,
           name: "close",
           description:
-            "Close this gameday thread and send a summary message. This will reveal the score in the parent channel.",
+            "Close this gameday thread & send a summary. This will reveal the score in the parent channel.",
         },
       ],
       handlers: {

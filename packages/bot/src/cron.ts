@@ -1,16 +1,6 @@
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  EmbedBuilder,
-  time,
-} from "@discordjs/builders";
+import { EmbedBuilder, time } from "@discordjs/builders";
 import { REST } from "@discordjs/rest";
-import {
-  APIMessage,
-  ButtonStyle,
-  ChannelType,
-  Routes,
-} from "discord-api-types/v10";
+import { APIMessage, ChannelType, Routes } from "discord-api-types/v10";
 import { eq } from "drizzle-orm";
 import {
   GCGamePlayByPlay,
@@ -43,8 +33,7 @@ import {
 import { HockeyTechLeague, getHtClient, getPointsPct } from "./ht/client";
 import { htPlayerImageUrl } from "./ht/player";
 import { getHtTeamLogoUrl } from "./ht/team";
-import { ThreadsItemPost } from "./types/threads";
-import { colors, getTeamColor } from "./util/colors";
+import { getTeamColor } from "./util/colors";
 import { getTeamEmoji } from "./util/emojis";
 import { ExternalUtils, getExternalUtils } from "./util/external";
 import { toHMS } from "./util/time";
