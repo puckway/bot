@@ -228,16 +228,14 @@ export const getHtGoalEmbed = (
   goalPlays: GamePlayByPlayEventGoal[],
   goal: GamePlayByPlayEventGoal,
 ) => {
-  let qualifiers = "";
-  if (goal.empty_net === "1") qualifiers += " empty net";
-  if (goal.game_tieing === "1") qualifiers += " game-tying";
-  // Doesn't really make sense for live games
-  // if (goal.game_winning === "1") qualifiers += " game-winning";
-  if (goal.short_handed === "1") qualifiers += " shorthanded";
-  else if (goal.power_play === "1") qualifiers += " power play";
-  else qualifiers += " even strength";
-  if (goal.penalty_shot === "1") qualifiers += " penalty shot";
-  if (goal.insurance_goal === "1") qualifiers += " insurance";
+  const qualifier =
+    goal.empty_net === "1"
+      ? "empty net"
+      : goal.short_handed === "1"
+        ? "shorthanded"
+        : goal.power_play === "1"
+          ? "power play"
+          : "even strength";
 
   // We calculate goals like this in order to compensate for past goals
   // (not the most recent one) that we have not previously sent.
@@ -247,7 +245,7 @@ export const getHtGoalEmbed = (
   const utils = getExternalUtils(league);
   return new EmbedBuilder()
     .setAuthor({
-      name: `🚨 ${goalTeam.name}${qualifiers} goal 🚨`,
+      name: `🚨 ${goalTeam.name} ${qualifier} goal 🚨`,
       url: utils.gameCenter(game.meta.id),
       iconURL: getHtTeamLogoUrl(league, goalTeam.id),
     })
