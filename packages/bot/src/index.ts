@@ -254,6 +254,19 @@ router
     console.error("Unknown Type");
     return respond({ error: "Unknown Type" });
   })
+  // .get("/t", async (request, env: Env) => {
+  //   const gameId = Number(new URL(request.url).searchParams.get("game"));
+  //   const client = getHtClient("pwhl");
+  //   const plays = (await client.getGamePlayByPlay(gameId)).GC.Pxpverbose;
+  //   return json(
+  //     plays
+  //       .filter(
+  //         (p): p is GamePlayByPlayEventPenalty =>
+  //           p.event === GamePlayByPlayEvent.Penalty,
+  //       )
+  //       .map((p) => ({ offence: p.offence, id: p.lang_penalty_description })),
+  //   );
+  // })
   .all("*", () => new Response("Not Found.", { status: 404 }));
 
 async function verifyDiscordRequest(request: Request, env: Env) {
