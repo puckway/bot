@@ -772,45 +772,54 @@ export const getHtLineupEmbed = (
     })
     .setColor(getTeamColor(league, game.home.id))
     .addFields(
-      // TODO sort this by position
       {
         name: `${getTeamEmoji(league, game.visitor.id)} ${
           game.visitor.nickname
-        }`,
-        value: [
-          "**Forwards**",
-          ...lines.visitor.f.map(
-            (player) => `#${player.jersey_number} ${player.last_name}`,
-          ),
-          "\n**Defense**",
-          ...lines.visitor.d.map(
-            (player) => `#${player.jersey_number} ${player.last_name}`,
-          ),
-          "\n**Goalie**",
-          ...lines.visitor.g.map(
-            (player) => `#${player.jersey_number} ${player.last_name}`,
-          ),
-        ]
+        }\nForwards`,
+        value: lines.visitor.f
+          .map((player) => `#${player.jersey_number} ${player.last_name}`)
           .join("\n")
           .slice(0, 1024),
         inline: true,
       },
       {
-        name: `${getTeamEmoji(league, game.home.id)} ${game.home.nickname}`,
-        value: [
-          "**Forwards**",
-          ...lines.home.f.map(
-            (player) => `#${player.jersey_number} ${player.last_name}`,
-          ),
-          "\n**Defense**",
-          ...lines.home.d.map(
-            (player) => `#${player.jersey_number} ${player.last_name}`,
-          ),
-          "\n**Goalie**",
-          ...lines.home.g.map(
-            (player) => `#${player.jersey_number} ${player.last_name}`,
-          ),
-        ]
+        name: "_ _\nDefense",
+        value: lines.visitor.d
+          .map((player) => `#${player.jersey_number} ${player.last_name}`)
+          .join("\n")
+          .slice(0, 1024),
+        inline: true,
+      },
+      {
+        name: "_ _\nGoalie",
+        value: lines.visitor.g
+          .map((player) => `#${player.jersey_number} ${player.last_name}`)
+          .join("\n")
+          .slice(0, 1024),
+        inline: true,
+      },
+      {
+        name: `${getTeamEmoji(league, game.home.id)} ${
+          game.home.nickname
+        }\nForwards`,
+        value: lines.home.f
+          .map((player) => `#${player.jersey_number} ${player.last_name}`)
+          .join("\n")
+          .slice(0, 1024),
+        inline: true,
+      },
+      {
+        name: "_ _\nDefense",
+        value: lines.home.d
+          .map((player) => `#${player.jersey_number} ${player.last_name}`)
+          .join("\n")
+          .slice(0, 1024),
+        inline: true,
+      },
+      {
+        name: "_ _\nGoalie",
+        value: lines.home.g
+          .map((player) => `#${player.jersey_number} ${player.last_name}`)
           .join("\n")
           .slice(0, 1024),
         inline: true,
