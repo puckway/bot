@@ -96,6 +96,7 @@ const getStandingsEmbed = (
   headers: string[],
   stats: {
     teamCode: string;
+    clinch?: string;
     values: string[];
   }[],
 ) => {
@@ -112,7 +113,11 @@ const getStandingsEmbed = (
   tableData.push(tableData[0].map((e) => dashes(e.length + 1)));
 
   tableData.push(
-    ...stats.map((stat, i) => [String(i + 1), stat.teamCode, ...stat.values]),
+    ...stats.map((stat, i) => [
+      String(i + 1),
+      `${stat.teamCode}${stat.clinch ? ` (${stat.clinch})` : ""}`,
+      ...stat.values,
+    ]),
   );
 
   embed.setDescription(
@@ -197,10 +202,9 @@ export const standingsCallback: ChatInputAppCommandCallback = async (ctx) => {
       "L",
       "PCT",
     ],
-    standings
-
-    .map((team) => ({
+    standings.map((team) => ({
       teamCode: team.team_code,
+      clinch: team.clinched || undefined,
       values: [
         team.games_played,
         // team.games_remaining,
