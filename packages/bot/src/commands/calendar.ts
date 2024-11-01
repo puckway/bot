@@ -8,6 +8,7 @@ import * as api from "api";
 import {
   APIActionRowComponent,
   APIButtonComponent,
+  APIChatInputApplicationCommandInteraction,
   ButtonStyle,
   GuildScheduledEventEntityType,
   GuildScheduledEventPrivacyLevel,
@@ -16,18 +17,19 @@ import {
   Routes,
 } from "discord-api-types/v10";
 import { PermissionFlags } from "discord-bitflag";
-import { GameStatus, GamesByDate } from "hockeytech";
+import { GameStatus, GamesByDate, Schedule } from "hockeytech";
 import { type APIEvent } from "khl-api-types";
 import { ChatInputAppCommandCallback } from "../commands";
 import { ButtonCallback, MinimumKVComponentState } from "../components";
 import { League } from "../db/schema";
-import { HockeyTechLeague, getHtClient } from "../ht/client";
-import { getLeagueTeams } from "../ht/team";
+import { HockeyTechLeague, getHtClient, hockeyTechLeagues } from "../ht/client";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { getLeagueLogoUrl, getTeamEmoji } from "../util/emojis";
 import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
 import { getOffset } from "../util/time";
+import { leagueTeams } from "../ht/teams";
+import { InteractionContext } from "../interactions";
 
 export const DATE_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
 
@@ -192,18 +194,128 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
   ];
 };
 
-export const scheduleCallback: ChatInputAppCommandCallback = async (ctx) => {
+const isoDate = (game: GamesByDate | Schedule) =>
+  `${game.date_played}T${game.schedule_time}${getOffset(game.timezone)}`;
+
+const sendScheduleMessage = async (
+  ctx: InteractionContext<APIChatInputApplicationCommandInteraction>,
+  games: (GamesByDate | Schedule)[],
+) => {
+  const league = ctx.getStringOption("league").value as HockeyTechLeague;
+
+  const today = new Date().toISOString().split("T")[0];
+  const teamId = ctx.getStringOption("team")?.value;
+  const team = teamId
+    ? leagueTeams[league].find((t) => t.id === teamId)
+    : undefined;
+
+  const displayDate = games.length ? new Date(isoDate(games[0])) : new Date();
+  const title = `${s(ctx, "schedule")}${
+    team ? ` - ${team.nickname}` : ""
+  } - ${displayDate.toLocaleString(ctx.getLocale(), {
+    month: "long",
+    day: ctx.interaction.data.name === "day" ? "numeric" : undefined,
+    year: "numeric",
+  })}`;
+
+  const embed = new EmbedBuilder()
+    .setAuthor({
+      name: uni(ctx, league),
+      iconURL: getLeagueLogoUrl(league),
+    })
+    .setTitle(title)
+    .setColor(colors[league])
+    .setDescription(
+      games
+        .map((game) => {
+          const startAt = new Date(isoDate(game));
+          const style =
+            game.date_played === today || ctx.interaction.data.name === "day"
+              ? "t"
+              : "d";
+          const homeEmoji = getTeamEmoji(league, game.home_team);
+          const awayEmoji = getTeamEmoji(league, game.visiting_team);
+          const line =
+            game.status === GameStatus.NotStarted
+              ? `🔴 ${time(startAt, style)} ${awayEmoji} ${
+                  game.visiting_team_code
+                } @ ${homeEmoji} ${game.home_team_code}`
+              : `${
+                  game.status === GameStatus.Final ||
+                  game.status === GameStatus.UnofficialFinal
+                    ? "🏁"
+                    : "🟢"
+                } ${time(startAt, style)} ${awayEmoji} ${
+                  game.visiting_team_code
+                } **${game.visiting_goal_count}** - **${
+                  game.home_goal_count
+                }** ${homeEmoji} ${game.home_team_code}\n${game.game_status}`;
+
+          return line;
+        })
+        .join("\n\n")
+        .trim()
+        .slice(0, 4096) || s(ctx, "noGames"),
+    )
+    .toJSON();
+
+  let components: APIActionRowComponent<APIButtonComponent>[] = [];
+  if (games.length > 0) {
+    components = [
+      new ActionRowBuilder<ButtonBuilder>()
+        .addComponents(
+          ...(await storeComponents(ctx.env.KV, [
+            new ButtonBuilder()
+              .setStyle(ButtonStyle.Primary)
+              .setLabel("Add all as server events")
+              .setDisabled(
+                games.filter((g) => g.status === GameStatus.NotStarted)
+                  .length === 0,
+              ),
+            {
+              componentRoutingId: "add-schedule-events",
+              componentTimeout: 600,
+              componentOnce: true,
+              league,
+              games: games
+                .filter((game) => game.status === GameStatus.NotStarted)
+                .map((game) => ({
+                  id: game.id,
+                  title: `${game.visiting_team_nickname} at ${game.home_team_nickname}`,
+                  location: game.venue_location,
+                  description: [
+                    hockeyTechLeagues[league].watch
+                      ? `📺 Watch live on ${hockeyTechLeagues[league].watch.platform}: ${hockeyTechLeagues[league].watch.url}`
+                      : "",
+                    `🏟️ ${game.visiting_team_code} @ ${game.home_team_code} - ${
+                      "venue" in game ? game.venue : game.venue_name
+                    }`,
+                    `🎟️ Buy tickets: ${
+                      game.tickets_url || "no link available for this game"
+                    }`,
+                    `🆔 ${league}:${game.id}`,
+                  ]
+                    .join("\n\n")
+                    .trim(),
+                  date: isoDate(game),
+                })),
+            },
+          ])),
+        )
+        .toJSON(),
+    ];
+  }
+  await ctx.followup.editOriginalMessage({ embeds: [embed], components });
+};
+
+export const scheduleDayCallback: ChatInputAppCommandCallback = async (ctx) => {
   const league = ctx.getStringOption("league").value as League;
   if (league === "khl") {
     return await khlCalendarCallback(ctx);
   }
 
-  const today = new Date().toISOString().split("T")[0];
   const client = getHtClient(league);
   const teamId = ctx.getStringOption("team")?.value;
-  const team = teamId
-    ? getLeagueTeams(league).find((t) => t.id === teamId)
-    : undefined;
 
   const dateVal = ctx.getStringOption("date")?.value;
   const dateMatch = dateVal ? dateVal.match(DATE_REGEX) : undefined;
@@ -228,9 +340,6 @@ export const scheduleCallback: ChatInputAppCommandCallback = async (ctx) => {
   }
   const dateDay = date.toISOString().split("T")[0];
 
-  const isoDate = (game: GamesByDate) =>
-    `${game.date_played}T${game.schedule_time}${getOffset(game.timezone)}`;
-
   return [
     ctx.defer(),
     async () => {
@@ -242,110 +351,50 @@ export const scheduleCallback: ChatInputAppCommandCallback = async (ctx) => {
           : true,
       );
 
-      const displayDate = games.length
-        ? new Date(isoDate(games[0]))
-        : new Date();
+      await sendScheduleMessage(ctx, games);
+    },
+  ];
+};
 
-      const embed = new EmbedBuilder()
-        .setAuthor({
-          name: uni(ctx, league),
-          iconURL: getLeagueLogoUrl(league),
-        })
-        .setTitle(
-          `${s(ctx, "schedule")}${
-            team ? ` - ${team.nickname}` : ""
-          } - ${displayDate.toLocaleString(ctx.getLocale(), {
-            month: "long",
-            day: "numeric",
-            year: "numeric",
-          })}`,
-        )
-        .setColor(colors[league])
-        .setDescription(
-          games
-            .map((game) => {
-              const startAt = new Date(isoDate(game));
-              const homeEmoji = getTeamEmoji(league, game.home_team);
-              const awayEmoji = getTeamEmoji(league, game.visiting_team);
-              const line =
-                game.status === "1"
-                  ? `🔴 ${time(startAt, "t")} ${awayEmoji} ${
-                      game.visiting_team_code
-                    } @ ${homeEmoji} ${game.home_team_code}`
-                  : `${
-                      game.status === "4" || game.status === "3" ? "🏁" : "🟢"
-                    } ${time(startAt, "t")} ${awayEmoji} ${
-                      game.visiting_team_code
-                    } **${game.visiting_goal_count}** - **${
-                      game.home_goal_count
-                    }** ${homeEmoji} ${game.home_team_code}\n${
-                      game.game_status
-                    }`;
+export const scheduleMonthCallback: ChatInputAppCommandCallback = async (
+  ctx,
+) => {
+  const league = ctx.getStringOption("league").value as League;
+  if (league === "khl") {
+    return await khlCalendarCallback(ctx);
+  }
 
-              return line;
-            })
-            .join("\n\n")
-            .trim()
-            .slice(0, 4096) || s(ctx, "noGames"),
-        )
-        // .setFooter({
-        //   text: data.SiteKit.Copyright.required_copyright.slice(0, 2048),
-        // })
-        .toJSON();
+  const client = getHtClient(league);
+  const teamId = ctx.getStringOption("team")?.value;
+  const monthVal = ctx.getStringOption("month")?.value;
 
-      let components: APIActionRowComponent<APIButtonComponent>[] = [];
-      if (games.length > 0) {
-        components = [
-          new ActionRowBuilder<ButtonBuilder>()
-            .addComponents(
-              // Discord provides this feature natively in events.
-              // Might be kind of confusing too.
-              // new ButtonBuilder()
-              //   .setStyle(ButtonStyle.Link)
-              //   .setURL(
-              //     `https://lscluster.hockeytech.com/components/calendar/ical_add_games.php?client_code=pwhl&game_ids=${games
-              //       .map((g) => g.id)
-              //       .join(",")}`,
-              //   )
-              //   .setLabel("Add to Calendar"),
-              ...(await storeComponents(ctx.env.KV, [
-                new ButtonBuilder()
-                  .setStyle(ButtonStyle.Primary)
-                  .setLabel("Add all as server events")
-                  .setDisabled(
-                    games.filter((g) => g.status === GameStatus.NotStarted)
-                      .length === 0,
-                  ),
-                {
-                  componentRoutingId: "add-schedule-events",
-                  componentTimeout: 600,
-                  componentOnce: true,
-                  league,
-                  games: games
-                    .filter((game) => game.status === GameStatus.NotStarted)
-                    .map((game) => ({
-                      id: game.id,
-                      title: `${game.visiting_team_nickname} at ${game.home_team_nickname}`,
-                      location: game.venue_location,
-                      description: [
-                        league === "pwhl"
-                          ? "📺 Watch live on YouTube [@thepwhlofficial](https://youtube.com/@thepwhlofficial/streams)"
-                          : "",
-                        `🏟️ ${game.visiting_team_code} @ ${game.home_team_code} - ${game.venue}`,
-                        `🎟️ Buy tickets: ${game.tickets_url}`,
-                        `🆔 ${league}:${game.id}`,
-                      ]
-                        .join("\n\n")
-                        .trim(),
-                      date: isoDate(game),
-                    })),
-                },
-              ])),
-            )
-            .toJSON(),
-        ];
+  const now = new Date();
+  const month = monthVal ? Number(monthVal) : now.getUTCMonth();
+
+  return [
+    ctx.defer(),
+    async () => {
+      const seasons = (await client.getSeasonList()).SiteKit.Seasons;
+      if (seasons.length === 0) {
+        await ctx.followup.editOriginalMessage({ content: s(ctx, "noGames") });
+        return;
       }
-      await ctx.followup.editOriginalMessage({ embeds: [embed], components });
+      const seasonId = Number(seasons[0].season_id);
+
+      const games = (
+        await client.getSeasonSchedule(seasonId)
+      ).SiteKit.Schedule.filter(
+        (game) =>
+          (teamId
+            ? game.home_team === teamId || game.visiting_team === teamId
+            : true) && new Date(game.GameDateISO8601).getUTCMonth() === month,
+      );
+
+      try {
+        await sendScheduleMessage(ctx, games);
+      } catch (e) {
+        console.error(e);
+      }
     },
   ];
 };
@@ -357,7 +406,7 @@ export const htGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
   const client = getHtClient(league);
   const teamId = ctx.getStringOption("team")?.value;
   const team = teamId
-    ? getLeagueTeams(league).find((t) => t.id === teamId)
+    ? leagueTeams[league].find((t) => t.id === teamId)
     : undefined;
   const games =
     // The PWHL doesn't play many games
@@ -386,7 +435,7 @@ export const htGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
           const homeEmoji = getTeamEmoji(league, game.HomeID);
           const awayEmoji = getTeamEmoji(league, game.VisitorID);
           let line =
-            game.GameStatus === "1"
+            game.GameStatus === GameStatus.NotStarted
               ? `🔴 ${time(
                   startAt,
                   game.Date === today.toISOString().split("T")[0] ? "t" : "d",
@@ -394,14 +443,15 @@ export const htGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
                   game.HomeCode
                 }`
               : `${
-                  game.GameStatus === "4" || game.GameStatus === "3"
+                  game.GameStatus === GameStatus.Final ||
+                  game.GameStatus === GameStatus.UnofficialFinal
                     ? `🏁 ${time(startAt, "d")}`
                     : `🟢 ${time(startAt, "t")}`
                 } ${awayEmoji} ${game.VisitorCode} **${
                   game.VisitorGoals
                 }** - **${game.HomeGoals}** ${homeEmoji} ${game.HomeCode}`;
 
-          if (game.GameStatus !== "1") {
+          if (game.GameStatus !== GameStatus.NotStarted) {
             line += `\n${game.GameStatusString}`;
           }
 
