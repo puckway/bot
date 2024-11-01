@@ -4,31 +4,12 @@ Puckway is an intragalactic bot for everything hockey (excluding the NHL). You m
 
 ## Features & roadmap
 
-- View game schedule
-    - [x] KHL
-    - [x] PWHL
-    - [x] AHL
-- Import game schedule as server events
-    - [ ] KHL
-    - [x] PWHL
-    - [x] AHL
-- View league standings
-    - [ ] KHL
-    - [x] PWHL
-    - [x] AHL
-- View player info
-    - [x] KHL
-    - [x] PWHL
-    - [x] AHL
-- Find player by jersey number
-    - [ ] KHL
-    - [x] PWHL
-    - [x] AHL
-- Automatic game threads
-    - [ ] KHL
-    - [x] PWHL
-    - [x] AHL
-- Live event notifications
-    - [ ] KHL
-    - [x] PWHL
-    - [x] AHL
+- [x] View game schedule
+- [x] Import game schedule as server events
+- [x] View league standings
+- [x] View player info
+- [x] Find player by jersey number
+- [x] Automatic game threads
+- [x] Live event notifications (goals, penalties, periods, ...)
+- [ ] Past game summary/stats
+- [ ] View past games for a given player

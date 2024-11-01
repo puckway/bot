@@ -4,7 +4,15 @@ import { NotificationSendConfig } from "../commands/notifications";
 
 const snowflake = (name: string) => text(name).$type<Snowflake>();
 
-export const leagues = ["khl", "pwhl", "ahl"] as const;
+export const leagues = [
+  "khl",
+  "pwhl",
+  "ahl",
+  "ohl",
+  "whl",
+  "lhjmq",
+  "sphl",
+] as const;
 export type League = (typeof leagues)[number];
 
 export const hypeMinutes = [5, 10, 20, 30, 60, 120] as const;

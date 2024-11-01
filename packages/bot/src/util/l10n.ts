@@ -66,6 +66,10 @@ export const uni = transformLocalizations({
     ahl: "AHL",
     pwhl: "PWHL",
     zhhl: "ZhHL",
+    ohl: "OHL",
+    whl: "WHL",
+    lhjmq: "QMJHL",
+    sphl: "SPHL",
   },
   ru: {
     khl: "КХЛ",
@@ -76,5 +80,7 @@ export const uni = transformLocalizations({
   fr: {
     pwhl: "LPHF",
     ahl: "LAH",
+    ohl: "LHO",
+    lhjmq: "LHJMQ",
   },
 });

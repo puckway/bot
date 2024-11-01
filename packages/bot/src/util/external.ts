@@ -44,8 +44,10 @@ export const getExternalUtils = <L = League>(league: L, locale_?: string) => {
         standings: () => `${site}/stats/standings`,
       };
     }
-    case "ahl": {
-      const site = "https://theahl.com";
+    case "ahl":
+    case "sphl": {
+      const site =
+        league === "ahl" ? "https://theahl.com" : "https://thesphl.com";
       return {
         site,
         player: (playerId: string | number) =>
@@ -54,6 +56,19 @@ export const getExternalUtils = <L = League>(league: L, locale_?: string) => {
           `${site}/stats/roster/${teamId}/${seasonId ?? ""}`,
         gameCenter: (gameId: string) => `${site}/stats/game-center/${gameId}`,
         standings: () => `${site}/stats/standings`,
+      };
+    }
+    case "ohl":
+    case "whl":
+    case "lhjmq": {
+      const site = `https://chl.ca/${league}`;
+      return {
+        site,
+        player: (playerId: string | number) => `${site}/players/${playerId}/`,
+        teamRoster: (teamSlug: string | number, seasonId?: string | number) =>
+          `${site}-${teamSlug}/roster/${seasonId ? `7/${seasonId}/` : ""}`,
+        gameCenter: (gameId: string) => `${site}/gamecentre/${gameId}/`,
+        standings: () => `${site}/standings/`,
       };
     }
     default:

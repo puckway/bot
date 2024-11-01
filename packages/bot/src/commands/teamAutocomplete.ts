@@ -1,8 +1,8 @@
 import * as api from "api";
 import { AppCommandAutocompleteCallback } from "../commands";
 import { League } from "../db/schema";
-import { getLeagueTeams } from "../ht/team";
 import { getKhlLocale } from "../util/l10n";
+import { leagueTeams } from "../ht/teams";
 
 export const teamAutocomplete: AppCommandAutocompleteCallback = async (ctx) => {
   const league = ctx.getStringOption("league").value as League;
@@ -29,9 +29,8 @@ export const teamAutocomplete: AppCommandAutocompleteCallback = async (ctx) => {
         value: String(team.id),
       }));
     }
-    case "ahl":
-    case "pwhl":
-      return getLeagueTeams(league)
+    default:
+      return leagueTeams[league]
         .filter(
           (t) =>
             t.name.toLowerCase().includes(query.toLowerCase()) ||
@@ -42,7 +41,5 @@ export const teamAutocomplete: AppCommandAutocompleteCallback = async (ctx) => {
           name: t.name,
           value: t.id,
         }));
-    default:
-      return [];
   }
 };

@@ -15,6 +15,10 @@ export const colors = {
   } as Record<PwhlTeamId, number>,
   khl: 0x306da9,
   ahl: 0xc9353c,
+  ohl: 0x3d7ab1,
+  lhjmq: 0x2d69dc,
+  whl: 0xbd2c34,
+  sphl: 0x0d2959,
 };
 
 export const getTeamColor = (league: League, teamId: string) =>

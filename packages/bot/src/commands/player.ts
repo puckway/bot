@@ -21,7 +21,7 @@ import { DBWithSchema, getDb } from "../db";
 import { League } from "../db/schema";
 import { getEpHtPlayer } from "../ep/rest";
 import { HockeyTechLeague, getHtClient } from "../ht/client";
-import { getHtTeamLogoUrl, getLeagueTeams } from "../ht/team";
+import { getHtTeamLogoUrl } from "../ht/team";
 import { InteractionContext } from "../interactions";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
@@ -32,6 +32,7 @@ import {
   getKhlLocale,
   transformLocalizations,
 } from "../util/l10n";
+import { leagueTeams } from "../ht/teams";
 
 type KhlPartialPlayer = Pick<APILightPlayer, "id" | "name" | "shirt_number"> & {
   team: { name: string } | null;
@@ -280,7 +281,7 @@ const getHtPlayerEmbed = async (
   const teamName =
     "most_recent_team_name" in player
       ? player.most_recent_team_name
-      : getLeagueTeams(league).find((t) => t.id === teamId)?.name;
+      : leagueTeams[league].find((t) => t.id === teamId)?.name;
   const number =
     "jersey_number" in player ? player.jersey_number : player.tp_jersey_number;
 

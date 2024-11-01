@@ -1,8 +1,5 @@
-import {
-  APIMessageComponentEmoji,
-  APIPartialEmoji,
-} from "discord-api-types/v10";
-import { League } from "../db/schema";
+import type { APIMessageComponentEmoji } from "discord-api-types/v10";
+import type { League } from "../db/schema";
 
 export const leagueAssets: Record<
   League,
@@ -40,12 +37,12 @@ export const leagueAssets: Record<
   pwhl: {
     logo: "https://hockey-bot.s3.us-east-005.backblazeb2.com/leagues/pwhl.jpg",
     teamEmojis: {
-      1: "1194368779086479410",
-      2: "1194368777832382605",
-      3: "1194368786543956010",
-      4: "1194368791283519660",
-      5: "1194368782131540099",
-      6: "1194368796224393328",
+      1: "1282702363412402188",
+      2: "1282702367178883072",
+      3: "1282702369863372890",
+      4: "1282702372598055035",
+      5: "1282702375425151079",
+      6: "1282699377835769938",
     },
   },
   ahl: {
@@ -91,6 +88,22 @@ export const leagueAssets: Record<
       // League
       418: "1203027240405696603",
     },
+  },
+  ohl: {
+    logo: undefined,
+    teamEmojis: {},
+  },
+  lhjmq: {
+    logo: undefined,
+    teamEmojis: {},
+  },
+  whl: {
+    logo: undefined,
+    teamEmojis: {},
+  },
+  sphl: {
+    logo: undefined,
+    teamEmojis: {},
   },
 };
 

@@ -16,12 +16,12 @@ import {
 } from "../components";
 import { getDb } from "../db";
 import { League, makeSnowflake, notifications } from "../db/schema";
-import { getLeagueTeams } from "../ht/team";
 import { InteractionContext } from "../interactions";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { getLeagueLogoUrl, getTeamPartialEmoji } from "../util/emojis";
 import { transformLocalizations, uni } from "../util/l10n";
+import { leagueTeams } from "../ht/teams";
 
 export interface NotificationSendConfig {
   preview?: boolean;
@@ -150,7 +150,7 @@ const getComponents = async (
           default: teamIds?.includes(String(team.id)),
           emoji: getTeamPartialEmoji(league, team.id),
         }))
-      : getLeagueTeams(league).map((team) => ({
+      : leagueTeams[league].map((team) => ({
           label: team.name,
           value: team.id,
           default: teamIds?.includes(team.id),
@@ -167,6 +167,7 @@ const getComponents = async (
         await storeComponents(ctx.env.KV, [
           new StringSelectMenuBuilder()
             .setPlaceholder(s(ctx, "selectTeamsPlaceholder"))
+            .setMinValues(0)
             .setMaxValues(opts.length)
             .addOptions(opts),
           {
@@ -305,7 +306,7 @@ export const selectNotificationTeamCallback: SelectMenuCallback = async (
   const allTeamIds =
     state.league === "khl"
       ? api.allTeams.map((team) => String(team.id))
-      : getLeagueTeams(state.league).map((team) => team.id);
+      : leagueTeams[state.league].map((team) => team.id);
 
   // This is a trimmed down mirror of what the user selected from.
   // For leagues with more than 25 teams, this is necessary to determine
