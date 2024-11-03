@@ -208,6 +208,14 @@ const payload: RESTPutAPIApplicationCommandsJSONBody = [
             required: false,
             autocomplete: true,
           },
+          {
+            type: ApplicationCommandOptionType.Boolean,
+            name: "exclude-finished-games",
+            name_localizations: { fr: "exclure-les-jeux-terminés" },
+            description:
+              "Exclude games that have already happened from the list",
+            required: false,
+          },
         ],
       },
     ],

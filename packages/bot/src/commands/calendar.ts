@@ -364,6 +364,9 @@ export const scheduleMonthCallback: ChatInputAppCommandCallback = async (
   const client = getHtClient(league);
   const teamId = ctx.getStringOption("team")?.value;
   const monthVal = ctx.getStringOption("month")?.value;
+  const excludeFinishedGames = ctx.getBooleanOption(
+    "exclude-finished-games",
+  ).value;
 
   const now = new Date();
   const month = monthVal ? Number(monthVal) : now.getUTCMonth();
@@ -384,7 +387,13 @@ export const scheduleMonthCallback: ChatInputAppCommandCallback = async (
         (game) =>
           (teamId
             ? game.home_team === teamId || game.visiting_team === teamId
-            : true) && new Date(game.GameDateISO8601).getUTCMonth() === month,
+            : true) &&
+          new Date(game.GameDateISO8601).getUTCMonth() === month &&
+          (excludeFinishedGames
+            ? ![GameStatus.Final, GameStatus.UnofficialFinal].includes(
+                game.status,
+              )
+            : true),
       );
 
       try {
