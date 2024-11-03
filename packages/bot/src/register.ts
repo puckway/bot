@@ -3,6 +3,8 @@ import {
   ApplicationCommandOptionType,
   ChannelType,
   type RESTPutAPIApplicationCommandsJSONBody,
+  RouteBases,
+  Routes,
 } from "discord-api-types/v10";
 import { PermissionFlags, PermissionsBitField } from "discord-bitflag";
 import dotenv from "dotenv";
@@ -29,12 +31,6 @@ if (!applicationId) {
     "The DISCORD_APPLICATION_ID environment variable is required.",
   );
 }
-
-/**
- * Register all commands globally.  This can take o(minutes), so wait until
- * you're sure these are the commands you want.
- */
-const url = `https://discord.com/api/v10/applications/${applicationId}/commands`;
 
 const getLeagueOption = ({
   description,
@@ -440,14 +436,17 @@ const payload: RESTPutAPIApplicationCommandsJSONBody = [
   },
 ];
 
-const response = await fetch(url, {
-  headers: {
-    "Content-Type": "application/json",
-    Authorization: `Bot ${token}`,
+const response = await fetch(
+  `${RouteBases.api}${Routes.applicationCommands(applicationId)}`,
+  {
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bot ${token}`,
+    },
+    method: "PUT",
+    body: JSON.stringify(payload),
   },
-  method: "PUT",
-  body: JSON.stringify(payload),
-});
+);
 
 if (response.ok) {
   console.log("Registered all commands");
