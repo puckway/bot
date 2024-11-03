@@ -10,7 +10,8 @@
     "ngrok": "ngrok http 8787",
     "register": "tsx ./src/register.ts",
     "migrate-dev": "drizzle-kit generate:sqlite --schema=src/db/schema.ts --out=./migrations && wrangler d1 migrations apply DB --local",
-    "migrate": "yarn migrate-dev && wrangler d1 migrations apply DB"
+    "migrate": "yarn migrate-dev && wrangler d1 migrations apply DB",
+    "look": "wrangler kv:key get --local --binding=KV"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20231218.0",
@@ -20,11 +21,11 @@
     "wrangler": "^3.22.2"
   },
   "dependencies": {
-    "@discordjs/builders": "^1.7.0",
+    "@discordjs/builders": "^1.9.0",
     "@discordjs/rest": "^2.2.0",
     "@haverstack/axios-fetch-adapter": "^0.12.0",
     "api": "./packages/api",
-    "discord-api-types": "^0.37.67",
+    "discord-api-types": "^0.37.103",
     "discord-bitflag": "^1.0.1",
     "discord-snowflake": "^2.0.0",
     "discord-verify": "^1.2.0",
