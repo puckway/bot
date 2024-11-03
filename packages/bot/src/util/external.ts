@@ -27,7 +27,7 @@ export const getExternalUtils = <L = League>(league: L, locale_?: string) => {
       };
     }
     case "pwhl": {
-      const site = `https://www.thepwhl.com/${locale}`;
+      const site = `https://thepwhl.com/${locale}`;
       return {
         site,
         player: (playerId: string | number) =>
