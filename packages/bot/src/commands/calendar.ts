@@ -203,18 +203,18 @@ const sendScheduleMessage = async (
 ) => {
   const league = ctx.getStringOption("league").value as HockeyTechLeague;
 
-  const today = new Date().toISOString().split("T")[0];
   const teamId = ctx.getStringOption("team")?.value;
   const team = teamId
     ? leagueTeams[league].find((t) => t.id === teamId)
     : undefined;
+  const subcommand = ctx.interaction.data.options?.[0].name;
 
   const displayDate = games.length ? new Date(isoDate(games[0])) : new Date();
   const title = `${s(ctx, "schedule")}${
     team ? ` - ${team.nickname}` : ""
   } - ${displayDate.toLocaleString(ctx.getLocale(), {
     month: "long",
-    day: ctx.interaction.data.name === "day" ? "numeric" : undefined,
+    day: subcommand === "day" ? "numeric" : undefined,
     year: "numeric",
   })}`;
 
@@ -229,10 +229,7 @@ const sendScheduleMessage = async (
       games
         .map((game) => {
           const startAt = new Date(isoDate(game));
-          const style =
-            game.date_played === today || ctx.interaction.data.name === "day"
-              ? "t"
-              : "d";
+          const style = subcommand === "day" ? "t" : "d";
           const homeEmoji = getTeamEmoji(league, game.home_team);
           const awayEmoji = getTeamEmoji(league, game.visiting_team);
           const line =
@@ -253,7 +250,7 @@ const sendScheduleMessage = async (
 
           return line;
         })
-        .join("\n\n")
+        .join(games.length > 30 ? "\n" : "\n\n")
         .trim()
         .slice(0, 4096) || s(ctx, "noGames"),
     )
