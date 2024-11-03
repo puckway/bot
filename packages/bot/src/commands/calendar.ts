@@ -30,6 +30,7 @@ import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
 import { getOffset } from "../util/time";
 import { leagueTeams } from "../ht/teams";
 import { InteractionContext } from "../interactions";
+import { getNow } from "../util/time";
 
 export const DATE_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
 
@@ -82,7 +83,7 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
         Number(dateMatch[2]) - 1,
         Number(dateMatch[3]),
       )
-    : new Date();
+    : getNow();
   if (Number.isNaN(date.getTime())) {
     return ctx.reply({
       content: s(ctx, "badDate"),
@@ -194,7 +195,7 @@ export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
   ];
 };
 
-const isoDate = (game: GamesByDate | Schedule) =>
+export const isoDate = (game: GamesByDate | Schedule) =>
   `${game.date_played}T${game.schedule_time}${getOffset(game.timezone)}`;
 
 const sendScheduleMessage = async (
@@ -209,7 +210,7 @@ const sendScheduleMessage = async (
     : undefined;
   const subcommand = ctx.interaction.data.options?.[0].name;
 
-  const displayDate = games.length ? new Date(isoDate(games[0])) : new Date();
+  const displayDate = games.length ? new Date(isoDate(games[0])) : getNow();
   const title = `${s(ctx, "schedule")}${
     team ? ` - ${team.nickname}` : ""
   } - ${displayDate.toLocaleString(ctx.getLocale(), {
@@ -328,7 +329,7 @@ export const scheduleDayCallback: ChatInputAppCommandCallback = async (ctx) => {
         Number(dateMatch[2]) - 1,
         Number(dateMatch[3]),
       )
-    : new Date();
+    : getNow();
   if (Number.isNaN(date.getTime())) {
     return ctx.reply({
       content: s(ctx, "badDate"),
@@ -368,7 +369,7 @@ export const scheduleMonthCallback: ChatInputAppCommandCallback = async (
     "exclude-finished-games",
   ).value;
 
-  const now = new Date();
+  const now = getNow();
   const month = monthVal ? Number(monthVal) : now.getUTCMonth();
 
   return [
@@ -406,7 +407,7 @@ export const scheduleMonthCallback: ChatInputAppCommandCallback = async (
 };
 
 export const htGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
-  const today = new Date();
+  const today = getNow();
   today.setUTCHours(6, 0, 0, 0);
   const league = ctx.getStringOption("league").value as HockeyTechLeague;
   const client = getHtClient(league);
@@ -429,7 +430,7 @@ export const htGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
     })
     .setTitle(
       `${s(ctx, "gameDay")}${team ? ` - ${team.nickname}` : ""} - ${time(
-        new Date(),
+        getNow(),
         "d",
       )}`,
     )
@@ -526,7 +527,7 @@ export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
     .map((e) => e as string);
   const newGames = state.games.filter(
     (game) =>
-      !extantGameIds.includes(game.id) && new Date(game.date) > new Date(),
+      !extantGameIds.includes(game.id) && new Date(game.date) > getNow(),
   );
 
   if (newGames.length === 0) {

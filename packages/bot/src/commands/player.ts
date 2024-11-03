@@ -33,6 +33,7 @@ import {
   transformLocalizations,
 } from "../util/l10n";
 import { leagueTeams } from "../ht/teams";
+import { getNow } from "../util/time";
 
 type KhlPartialPlayer = Pick<APILightPlayer, "id" | "name" | "shirt_number"> & {
   team: { name: string } | null;
@@ -348,7 +349,7 @@ const getHtPlayerEmbed = async (
 
   let description = "";
   if (player.birthdate) {
-    const today = new Date();
+    const today = getNow();
     const birthdate = new Date(player.birthdate);
     const age = Math.floor(
       (today.getTime() - birthdate.getTime()) / 31_556_952_000,
