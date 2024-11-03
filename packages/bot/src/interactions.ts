@@ -40,7 +40,6 @@ import {
 import { PermissionFlags, PermissionsBitField } from "discord-bitflag";
 import { Snowflake, getDate } from "discord-snowflake";
 import { MinimumKVComponentState } from "./components.js";
-import { Env } from "./index.js";
 
 export type APIPartialResolvedChannelBase = APIPartialChannel & {
   permissions: string;

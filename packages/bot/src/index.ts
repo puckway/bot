@@ -24,14 +24,6 @@ import { checkPosts } from "./cron";
 import { InteractionContext } from "./interactions";
 import { getErrorMessage, isDiscordError } from "./util/errors.js";
 
-export interface Env {
-  DB: D1Database;
-  KV: KVNamespace;
-  DISCORD_APPLICATION_ID: string;
-  DISCORD_PUBLIC_KEY: string;
-  DISCORD_TOKEN: string;
-}
-
 const router = Router();
 
 router
