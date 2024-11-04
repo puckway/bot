@@ -29,6 +29,7 @@ export const notifications = sqliteTable(
   {
     id: integer("id").primaryKey({ autoIncrement: true }),
     league: text("league").$type<League>().notNull(),
+    guildId: snowflake("guildId"),
     channelId: snowflake("channelId").notNull(),
     // channelType: integer("channelType").notNull().$type<ChannelType>().default(ChannelType.GuildText),
     teamIds: text("teamIds", { mode: "json" })
@@ -66,3 +67,20 @@ export const players = sqliteTable(
     unq: unique().on(table.league, table.nativeId),
   }),
 );
+
+// export const pickemsVotes = sqliteTable(
+//   "pickems_votes",
+//   {
+//     id: integer("id").primaryKey({ autoIncrement: true }),
+//     league: text("league").$type<League>().notNull(),
+//     gameId: text("gameId").notNull(),
+//     voteTeamId: text("voteTeamId").notNull(),
+//     winningTeamId: text("winningTeamId").notNull(),
+
+//     guildId: snowflake("guildId").notNull(),
+//     userId: snowflake("userId").notNull(),
+//   },
+//   (table) => ({
+//     unq: unique().on(table.guildId, table.userId, table.league, table.gameId),
+//   }),
+// );

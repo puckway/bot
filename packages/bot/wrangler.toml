@@ -4,7 +4,18 @@ node_compat = true
 compatibility_date = "2023-12-18"
 
 [triggers]
-crons = ["*/5 * * * *"] # run every 5 minutes
+# Every day at 17:00 UTC (12:00 EST)
+# There is drift here due to DST but most of the typical hockey
+# season takes place during NA's standard time period
+crons = ["0 17 * * *"]
+
+[[durable_objects.bindings]]
+name = "NOTIFICATIONS"
+class_name = "DurableNotificationManager"
+
+[[migrations]]
+tag = "v1"
+new_classes = ["DurableNotificationManager"]
 
 [[kv_namespaces]]
 binding = "KV"

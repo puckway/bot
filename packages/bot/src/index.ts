@@ -20,9 +20,10 @@ import {
   componentStore,
   modalStore,
 } from "./components";
-import { checkPosts } from "./cron";
+import { dailyInitNotifications } from "./cron";
 import { InteractionContext } from "./interactions";
 import { getErrorMessage, isDiscordError } from "./util/errors.js";
+export { DurableNotificationManager } from "./notifications";
 
 const router = Router();
 
@@ -47,9 +48,7 @@ router
     );
     return new Response(null, {
       status: 302,
-      headers: {
-        Location: inviteUrl.href,
-      },
+      headers: { Location: inviteUrl.href },
     });
   })
   .post("/", async (request, env: Env, workerCtx: ExecutionContext) => {
@@ -289,7 +288,7 @@ const server = {
   ): Promise<Response> {
     return router.handle(request, env, ctx);
   },
-  scheduled: checkPosts,
+  scheduled: dailyInitNotifications,
 };
 
 export default server;

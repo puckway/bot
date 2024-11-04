@@ -11,7 +11,7 @@ import {
   getHtGamePreviewFinalEmbed,
   getHtGoalsEmbed,
   getHtStatusEmbed,
-} from "../cron";
+} from "../notifications";
 import {
   GLOBAL_GAME_ID_REGEX,
   HockeyTechLeague,

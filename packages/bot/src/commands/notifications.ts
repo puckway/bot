@@ -22,8 +22,10 @@ import { storeComponents } from "../util/components";
 import { getLeagueLogoUrl, getTeamPartialEmoji } from "../util/emojis";
 import { transformLocalizations, uni } from "../util/l10n";
 import { leagueTeams } from "../ht/teams";
+import { isPremium } from "../util/premium";
 
 export interface NotificationSendConfig {
+  pickems?: boolean;
   preview?: boolean;
   threads?: boolean;
   lineups?: boolean;
@@ -45,6 +47,9 @@ const s = transformLocalizations({
     activate: "Activate",
     deactivate: "Deactivate",
     channel: "Channel",
+    pickems: "Pickems",
+    pickemsDescription:
+      "Sends a poll that ends at game time, created 7 days before",
     preview: "Preview",
     previewDescription:
       "Sent 6 hours before game time. Shows location, tickets, & records",
@@ -121,7 +126,10 @@ const getComponents = async (
   teamIds?: string[],
   active?: boolean,
 ) => {
-  const allFeatures = [
+  const premiumFeatures = [
+    "pickems",
+  ] satisfies (keyof NotificationSendConfig)[];
+  const freeFeatures = [
     "preview",
     "threads",
     "lineups",
@@ -132,15 +140,11 @@ const getComponents = async (
     "end",
     "final",
   ] satisfies (keyof NotificationSendConfig)[];
-  const features = allFeatures;
-  // I was going to do this in order to allow announcement channels but I decided
-  // against it because the type can be swapped with the same channel ID, rendering
-  // thread creation suddenly broken. The only workaround as far as I know would be
-  // to get every channel every time to make sure it hasn't changed, which is wasteful.
-  // Keeping this snippet for posterity in case I try again.
-  // .filter(
-  //   (f) => !(channelType === ChannelType.GuildAnnouncement && f === "threads"),
-  // );
+
+  const features = [
+    ...(isPremium(ctx) ? premiumFeatures : []),
+    ...freeFeatures,
+  ];
 
   const options =
     league === "khl"
@@ -235,6 +239,9 @@ const getComponents = async (
 export const notificationsCallback: ChatInputAppCommandCallback = async (
   ctx,
 ) => {
+  const guildId = ctx.interaction.guild_id;
+  if (!guildId) throw Error("Guild only");
+
   const league = ctx.getStringOption("league").value as League;
   // biome-ignore lint/style/noNonNullAssertion: Required in command schema
   const channel = ctx.getChannelOption("channel")!;
@@ -249,6 +256,7 @@ export const notificationsCallback: ChatInputAppCommandCallback = async (
       sendConfig: true,
       teamIds: true,
       active: true,
+      guildId: true,
     },
   });
 
@@ -267,14 +275,19 @@ export const notificationsCallback: ChatInputAppCommandCallback = async (
       flags: MessageFlags.Ephemeral,
     }),
     async () => {
-      if (!settings) {
+      if (!settings || settings.guildId === null) {
         await db
           .insert(notifications)
           .values({
             league,
             channelId: makeSnowflake(channel.id),
+            guildId: makeSnowflake(guildId),
           })
-          .onConflictDoNothing();
+          // `guildId` is a new column so we want to fill it in when we can
+          .onConflictDoUpdate({
+            target: [notifications.league, notifications.channelId],
+            set: { guildId: makeSnowflake(guildId) },
+          });
       }
     },
   ];
@@ -283,6 +296,9 @@ export const notificationsCallback: ChatInputAppCommandCallback = async (
 export const selectNotificationTeamCallback: SelectMenuCallback = async (
   ctx,
 ) => {
+  const guildId = ctx.interaction.guild_id;
+  if (!guildId) throw Error("Guild only");
+
   const state = ctx.state as MinimumKVComponentState & {
     league: League;
     channelId: string;
@@ -337,7 +353,7 @@ export const selectNotificationTeamCallback: SelectMenuCallback = async (
 
   await db
     .update(notifications)
-    .set({ teamIds })
+    .set({ teamIds, guildId: makeSnowflake(guildId) })
     .where(
       and(
         eq(notifications.league, state.league),
@@ -360,6 +376,9 @@ export const selectNotificationTeamCallback: SelectMenuCallback = async (
 export const selectNotificationFeaturesCallback: SelectMenuCallback = async (
   ctx,
 ) => {
+  const guildId = ctx.interaction.guild_id;
+  if (!guildId) throw Error("Guild only");
+
   const state = ctx.state as MinimumKVComponentState & {
     league: League;
     channelId: string;
@@ -379,6 +398,7 @@ export const selectNotificationFeaturesCallback: SelectMenuCallback = async (
       .insert(notifications)
       .values({
         league: state.league,
+        guildId: makeSnowflake(guildId),
         channelId: makeSnowflake(state.channelId),
         sendConfig,
       })
@@ -388,7 +408,7 @@ export const selectNotificationFeaturesCallback: SelectMenuCallback = async (
           eq(notifications.league, state.league),
           eq(notifications.channelId, makeSnowflake(state.channelId)),
         ),
-        set: { sendConfig },
+        set: { guildId: makeSnowflake(guildId), sendConfig },
       })
       .returning({
         sendConfig: notifications.sendConfig,
@@ -415,6 +435,9 @@ export const selectNotificationFeaturesCallback: SelectMenuCallback = async (
 export const toggleNotificationActiveButtonCallback: ButtonCallback = async (
   ctx,
 ) => {
+  const guildId = ctx.interaction.guild_id;
+  if (!guildId) throw Error("Guild only");
+
   const state = ctx.state as MinimumKVComponentState & {
     league: League;
     channelId: string;
@@ -439,6 +462,7 @@ export const toggleNotificationActiveButtonCallback: ButtonCallback = async (
     .insert(notifications)
     .values({
       league: state.league,
+      guildId: makeSnowflake(guildId),
       channelId: makeSnowflake(state.channelId),
       active,
     })
