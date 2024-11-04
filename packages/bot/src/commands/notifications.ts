@@ -7,7 +7,7 @@ import {
 } from "@discordjs/builders";
 import * as api from "api";
 import { ButtonStyle, ChannelType, MessageFlags } from "discord-api-types/v10";
-import { and, eq } from "drizzle-orm";
+import { and, eq, not } from "drizzle-orm";
 import { ChatInputAppCommandCallback } from "../commands";
 import {
   ButtonCallback,
@@ -392,7 +392,35 @@ export const selectNotificationFeaturesCallback: SelectMenuCallback = async (
     sendConfig[f] = true;
   }
 
+  let warning: string | undefined;
+  if (sendConfig.pickems && !isPremium(ctx)) {
+    // This shouldn't happen, but just in case, TODO: premium button
+    sendConfig.pickems = false;
+    warning =
+      "Pickems is currently a premium-only feature, so it cannot be enabled in this server.";
+  }
+
   const db = getDb(ctx.env.DB);
+  if (sendConfig.pickems) {
+    // Only allow one pickems channel per guild because of leaderboards (and API spam)
+    const existing = await db.query.notifications.findMany({
+      where: and(
+        eq(notifications.guildId, makeSnowflake(guildId)),
+        eq(notifications.league, state.league),
+        not(eq(notifications.channelId, makeSnowflake(state.channelId))),
+      ),
+      columns: { channelId: true, sendConfig: true },
+    });
+    const conflict = existing.find((s) => s.sendConfig.pickems);
+    if (conflict !== undefined) {
+      // TODO: button to disable in other channel (it may have been deleted in which case the user currently needs to contact support)
+      sendConfig.pickems = false;
+      warning = `A league's Pickems can only be active in one channel at a time. You must disable ${state.league.toUpperCase()} Pickems in <#${
+        conflict.channelId
+      }> before enabling them in <#${state.channelId}>.`;
+    }
+  }
+
   const settings = (
     await db
       .insert(notifications)
@@ -417,19 +445,29 @@ export const selectNotificationFeaturesCallback: SelectMenuCallback = async (
       })
   )[0];
 
-  return ctx.updateMessage({
-    embeds: [
-      getSettingsEmbed(ctx, state.league, state.channelId, settings.active),
-    ],
-    components: await getComponents(
-      ctx,
-      state.league,
-      state.channelId,
-      state.channelType,
-      settings.sendConfig,
-      settings.teamIds,
-    ),
-  });
+  return [
+    ctx.updateMessage({
+      embeds: [
+        getSettingsEmbed(ctx, state.league, state.channelId, settings.active),
+      ],
+      components: await getComponents(
+        ctx,
+        state.league,
+        state.channelId,
+        state.channelType,
+        settings.sendConfig,
+        settings.teamIds,
+      ),
+    }),
+    async () => {
+      if (warning) {
+        await ctx.followup.send({
+          content: `⚠️ ${warning}`,
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+    },
+  ];
 };
 
 export const toggleNotificationActiveButtonCallback: ButtonCallback = async (
