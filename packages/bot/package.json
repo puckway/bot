@@ -11,7 +11,8 @@
     "register": "tsx ./src/register.ts",
     "migrate-dev": "drizzle-kit generate:sqlite --schema=src/db/schema.ts --out=./migrations && wrangler d1 migrations apply DB --local",
     "migrate": "yarn migrate-dev && wrangler d1 migrations apply DB",
-    "look": "wrangler kv:key get --local --binding=KV"
+    "look": "wrangler kv:key get --local --binding=KV",
+    "sql": "wrangler d1 execute DB --local"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^4.20231218.0",

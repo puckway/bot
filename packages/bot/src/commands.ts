@@ -20,6 +20,7 @@ import { standingsCallback } from "./commands/standings";
 import { teamAutocomplete } from "./commands/teamAutocomplete";
 import { threadCloseCallback } from "./commands/thread";
 import { InteractionContext } from "./interactions";
+import { pickemsCallback } from "./commands/pickems";
 
 export type AppCommandCallbackT<T extends APIInteraction> = (
   ctx: InteractionContext<T>,
@@ -76,6 +77,9 @@ export const appCommands: Record<
     notifications: {
       handlers: { BASE: notificationsCallback },
     },
+    pickems: {
+      handlers: { BASE: pickemsCallback },
+    },
     about: {
       handlers: { BASE: aboutCallback },
     },
@@ -85,6 +89,7 @@ export const appCommands: Record<
   },
   [ApplicationCommandType.Message]: {},
   [ApplicationCommandType.User]: {},
+  [ApplicationCommandType.PrimaryEntryPoint]: {},
 };
 
 export type DiscordInteractionResponse =

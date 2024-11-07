@@ -13,6 +13,11 @@ import {
 } from "./commands/notifications";
 import { playerSearchSelectCallback } from "./commands/player";
 import { InteractionContext } from "./interactions";
+import {
+  selectPickemsChannelCallback,
+  selectPickemsTeamCallback,
+  togglePickemsActiveButtonCallback,
+} from "./commands/pickems";
 
 export interface MinimumKVComponentState {
   /** The total number of seconds that the component/modal should be stored. */
@@ -53,7 +58,10 @@ export type ComponentRoutingId =
   | "add-schedule-events"
   | "select-notifications-teams"
   | "select-notifications-features"
-  | "select-notifications-activate-toggle";
+  | "select-notifications-activate-toggle"
+  | "select-pickems-teams"
+  | "select-pickems-channel"
+  | "select-pickems-activate-toggle";
 
 export type StorableRoutingId = ComponentRoutingId | ModalRoutingId;
 
@@ -66,6 +74,15 @@ export const componentStore: Record<ComponentRoutingId, StoredComponentData> = {
   },
   "select-notifications-activate-toggle": {
     handler: toggleNotificationActiveButtonCallback,
+  },
+  "select-pickems-teams": {
+    handler: selectPickemsTeamCallback,
+  },
+  "select-pickems-channel": {
+    handler: selectPickemsChannelCallback,
+  },
+  "select-pickems-activate-toggle": {
+    handler: togglePickemsActiveButtonCallback,
   },
 };
 

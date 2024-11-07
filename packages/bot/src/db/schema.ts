@@ -24,6 +24,8 @@ export const makeSnowflake = (id: string): Snowflake => {
   throw new Error(`${id} is not a snowflake.`);
 };
 
+const boolean = (name: string) => integer(name, { mode: "boolean" });
+
 export const notifications = sqliteTable(
   "notifications",
   {
@@ -40,7 +42,7 @@ export const notifications = sqliteTable(
       .$type<NotificationSendConfig>()
       .notNull()
       .default({}),
-    active: integer("active", { mode: "boolean" }).default(true),
+    active: boolean("active").default(true),
   },
   (table) => ({
     unq: unique().on(table.league, table.channelId),
@@ -68,19 +70,57 @@ export const players = sqliteTable(
   }),
 );
 
-// export const pickemsVotes = sqliteTable(
-//   "pickems_votes",
-//   {
-//     id: integer("id").primaryKey({ autoIncrement: true }),
-//     league: text("league").$type<League>().notNull(),
-//     gameId: text("gameId").notNull(),
-//     voteTeamId: text("voteTeamId").notNull(),
-//     winningTeamId: text("winningTeamId").notNull(),
+export const pickems = sqliteTable(
+  "pickems",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    guildId: snowflake("guildId").notNull(),
+    channelId: snowflake("channelId"),
 
-//     guildId: snowflake("guildId").notNull(),
-//     userId: snowflake("userId").notNull(),
-//   },
-//   (table) => ({
-//     unq: unique().on(table.guildId, table.userId, table.league, table.gameId),
-//   }),
-// );
+    league: text("league").$type<League>().notNull(),
+    teamIds: text("teamIds", { mode: "json" })
+      .$type<string[]>()
+      .notNull()
+      .default([]),
+    active: boolean("active").default(false),
+  },
+  (table) => ({
+    unq: unique().on(table.league, table.guildId),
+  }),
+);
+
+export const pickemsPolls = sqliteTable("pickems_polls", {
+  guildId: snowflake("guildId").notNull(),
+  channelId: snowflake("channelId").notNull(),
+  messageId: snowflake("messageId").notNull().primaryKey(),
+  // ended: boolean("ended").default(false),
+
+  league: text("league").$type<League>().notNull(),
+  gameId: text("gameId").notNull(),
+  seasonId: text("seasonId").notNull(),
+  day: text("day").notNull(),
+});
+
+export const pickemsVotes = sqliteTable(
+  "pickems_votes",
+  {
+    id: integer("id").primaryKey({ autoIncrement: true }),
+    league: text("league").$type<League>().notNull(),
+    gameId: text("gameId").notNull(),
+    seasonId: text("seasonId").notNull(),
+    voteTeamId: text("voteTeamId").notNull(),
+    winningTeamId: text("winningTeamId").notNull(),
+
+    guildId: snowflake("guildId").notNull(),
+    userId: snowflake("userId").notNull(),
+  },
+  (table) => ({
+    unq: unique().on(
+      table.guildId,
+      table.userId,
+      table.league,
+      table.seasonId,
+      table.gameId,
+    ),
+  }),
+);

@@ -408,6 +408,20 @@ const payload: RESTPutAPIApplicationCommandsJSONBody = [
     ],
   },
   {
+    name: "pickems",
+    description: "Configure Pickems",
+    dm_permission: false,
+    default_member_permissions: new PermissionsBitField(
+      PermissionFlags.ManageGuild,
+    ).toString(),
+    options: [
+      getLeagueOption({
+        description: "The league to configure Pickems for",
+        noKhl: true,
+      }),
+    ],
+  },
+  {
     name: "about",
     description: "About this bot",
   },

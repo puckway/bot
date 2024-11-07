@@ -7,6 +7,7 @@ import {
   notifications,
   hypeMinutes,
   HypeMinute,
+  pickemsPolls,
 } from "./db/schema";
 import { NotificationSendConfig } from "./commands/notifications";
 import { getHtClient, HockeyTechLeague, getPointsPct } from "./ht/client";
@@ -1074,6 +1075,7 @@ const runNotifications = async ({
   now,
   day,
   channelIds,
+  pickemsPollMessageIds,
 }: {
   rest: REST;
   env: Env;
@@ -1082,6 +1084,10 @@ const runNotifications = async ({
   now: Date;
   day: string;
   channelIds: Record<string, Record<string, NotificationSendConfig>>;
+  pickemsPollMessageIds: Record<
+    string,
+    { channelId: string; messageId: string }[]
+  >;
 }): Promise<Date | null> => {
   const nextAlarms: Date[] = [];
   switch (league) {
@@ -1365,6 +1371,17 @@ const runNotifications = async ({
                     ),
                   );
                 }
+                // End polls so people cannot vote after the game has started
+                const polls = pickemsPollMessageIds[game.id];
+                if (polls && polls.length !== 0) {
+                  for (const { channelId, messageId } of polls) {
+                    ctx.waitUntil(
+                      logErrors(
+                        rest.post(Routes.expirePoll(channelId, messageId)),
+                      ),
+                    );
+                  }
+                }
               }
               break;
             }
@@ -1498,6 +1515,11 @@ export class DurableNotificationManager implements DurableObject {
 
     const client = getHtClient(data.league);
     const games = (await client.getDailySchedule(data.day)).SiteKit.Gamesbydate;
+    console.log(
+      data.league,
+      "notifs",
+      games.map((g) => g.id),
+    );
     if (games.length === 0) {
       return new Response(null, { status: 204 });
     }
@@ -1561,6 +1583,28 @@ export class DurableNotificationManager implements DurableObject {
           }
         }
 
+        const pickemsPollEntries = await db.query.pickemsPolls.findMany({
+          where: and(
+            eq(pickemsPolls.league, league),
+            eq(pickemsPolls.day, day),
+            // eq(pickemsPolls.ended, false),
+          ),
+          columns: {
+            gameId: true,
+            channelId: true,
+            messageId: true,
+          },
+        });
+        const pickemsPollMessageIds: Record<
+          string,
+          { channelId: string; messageId: string }[]
+        > = {};
+        for (const entry of pickemsPollEntries) {
+          pickemsPollMessageIds[entry.gameId] =
+            pickemsPollMessageIds[entry.gameId] ?? [];
+          pickemsPollMessageIds[entry.gameId].push(entry);
+        }
+
         const now = getNow();
         const rest = new REST().setToken(this.env.DISCORD_TOKEN);
 
@@ -1574,6 +1618,7 @@ export class DurableNotificationManager implements DurableObject {
             now,
             day,
             channelIds,
+            pickemsPollMessageIds,
           });
         } catch (e) {
           console.error(e);

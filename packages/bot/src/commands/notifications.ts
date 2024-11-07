@@ -22,10 +22,8 @@ import { storeComponents } from "../util/components";
 import { getLeagueLogoUrl, getTeamPartialEmoji } from "../util/emojis";
 import { transformLocalizations, uni } from "../util/l10n";
 import { leagueTeams } from "../ht/teams";
-import { isPremium } from "../util/premium";
 
 export interface NotificationSendConfig {
-  pickems?: boolean;
   preview?: boolean;
   threads?: boolean;
   lineups?: boolean;
@@ -47,9 +45,6 @@ const s = transformLocalizations({
     activate: "Activate",
     deactivate: "Deactivate",
     channel: "Channel",
-    pickems: "Pickems",
-    pickemsDescription:
-      "Sends a poll that ends at game time, created 7 days before",
     preview: "Preview",
     previewDescription:
       "Sent 6 hours before game time. Shows location, tickets, & records",
@@ -97,7 +92,7 @@ const s = transformLocalizations({
   },
 });
 
-const emojiBool = (value: boolean) =>
+export const emojiBool = (value: boolean) =>
   `<:${value}:${value ? "834927244500533258" : "834927293633527839"}>`;
 
 const getSettingsEmbed = (
@@ -126,10 +121,7 @@ const getComponents = async (
   teamIds?: string[],
   active?: boolean,
 ) => {
-  const premiumFeatures = [
-    "pickems",
-  ] satisfies (keyof NotificationSendConfig)[];
-  const freeFeatures = [
+  const features = [
     "preview",
     "threads",
     "lineups",
@@ -140,11 +132,6 @@ const getComponents = async (
     "end",
     "final",
   ] satisfies (keyof NotificationSendConfig)[];
-
-  const features = [
-    ...(isPremium(ctx) ? premiumFeatures : []),
-    ...freeFeatures,
-  ];
 
   const options =
     league === "khl"
@@ -346,10 +333,7 @@ export const selectNotificationTeamCallback: SelectMenuCallback = async (
   }
 
   // Re-combine all team IDs for storage
-  const teamIds = teamIdGroups.reduce((a, b) => {
-    a.push(...b);
-    return a;
-  }, []);
+  const teamIds = teamIdGroups.flat();
 
   await db
     .update(notifications)
@@ -369,6 +353,7 @@ export const selectNotificationTeamCallback: SelectMenuCallback = async (
       state.channelType,
       settings?.sendConfig,
       teamIds,
+      settings?.active ?? undefined,
     ),
   });
 };
@@ -392,35 +377,7 @@ export const selectNotificationFeaturesCallback: SelectMenuCallback = async (
     sendConfig[f] = true;
   }
 
-  let warning: string | undefined;
-  if (sendConfig.pickems && !isPremium(ctx)) {
-    // This shouldn't happen, but just in case, TODO: premium button
-    sendConfig.pickems = false;
-    warning =
-      "Pickems is currently a premium-only feature, so it cannot be enabled in this server.";
-  }
-
   const db = getDb(ctx.env.DB);
-  if (sendConfig.pickems) {
-    // Only allow one pickems channel per guild because of leaderboards (and API spam)
-    const existing = await db.query.notifications.findMany({
-      where: and(
-        eq(notifications.guildId, makeSnowflake(guildId)),
-        eq(notifications.league, state.league),
-        not(eq(notifications.channelId, makeSnowflake(state.channelId))),
-      ),
-      columns: { channelId: true, sendConfig: true },
-    });
-    const conflict = existing.find((s) => s.sendConfig.pickems);
-    if (conflict !== undefined) {
-      // TODO: button to disable in other channel (it may have been deleted in which case the user currently needs to contact support)
-      sendConfig.pickems = false;
-      warning = `A league's Pickems can only be active in one channel at a time. You must disable ${state.league.toUpperCase()} Pickems in <#${
-        conflict.channelId
-      }> before enabling them in <#${state.channelId}>.`;
-    }
-  }
-
   const settings = (
     await db
       .insert(notifications)
@@ -445,29 +402,20 @@ export const selectNotificationFeaturesCallback: SelectMenuCallback = async (
       })
   )[0];
 
-  return [
-    ctx.updateMessage({
-      embeds: [
-        getSettingsEmbed(ctx, state.league, state.channelId, settings.active),
-      ],
-      components: await getComponents(
-        ctx,
-        state.league,
-        state.channelId,
-        state.channelType,
-        settings.sendConfig,
-        settings.teamIds,
-      ),
-    }),
-    async () => {
-      if (warning) {
-        await ctx.followup.send({
-          content: `⚠️ ${warning}`,
-          flags: MessageFlags.Ephemeral,
-        });
-      }
-    },
-  ];
+  return ctx.updateMessage({
+    embeds: [
+      getSettingsEmbed(ctx, state.league, state.channelId, settings.active),
+    ],
+    components: await getComponents(
+      ctx,
+      state.league,
+      state.channelId,
+      state.channelType,
+      settings.sendConfig,
+      settings.teamIds,
+      settings.active ?? undefined,
+    ),
+  });
 };
 
 export const toggleNotificationActiveButtonCallback: ButtonCallback = async (
