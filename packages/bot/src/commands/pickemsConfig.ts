@@ -4,7 +4,6 @@ import {
   ChannelSelectMenuBuilder,
   EmbedBuilder,
   StringSelectMenuBuilder,
-  StringSelectMenuOptionBuilder,
 } from "@discordjs/builders";
 import * as api from "api";
 import {
@@ -13,7 +12,7 @@ import {
   MessageFlags,
   SelectMenuDefaultValueType,
 } from "discord-api-types/v10";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { ChatInputAppCommandCallback } from "../commands";
 import {
   ButtonCallback,
@@ -165,7 +164,9 @@ const getComponents = async (
   ].map((x) => x.toJSON());
 };
 
-export const pickemsCallback: ChatInputAppCommandCallback = async (ctx) => {
+export const pickemsConfigCallback: ChatInputAppCommandCallback = async (
+  ctx,
+) => {
   const guildId = ctx.interaction.guild_id;
   if (!guildId) throw Error("Guild only");
 
@@ -187,8 +188,13 @@ export const pickemsCallback: ChatInputAppCommandCallback = async (ctx) => {
     }
 
     return ctx.reply({
-      content:
-        "Pickems is currently restricted to servers that have Puckway Plus. You can purchase a plan on a monthly or lifetime basis!",
+      content: `Pickems is currently restricted to servers that have Puckway Plus. You can purchase a plan on a ${
+        ctx.env.MONTHLY_SKU && ctx.env.LIFETIME_SKU
+          ? "monthly or lifetime"
+          : ctx.env.MONTHLY_SKU
+            ? "monthly"
+            : "lifetime"
+      } basis.`,
       components: [
         new ActionRowBuilder<ButtonBuilder>().addComponents(buttons).toJSON(),
       ],

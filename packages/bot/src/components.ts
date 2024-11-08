@@ -17,7 +17,11 @@ import {
   selectPickemsChannelCallback,
   selectPickemsTeamCallback,
   togglePickemsActiveButtonCallback,
-} from "./commands/pickems";
+} from "./commands/pickemsConfig";
+import {
+  pickemsPurgeCancelCallback,
+  pickemsPurgeConfirmCallback,
+} from "./commands/pickemsLeaderboard";
 
 export interface MinimumKVComponentState {
   /** The total number of seconds that the component/modal should be stored. */
@@ -61,7 +65,9 @@ export type ComponentRoutingId =
   | "select-notifications-activate-toggle"
   | "select-pickems-teams"
   | "select-pickems-channel"
-  | "select-pickems-activate-toggle";
+  | "select-pickems-activate-toggle"
+  | "pickems-purge-confirm"
+  | "pickems-purge-cancel";
 
 export type StorableRoutingId = ComponentRoutingId | ModalRoutingId;
 
@@ -75,15 +81,13 @@ export const componentStore: Record<ComponentRoutingId, StoredComponentData> = {
   "select-notifications-activate-toggle": {
     handler: toggleNotificationActiveButtonCallback,
   },
-  "select-pickems-teams": {
-    handler: selectPickemsTeamCallback,
-  },
-  "select-pickems-channel": {
-    handler: selectPickemsChannelCallback,
-  },
+  "select-pickems-teams": { handler: selectPickemsTeamCallback },
+  "select-pickems-channel": { handler: selectPickemsChannelCallback },
   "select-pickems-activate-toggle": {
     handler: togglePickemsActiveButtonCallback,
   },
+  "pickems-purge-confirm": { handler: pickemsPurgeConfirmCallback },
+  "pickems-purge-cancel": { handler: pickemsPurgeCancelCallback },
 };
 
 export const modalStore: Record<string, StoredModalData> = {};

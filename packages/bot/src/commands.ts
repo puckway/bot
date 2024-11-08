@@ -20,7 +20,13 @@ import { standingsCallback } from "./commands/standings";
 import { teamAutocomplete } from "./commands/teamAutocomplete";
 import { threadCloseCallback } from "./commands/thread";
 import { InteractionContext } from "./interactions";
-import { pickemsCallback } from "./commands/pickems";
+import { pickemsConfigCallback } from "./commands/pickemsConfig";
+import {
+  pickemsLeaderboardCallback,
+  pickemsMeCallback,
+  pickemsPurgeCallback,
+  seasonAutocomplete,
+} from "./commands/pickemsLeaderboard";
 
 export type AppCommandCallbackT<T extends APIInteraction> = (
   ctx: InteractionContext<T>,
@@ -77,8 +83,18 @@ export const appCommands: Record<
     notifications: {
       handlers: { BASE: notificationsCallback },
     },
+    "pickems-config": {
+      handlers: { BASE: pickemsConfigCallback },
+    },
     pickems: {
-      handlers: { BASE: pickemsCallback },
+      handlers: {
+        leaderboard: pickemsLeaderboardCallback,
+        me: pickemsMeCallback,
+        purge: pickemsPurgeCallback,
+      },
+      autocompleteHandlers: {
+        leaderboard: seasonAutocomplete,
+      },
     },
     about: {
       handlers: { BASE: aboutCallback },
