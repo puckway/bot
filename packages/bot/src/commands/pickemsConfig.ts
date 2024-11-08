@@ -282,14 +282,12 @@ export const selectPickemsTeamCallback: SelectMenuCallback = async (ctx) => {
   const teamIds = teamIdGroups.flat();
 
   await db
-    .update(pickems)
-    .set({ teamIds })
-    .where(
-      and(
-        eq(pickems.league, state.league),
-        eq(pickems.guildId, makeSnowflake(guildId)),
-      ),
-    );
+    .insert(pickems)
+    .values({ teamIds, league: state.league, guildId: makeSnowflake(guildId) })
+    .onConflictDoUpdate({
+      target: [pickems.league, pickems.guildId],
+      set: { teamIds },
+    });
 
   return ctx.updateMessage({
     embeds: [getSettingsEmbed(ctx, state.league, settings?.active)],
@@ -323,14 +321,16 @@ export const selectPickemsChannelCallback: SelectMenuCallback = async (ctx) => {
   });
 
   await db
-    .update(pickems)
-    .set({ channelId })
-    .where(
-      and(
-        eq(pickems.league, state.league),
-        eq(pickems.guildId, makeSnowflake(guildId)),
-      ),
-    );
+    .insert(pickems)
+    .values({
+      channelId,
+      league: state.league,
+      guildId: makeSnowflake(guildId),
+    })
+    .onConflictDoUpdate({
+      target: [pickems.league, pickems.guildId],
+      set: { channelId },
+    });
 
   return ctx.updateMessage({
     components: await getComponents(
