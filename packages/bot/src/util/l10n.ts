@@ -49,8 +49,10 @@ export const transformLocalizations =
   >(
     localizations: T,
   ) =>
-  (ctx: InteractionContext<APIInteraction>, key: keyof T["en"]) => {
-    const locale = getKeyableLocale(ctx) as keyof T;
+  (ctx: InteractionContext<APIInteraction> | string, key: keyof T["en"]) => {
+    const locale = (
+      typeof ctx === "string" ? ctx : getKeyableLocale(ctx)
+    ) as keyof T;
     const engStrings = localizations.en;
     const strings = localizations[locale];
     if (strings && key in strings) {

@@ -26,6 +26,7 @@ import { getTeamPartialEmoji } from "./util/emojis";
 import { isDiscordError } from "./util/errors";
 import { getNow } from "./util/time";
 import type { Snowflake } from "discord-snowflake";
+import { uni } from "./util/l10n";
 
 export type NotificationEntry = Pick<
   typeof notifications.$inferSelect,
@@ -140,7 +141,7 @@ const runPickems = async (
     try {
       const thread = (await rest.post(Routes.threads(entry.channelId), {
         body: {
-          name: `${league.toUpperCase()} Pickems - ${firstStart.toLocaleDateString(
+          name: `${uni("en", league)} Pickems - ${firstStart.toLocaleDateString(
             "en-US",
             {
               weekday: "short",
