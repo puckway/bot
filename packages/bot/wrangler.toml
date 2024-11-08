@@ -3,11 +3,10 @@ main = "src/index.ts"
 node_compat = true
 compatibility_date = "2023-12-18"
 
-[triggers]
 # Every day at 17:00 UTC (12:00 EST)
 # There is drift here due to DST but most of the typical hockey
 # season takes place during NA's standard time period
-crons = ["0 17 * * *"]
+triggers.crons = ["0 17 * * *"]
 
 [[durable_objects.bindings]]
 name = "NOTIFICATIONS"
@@ -26,3 +25,14 @@ preview_id = "e4d99620fddd4e959acd584ab2ca15ee"
 binding = "DB"
 database_name = "puckway"
 database_id = "6004009b-2d06-427e-905e-bb60b3802ff5"
+preview_database_id = "8716909d-ccc8-415c-8c4e-78c3c8983257"
+
+[env.preview]
+name = "puckway-bot-preview"
+durable_objects.bindings = [
+    { name = "NOTIFICATIONS", class_name = "DurableNotificationManager" },
+]
+kv_namespaces = [{ binding = "KV", id = "e4d99620fddd4e959acd584ab2ca15ee" }]
+d1_databases = [
+    { binding = "DB", database_name = "puckway-preview", database_id = "8716909d-ccc8-415c-8c4e-78c3c8983257" },
+]
