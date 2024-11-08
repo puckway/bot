@@ -18,7 +18,12 @@ export default function Index() {
         <p>
           Puckway stores some data as necessary for functionality. Configuring
           notifications with <span className="font-bold">/notifications</span>{" "}
-          will cause submitted data to be saved permanently.
+          and Pickems with <span className="font-bold">/pickems-config</span>{" "}
+          will cause submitted data to be saved permanently. Voting on Pickems
+          polls posted by the bot will cause the user's votes to be recorded
+          after the game has concluded. The user may use{" "}
+          <span className="font-bold">/pickems purge</span> to delete all votes
+          associated with their user ID.
         </p>
         <h1 className="font-bold text-3xl mt-4 mb-1">Terms of Use</h1>
         <p>
