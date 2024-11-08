@@ -36,27 +36,47 @@ export const hockeyTechLeagues: Record<
     // american
     clientCode: "ahl",
     key: "ccb91f29d6744675",
+    watch: {
+      platform: "FloHockey",
+      url: "https://www.flohockey.tv/leagues/10826833",
+    },
   },
   ohl: {
     // ontario
     clientCode: "ohl",
     // key: "4767a11864244441",
     key: "f1aa699db3d81487",
+    watch: {
+      platform: "CHL TV",
+      url: "https://watch.chl.ca/ohl_chl",
+    },
   },
   lhjmq: {
     // quebec major junior
     clientCode: "lhjmq",
     key: "f1aa699db3d81487",
+    watch: {
+      platform: "CHL TV",
+      url: "https://watch.chl.ca/qmjhl_chl",
+    },
   },
   whl: {
     // western
     clientCode: "whl",
     key: "41b145a848f4bd67",
+    watch: {
+      platform: "CHL TV",
+      url: "https://watch.chl.ca/whl_chl",
+    },
   },
   sphl: {
     // southern professional
     clientCode: "sphl",
     key: "8fa10d218c49ec96",
+    watch: {
+      platform: "FloHockey",
+      url: "https://www.flohockey.tv/leagues/10826834",
+    },
   },
   // mjhl: {
   //   // maritime junior
@@ -87,7 +107,7 @@ export const hockeyTechLeagues: Record<
   //   },
   // },
   // mhl: {
-  //   // 
+  //   // minor (Молодежная)
   //   clientCode: "mhl",
   //   key: "",
   //   proxy: "",

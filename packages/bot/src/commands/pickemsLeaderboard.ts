@@ -293,10 +293,9 @@ export const pickemsPurgeConfirmCallback: ButtonCallback = async (ctx) => {
   });
 };
 
-export const pickemsPurgeCancelCallback: ButtonCallback = async (ctx) => {
-  return ctx.updateMessage({
+export const pickemsPurgeCancelCallback: ButtonCallback = async (ctx) =>
+  ctx.updateMessage({
     content: "Cancelled. Your votes are safe with me.",
     components: [],
     flags: MessageFlags.Ephemeral,
   });
-};
