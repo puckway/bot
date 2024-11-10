@@ -388,9 +388,11 @@ export const getHtPenaltyEmbed = (
     .setColor(getTeamColor(league, team.id))
     .setDescription(
       [
-        `**${htPlayerName(penalty.player_penalized_info, utils)} (${
-          penalty.lang_penalty_description
-        })**`,
+        penalty.player_penalized_info?.player_id === undefined
+          ? `**${penalty.lang_penalty_description}**`
+          : `**${htPlayerName(penalty.player_penalized_info, utils)} (${
+              penalty.lang_penalty_description
+            })**`,
         penalty.player_penalized_info.player_id !==
         penalty.player_served_info.player_id
           ? `Served by ${htPlayerName(penalty.player_served_info, utils)}`
