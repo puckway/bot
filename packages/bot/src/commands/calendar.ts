@@ -4,7 +4,6 @@ import {
   EmbedBuilder,
   time,
 } from "@discordjs/builders";
-import * as api from "api";
 import {
   APIActionRowComponent,
   APIButtonComponent,
@@ -26,7 +25,7 @@ import { HockeyTechLeague, getHtClient, hockeyTechLeagues } from "../ht/client";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { getLeagueLogoUrl, getTeamEmoji } from "../util/emojis";
-import { getKhlLocale, transformLocalizations, uni } from "../util/l10n";
+import { transformLocalizations, uni } from "../util/l10n";
 import { getOffset } from "../util/time";
 import { leagueTeams } from "../ht/teams";
 import { InteractionContext } from "../interactions";
@@ -66,151 +65,21 @@ export type KhlListedPartialGame = Pick<
   "game_state_key" | "score" | "team_a" | "team_b" | "start_at" | "end_at"
 >;
 
-export const khlCalendarCallback: ChatInputAppCommandCallback = async (ctx) => {
-  // const teamVal = ctx.getStringOption("team")?.value;
-  const league = ctx.getStringOption("league").value as League;
-  const dateVal = ctx.getStringOption("date")?.value;
-  const dateMatch = dateVal ? dateVal.match(DATE_REGEX) : undefined;
-  if (dateVal && !dateMatch) {
-    return ctx.reply({
-      content: s(ctx, "badDate"),
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-  const date = dateMatch
-    ? new Date(
-        Number(dateMatch[1]),
-        Number(dateMatch[2]) - 1,
-        Number(dateMatch[3]),
-      )
-    : getNow();
-  if (Number.isNaN(date.getTime())) {
-    return ctx.reply({
-      content: s(ctx, "badDate"),
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-  const dateDay = date.toISOString().split("T")[0];
-  const locale = getKhlLocale(ctx);
-  const lowerLocale = locale === "cn" ? "en" : locale;
-  const key = `games-${league}-${date.toISOString().split("T")[0]}-${locale}`;
-  const cachedGames = await ctx.env.KV.get<KhlListedPartialGame[]>(key, "json");
-
-  const buildEmbed = (events: KhlListedPartialGame[]) =>
-    new EmbedBuilder()
-      .setAuthor({
-        name: uni(ctx, league),
-        // iconURL: "https://www.khl.ru/img/icons/32x32.png",
-      })
-      .setTitle(`${s(ctx, "schedule")} - ${time(date, "D")}`)
-      .setColor(colors.khl)
-      .setDescription(
-        events
-          .filter(
-            (game) =>
-              dateDay === new Date(game.start_at).toISOString().split("T")[0],
-          )
-          .sort((a, b) => a.start_at - b.start_at)
-          .map((game) => {
-            const homeAbbrev =
-              api.allTeams.find((t) => t.id === game.team_a.id)?.abbreviations[
-                lowerLocale
-              ] ?? game.team_a.name;
-            const awayAbbrev =
-              api.allTeams.find((t) => t.id === game.team_b.id)?.abbreviations[
-                lowerLocale
-              ] ?? game.team_b.name;
-            let homeScore = "";
-            let awayScore = "";
-            let extraScoreText = "";
-            if (game.score) {
-              const [h, a] = game.score.split(":");
-              homeScore = h;
-              awayScore = a.split(" ")[0];
-              // Just in case
-              extraScoreText = a.split(" ")[1] ?? "";
-            }
-            const homeEmoji = getTeamEmoji("khl", game.team_a.id);
-            const awayEmoji = getTeamEmoji("khl", game.team_b.id);
-            const line =
-              game.game_state_key === "not_yet_started"
-                ? `🔴 ${time(
-                    game.start_at / 1000,
-                    "t",
-                  )} - ${awayEmoji} ${awayAbbrev} @ ${homeEmoji} ${homeAbbrev}${
-                    game.end_at ? ` 🏁 ${time(game.end_at / 1000, "t")}` : ""
-                  }`
-                : `${
-                    game.game_state_key === "finished" ? "🏁" : "🟢"
-                  } ${awayEmoji} ${awayAbbrev} **${awayScore}** - **${homeScore}** ${homeEmoji} ${homeAbbrev}`;
-
-            return line;
-          })
-          .join("\n\n")
-          .trim() || s(ctx, "noGames"),
-      )
-      .toJSON();
-
-  if (cachedGames) {
-    return ctx.reply({ embeds: [buildEmbed(cachedGames)] });
-  }
-
-  return [
-    ctx.defer(),
-    async () => {
-      // The API accepts a specific timestamp, not a broad day, so we have to
-      // make sure our timestamp starts at 0 seconds on the next day in order
-      // to get all events for the day.
-      const sortDate = new Date(date);
-      sortDate.setUTCHours(0);
-      sortDate.setTime(sortDate.getTime() + 86400000);
-      const games = await api.getGames({ locale, date: sortDate });
-      await ctx.env.KV.put(
-        key,
-        JSON.stringify(
-          games.map(
-            (game) =>
-              ({
-                game_state_key: game.game_state_key,
-                team_a: game.team_a,
-                team_b: game.team_b,
-                score: game.score,
-                start_at: game.start_at,
-                end_at: game.end_at,
-              }) as KhlListedPartialGame,
-          ),
-        ),
-        {
-          // 1hr for empty days (not populated yet?), 5 minutes if there are ongoing games, 10 minutes otherwise
-          expirationTtl:
-            games.length === 0
-              ? 3600
-              : games.find((g) => g.game_state_key === "in_progress")
-                ? 300000
-                : 600000,
-        },
-      );
-      await ctx.followup.editOriginalMessage({ embeds: [buildEmbed(games)] });
-    },
-  ];
-};
-
 export const isoDate = (game: GamesByDate | Schedule) =>
   `${game.date_played}T${game.schedule_time}${getOffset(game.timezone)}`;
 
 const sendScheduleMessage = async (
   ctx: InteractionContext<APIChatInputApplicationCommandInteraction>,
   games: (GamesByDate | Schedule)[],
+  displayDate: Date,
 ) => {
-  const league = ctx.getStringOption("league").value as HockeyTechLeague;
-
+  const league = ctx.getStringOption("league").value as League;
   const teamId = ctx.getStringOption("team")?.value;
   const team = teamId
     ? leagueTeams[league].find((t) => t.id === teamId)
     : undefined;
   const subcommand = ctx.interaction.data.options?.[0].name;
 
-  const displayDate = games.length ? new Date(isoDate(games[0])) : getNow();
   const title = `${s(ctx, "schedule")}${
     team ? ` - ${team.nickname}` : ""
   } - ${displayDate.toLocaleString(ctx.getLocale(), {
@@ -308,10 +177,6 @@ const sendScheduleMessage = async (
 
 export const scheduleDayCallback: ChatInputAppCommandCallback = async (ctx) => {
   const league = ctx.getStringOption("league").value as League;
-  if (league === "khl") {
-    return await khlCalendarCallback(ctx);
-  }
-
   const client = getHtClient(league);
   const teamId = ctx.getStringOption("team")?.value;
 
@@ -324,11 +189,7 @@ export const scheduleDayCallback: ChatInputAppCommandCallback = async (ctx) => {
     });
   }
   const date = dateMatch
-    ? new Date(
-        Number(dateMatch[1]),
-        Number(dateMatch[2]) - 1,
-        Number(dateMatch[3]),
-      )
+    ? new Date(`${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}`)
     : getNow();
   if (Number.isNaN(date.getTime())) {
     return ctx.reply({
@@ -349,7 +210,7 @@ export const scheduleDayCallback: ChatInputAppCommandCallback = async (ctx) => {
           : true,
       );
 
-      await sendScheduleMessage(ctx, games);
+      await sendScheduleMessage(ctx, games, date);
     },
   ];
 };
@@ -358,9 +219,6 @@ export const scheduleMonthCallback: ChatInputAppCommandCallback = async (
   ctx,
 ) => {
   const league = ctx.getStringOption("league").value as League;
-  if (league === "khl") {
-    return await khlCalendarCallback(ctx);
-  }
 
   const client = getHtClient(league);
   const teamId = ctx.getStringOption("team")?.value;
@@ -375,15 +233,12 @@ export const scheduleMonthCallback: ChatInputAppCommandCallback = async (
   return [
     ctx.defer(),
     async () => {
-      const seasons = (await client.getSeasonList()).SiteKit.Seasons;
-      if (seasons.length === 0) {
-        await ctx.followup.editOriginalMessage({ content: s(ctx, "noGames") });
-        return;
-      }
-      const seasonId = Number(seasons[0].season_id);
-
       const games = (
-        await client.getSeasonSchedule(seasonId)
+        await client.getSeasonSchedule(
+          // @ts-expect-error
+          "latest",
+          teamId ? Number(teamId) : undefined,
+        )
       ).SiteKit.Schedule.filter(
         (game) =>
           (teamId
@@ -398,7 +253,21 @@ export const scheduleMonthCallback: ChatInputAppCommandCallback = async (
       );
 
       try {
-        await sendScheduleMessage(ctx, games);
+        await sendScheduleMessage(
+          ctx,
+          games,
+          games.length === 0
+            ? new Date(
+                // Next year if the provided month is after December but
+                // before the current month (i.e. it's not currently the
+                // end half of the season)
+                now.getUTCFullYear() +
+                  (month > 11 && month < now.getUTCMonth() ? 1 : 0),
+                month,
+                now.getUTCDate(),
+              )
+            : new Date(isoDate(games[0])),
+        );
       } catch (e) {
         console.error(e);
       }

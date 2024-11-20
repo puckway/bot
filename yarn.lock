@@ -1691,11 +1691,6 @@ anymatch@~3.1.2:
     normalize-path "^3.0.0"
     picomatch "^2.0.4"
 
-api@./packages/api:
-  version "0.0.0"
-  dependencies:
-    khl-api-types "^1.1.1"
-
 arg@^5.0.1, arg@^5.0.2:
   version "5.0.2"
   resolved "https://registry.npmjs.org/arg/-/arg-5.0.2.tgz"

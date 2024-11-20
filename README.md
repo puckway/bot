@@ -13,3 +13,6 @@ Puckway is an intragalactic bot for everything hockey (excluding the NHL). You m
 - [x] Live event notifications (goals, penalties, periods, ...)
 - [ ] Past game summary/stats
 - [ ] View past games for a given player
+
+## KHL compatibility
+

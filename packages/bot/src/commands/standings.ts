@@ -4,7 +4,12 @@ import HockeyTech from "hockeytech";
 import { getBorderCharacters, table } from "table";
 import { ChatInputAppCommandCallback } from "../commands";
 import { League } from "../db/schema";
-import { HockeyTechLeague, getHtClient, getPointsPct } from "../ht/client";
+import {
+  HockeyTechLeague,
+  getHtClient,
+  getPointsPct,
+  isKhl,
+} from "../ht/client";
 import { InteractionContext } from "../interactions";
 import { colors } from "../util/colors";
 import { getLeagueLogoUrl } from "../util/emojis";
@@ -136,14 +141,23 @@ export const getHtStandings = async (
   sort?: string,
   seasonId?: number,
 ) => {
-  let sid = seasonId;
-  const seasons = (await client.getSeasonList()).SiteKit.Seasons;
-  if (seasons.length === 0 && seasonId === undefined) {
-    return null;
-  } else if (seasons.length) {
-    sid = Number(
-      (seasons.find((s) => s.career !== "0") ?? seasons[0]).season_id,
-    );
+  let sid: "latest" | number | undefined = seasonId;
+  if (
+    seasonId === undefined &&
+    isKhl(client.getClientCode() as HockeyTechLeague)
+  ) {
+    // The KHL proxy won't return non-career seasons so
+    //  we can just use the latest one
+    sid = "latest";
+  } else {
+    const seasons = (await client.getSeasonList()).SiteKit.Seasons;
+    if (seasons.length === 0 && seasonId === undefined) {
+      return null;
+    } else if (seasons.length) {
+      sid = Number(
+        (seasons.find((s) => s.career !== "0") ?? seasons[0]).season_id,
+      );
+    }
   }
   if (!sid) {
     return null;
@@ -161,8 +175,14 @@ export const getHtStandings = async (
     | undefined;
 
   const standings = (
-    (await client.getStandings(sid, "conference", "standings")).SiteKit
-      .Statviewtype as HockeyTechTeamStanding[]
+    (
+      await client.getStandings(
+        // @ts-expect-error
+        sid,
+        "conference",
+        "standings",
+      )
+    ).SiteKit.Statviewtype as HockeyTechTeamStanding[]
   )
     .filter((team) => !!team.team_code)
     .sort((a, b) =>

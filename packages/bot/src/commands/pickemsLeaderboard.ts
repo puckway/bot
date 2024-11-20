@@ -158,15 +158,6 @@ export const pickemsMeCallback: ChatInputAppCommandCallback = async (ctx) => {
   const league = ctx.getStringOption("league").value as HockeyTechLeague;
 
   const client = getHtClient(league);
-  const seasons = (await client.getSeasonList()).SiteKit.Seasons;
-  if (seasons.length === 0) {
-    return ctx.reply({
-      content:
-        "There aren't any seasons for this league. This shouldn't happen.",
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-
   const db = getDb(ctx.env.DB);
   const votes = await db
     .select({
@@ -191,6 +182,15 @@ export const pickemsMeCallback: ChatInputAppCommandCallback = async (ctx) => {
   if (votes.length === 0) {
     return ctx.reply({
       content: "Looks like you don't have any votes recorded.",
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
+  const seasons = (await client.getSeasonList()).SiteKit.Seasons;
+  if (seasons.length === 0) {
+    return ctx.reply({
+      content:
+        "There aren't any seasons for this league. This shouldn't happen.",
       flags: MessageFlags.Ephemeral,
     });
   }

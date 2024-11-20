@@ -6,6 +6,7 @@ export const leagueAssets: Record<
   { logo?: string; teamEmojis: Record<number, string> }
 > = {
   khl: {
+    // logo: "",
     teamEmojis: {
       61: "1192320180865466438",
       40: "1192320195600076871",
@@ -34,6 +35,12 @@ export const leagueAssets: Record<
       31: "1198642562689409024",
     },
   },
+  zhhl: {
+    teamEmojis: {},
+  },
+  mhl: {
+    teamEmojis: {},
+  },
   pwhl: {
     logo: "https://hockey-bot.s3.us-east-005.backblazeb2.com/leagues/pwhl.jpg",
     teamEmojis: {
@@ -46,7 +53,8 @@ export const leagueAssets: Record<
     },
   },
   ahl: {
-    logo: "https://assets.leaguestat.com/ahl/logos/50x50/418.png",
+    logo: "https://lscluster.hockeytech.com/download.php?client_code=ahl&file_path=img/logos/4_logo_image.png",
+    // logo: "https://assets.leaguestat.com/ahl/logos/50x50/418.png",
     teamEmojis: {
       440: "1203027257640222782",
       402: "1203027525450604585",
@@ -90,19 +98,19 @@ export const leagueAssets: Record<
     },
   },
   ohl: {
-    logo: undefined,
+    logo: "https://lscluster.hockeytech.com/download.php?client_code=ohl&file_path=img/logos/league-logo.jpg",
     teamEmojis: {},
   },
   lhjmq: {
-    logo: undefined,
+    logo: "https://lscluster.hockeytech.com/download.php?client_code=lhjmq&file_path=img/logos/1_logo_image.png",
     teamEmojis: {},
   },
   whl: {
-    logo: undefined,
+    logo: "https://lscluster.hockeytech.com/download.php?client_code=whl&file_path=img/logos/26_logo_image.jpg",
     teamEmojis: {},
   },
   sphl: {
-    logo: undefined,
+    logo: "https://lscluster.hockeytech.com/download.php?client_code=sphl&file_path=img/logos/1_logo_image.png",
     teamEmojis: {},
   },
 };

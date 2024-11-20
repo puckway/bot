@@ -12,6 +12,9 @@ export const leagues = [
   "whl",
   "lhjmq",
   "sphl",
+  "khl",
+  "zhhl",
+  "mhl",
 ] as const;
 export type League = (typeof leagues)[number];
 

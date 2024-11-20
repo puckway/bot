@@ -7,7 +7,10 @@ export type HockeyTechLeague =
   | "ohl"
   | "lhjmq"
   | "whl"
-  | "sphl";
+  | "sphl"
+  | "khl"
+  | "zhhl"
+  | "mhl";
 
 export interface HockeyTechLeagueConfiguration {
   clientCode: string;
@@ -18,6 +21,12 @@ export interface HockeyTechLeagueConfiguration {
     url: string;
   };
 }
+
+export const khlProxyOrigin = "http://localhost:56523";
+// export const khlProxyOrigin = "https://khl.shayy.workers.dev"
+
+export const isKhl = (league: HockeyTechLeague) =>
+  ["khl", "zhhl", "mhl"].includes(league);
 
 export const hockeyTechLeagues: Record<
   HockeyTechLeague,
@@ -84,38 +93,38 @@ export const hockeyTechLeagues: Record<
   //   key: "4a948e7faf5ee58d",
   // },
   // khl leagues (hockeytech imitation proxy server)
-  // khl: {
-  //   // kontinental
-  //   clientCode: "khl",
-  //   key: "",
-  //   proxy: "",
-  //   // They might be migrating to yandex (KHL plus) instead?
-  //   // There is also KHL prime, a TV channel
-  //   // watch: {
-  //   //   platform: "video.khl.ru",
-  //   //   url: "https://video.khl.ru/page/broadcasts/",
-  //   // },
-  // },
-  // zhhl: {
-  //   // women's (Женская)
-  //   clientCode: "zhhl",
-  //   key: "",
-  //   proxy: "",
-  //   watch: {
-  //     platform: "YouTube",
-  //     url: "https://www.youtube.com/@whl_ru/streams",
-  //   },
-  // },
-  // mhl: {
-  //   // minor (Молодежная)
-  //   clientCode: "mhl",
-  //   key: "",
-  //   proxy: "",
-  //   watch: {
-  //     platform: "YouTube",
-  //     url: "https://www.youtube.com/@mhl_rus/streams",
-  //   },
-  // },
+  khl: {
+    // kontinental
+    clientCode: "khl",
+    key: "khl",
+    proxy: `${khlProxyOrigin}?url=`,
+    // They might be migrating to yandex (KHL plus) instead?
+    // There is also KHL prime, a TV channel
+    watch: {
+      platform: "video.khl.ru",
+      url: "https://video.khl.ru/page/broadcasts/",
+    },
+  },
+  zhhl: {
+    // women's (Женская)
+    clientCode: "whl",
+    key: "whl",
+    proxy: `${khlProxyOrigin}?url=`,
+    watch: {
+      platform: "YouTube",
+      url: "https://www.youtube.com/@whl_ru/streams",
+    },
+  },
+  mhl: {
+    // minor (Молодежная)
+    clientCode: "mhl",
+    key: "mhl",
+    proxy: `${khlProxyOrigin}?url=`,
+    watch: {
+      platform: "YouTube",
+      url: "https://www.youtube.com/@mhl_rus/streams",
+    },
+  },
 };
 
 export const getHtClient = (league: HockeyTechLeague, locale?: "en" | "fr") => {
@@ -137,4 +146,5 @@ export const getPointsPct = (
   return (points / (gamesPlayed * gamesWorth || 1)).toPrecision(3);
 };
 
-export const GLOBAL_GAME_ID_REGEX = /^🆔 (pwhl|ahl|ohl|lhjmq|whl|sphl):(\d+)$/m;
+export const GLOBAL_GAME_ID_REGEX =
+  /^🆔 (pwhl|ahl|ohl|lhjmq|whl|sphl|khl|zhhl|mhl):(\d+)$/m;

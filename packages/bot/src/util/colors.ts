@@ -14,6 +14,8 @@ export const colors = {
     "6": 0x467ddb,
   } as Record<PwhlTeamId, number>,
   khl: 0x306da9,
+  zhhl: 0x306da9,
+  mhl: 0x306da9,
   ahl: 0xc9353c,
   ohl: 0x3d7ab1,
   lhjmq: 0x2d69dc,

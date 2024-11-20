@@ -53,65 +53,70 @@ const getLeagueOption = ({
   description_localizations,
   choices: [
     {
-      name: "AHL",
+      name: "AHL (USA)",
       name_localizations: {
-        fr: "LAH",
-        ru: "АХЛ",
+        fr: "LAH (États-Unis)",
+        ru: "АХЛ (США)",
       },
       value: "ahl",
+    },
+    {
+      name: "PWHL (USA/Canada)",
+      name_localizations: {
+        fr: "LPHF (États-Unis/Canada)",
+        ru: "ПЖХЛ (США/Канада)",
+      },
+      value: "pwhl",
     },
     ...(!noKhl
       ? [
           {
-            name: "KHL",
+            name: "KHL (Russia)",
             name_localizations: {
-              ru: "КХЛ",
+              ru: "КХЛ (Россия)",
             },
             value: "khl",
           },
-          // {
-          //   name: "MHL",
-          //   name_localizations: {
-          //     ru: "МХЛ",
-          //   },
-          //   value: "mhl",
-          // },
-          // {
-          //   name: "ZhHL",
-          //   name_localizations: {
-          //     ru: "ЖХЛ",
-          //   },
-          //   value: "zhhl",
-          // },
+          {
+            name: "MHL (Russia)",
+            name_localizations: {
+              ru: "МХЛ (Россия)",
+            },
+            value: "mhl",
+          },
+          {
+            name: "WHL (Russia)",
+            name_localizations: {
+              ru: "ЖХЛ (Россия)",
+            },
+            value: "zhhl",
+          },
         ]
       : []),
     // {
-    //   name: "QMJHL",
+    //   name: "QMJHL (Canada)",
     //   name_localizations: {
-    //     fr: "LHJMQ",
+    //     fr: "LHJMQ (Canada)",
     //   },
     //   value: "lhjmq",
     // },
     // {
-    //   name: "OHL",
+    //   name: "OHL (Canada)",
     //   name_localizations: {
-    //     fr: "LHO",
+    //     fr: "LHO (Canada)",
     //   },
     //   value: "ohl",
     // },
-    {
-      name: "PWHL",
-      name_localizations: {
-        fr: "LPHF",
-      },
-      value: "pwhl",
-    },
     // {
-    //   name: "SPHL",
+    //   name: "SPHL (USA)",
     //   value: "sphl",
     // },
     // {
-    //   name: "WHL",
+    //   name: "WHL (Canada/USA)",
+    //   name_localizations: {
+    //     // Wikipedia just uses the latin abbreviation
+    //     ru: "ЗХЛ (Канада/США)",
+    //   },
     //   value: "whl",
     // },
   ],
@@ -140,9 +145,7 @@ const payload: RESTPutAPIApplicationCommandsJSONBody = [
           fr: "Obtenir tous les jeux pour une date spécifique, ou aujourd'hui si elle n'est pas spécifiée.",
         },
         options: [
-          getLeagueOption({
-            description: "The league to get games for",
-          }),
+          getLeagueOption({ description: "The league to get games for" }),
           {
             type: ApplicationCommandOptionType.String,
             name: "date",
@@ -172,10 +175,7 @@ const payload: RESTPutAPIApplicationCommandsJSONBody = [
           fr: "Obtenir tous les jeux pour un mois donné, ou le mois en cours s'il n'est pas spécifié.",
         },
         options: [
-          getLeagueOption({
-            description: "The league to get games for",
-            noKhl: true,
-          }),
+          getLeagueOption({ description: "The league to get games for" }),
           {
             type: ApplicationCommandOptionType.String,
             name: "month",
@@ -224,10 +224,7 @@ const payload: RESTPutAPIApplicationCommandsJSONBody = [
     },
     description: "A quick look at current, recent, and future games",
     options: [
-      getLeagueOption({
-        description: "The league to check games for",
-        noKhl: true,
-      }),
+      getLeagueOption({ description: "The league to check games for" }),
       {
         type: ApplicationCommandOptionType.String,
         name: "team",
@@ -247,9 +244,7 @@ const payload: RESTPutAPIApplicationCommandsJSONBody = [
     },
     description: "Get info for a player",
     options: [
-      getLeagueOption({
-        description: "The league that the player is in",
-      }),
+      getLeagueOption({ description: "The league that the player is in" }),
       {
         type: ApplicationCommandOptionType.String,
         name: "name",
@@ -269,9 +264,7 @@ const payload: RESTPutAPIApplicationCommandsJSONBody = [
     description: "Get league standings",
     // dm_permission: false,
     options: [
-      getLeagueOption({
-        description: "The league to get team standings for",
-      }),
+      getLeagueOption({ description: "The league to get team standings for" }),
       {
         type: ApplicationCommandOptionType.String,
         name: "sort",
@@ -318,46 +311,7 @@ const payload: RESTPutAPIApplicationCommandsJSONBody = [
       ru: "Найдите игрока по номеру",
     },
     options: [
-      // {
-      //   type: ApplicationCommandOptionType.Subcommand,
-      //   name: "khl",
-      //   name_localizations: {
-      //     ru: "кхл",
-      //   },
-      //   description: "Find a player by their number",
-      //   description_localizations: {
-      //     fr: "Trouver un joueur par son numéro",
-      //     ru: "Найдите игрока по номеру",
-      //   },
-      //   options: [
-      //     {
-      //       type: ApplicationCommandOptionType.Integer,
-      //       min_value: 1,
-      //       max_value: 99,
-      //       name: "number",
-      //       name_localizations: {
-      //         fr: "numéro",
-      //         ru: "число",
-      //       },
-      //       description: "The player's jersey number",
-      //       description_localizations: {
-      //         fr: "Le numéro de maillot du joueur",
-      //       },
-      //       required: true,
-      //     },
-      //     {
-      //       type: ApplicationCommandOptionType.String,
-      //       name: "team",
-      //       description: "The team to search",
-      //       required: false,
-      //       autocomplete: true,
-      //     }
-      //   ],
-      // },
-      getLeagueOption({
-        description: "The league that the player is in",
-        noKhl: true,
-      }),
+      getLeagueOption({ description: "The league that the player is in" }),
       {
         type: ApplicationCommandOptionType.Integer,
         min_value: 1,

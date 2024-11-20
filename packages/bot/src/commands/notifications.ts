@@ -5,9 +5,8 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
 } from "@discordjs/builders";
-import * as api from "api";
 import { ButtonStyle, ChannelType, MessageFlags } from "discord-api-types/v10";
-import { and, eq, not } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { ChatInputAppCommandCallback } from "../commands";
 import {
   ButtonCallback,
@@ -133,20 +132,12 @@ const getComponents = async (
     "final",
   ] satisfies (keyof NotificationSendConfig)[];
 
-  const options =
-    league === "khl"
-      ? api.allTeams.map((team) => ({
-          label: team.names.en,
-          value: String(team.id),
-          default: teamIds?.includes(String(team.id)),
-          emoji: getTeamPartialEmoji(league, team.id),
-        }))
-      : leagueTeams[league].map((team) => ({
-          label: team.name,
-          value: team.id,
-          default: teamIds?.includes(team.id),
-          emoji: getTeamPartialEmoji(league, team.id),
-        }));
+  const options = leagueTeams[league].map((team) => ({
+    label: team.name,
+    value: team.id,
+    default: teamIds?.includes(team.id),
+    emoji: getTeamPartialEmoji(league, team.id),
+  }));
 
   const optionGroups = [];
   let selectIndex = 0;
@@ -306,10 +297,7 @@ export const selectNotificationTeamCallback: SelectMenuCallback = async (
     },
   });
 
-  const allTeamIds =
-    state.league === "khl"
-      ? api.allTeams.map((team) => String(team.id))
-      : leagueTeams[state.league].map((team) => team.id);
+  const allTeamIds = leagueTeams[state.league].map((team) => team.id);
 
   // This is a trimmed down mirror of what the user selected from.
   // For leagues with more than 25 teams, this is necessary to determine

@@ -5,39 +5,29 @@ import {
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
 } from "@discordjs/builders";
-import * as api from "api";
-import { APIInteraction, MessageFlags } from "discord-api-types/v10";
+import { APIInteraction } from "discord-api-types/v10";
 import {
   NumericBoolean,
   PlayerSeasonStat,
   PlayerSeasonStatTotal,
   RosterPlayer,
 } from "hockeytech";
-import type { APILightPlayer } from "khl-api-types";
 import { getBorderCharacters, table } from "table";
 import { ChatInputAppCommandCallback } from "../commands";
 import { SelectMenuCallback } from "../components";
 import { DBWithSchema, getDb } from "../db";
 import { League } from "../db/schema";
 import { getEpHtPlayer } from "../ep/rest";
-import { HockeyTechLeague, getHtClient } from "../ht/client";
+import { HockeyTechLeague, getHtClient, isKhl } from "../ht/client";
 import { getHtTeamLogoUrl } from "../ht/team";
 import { InteractionContext } from "../interactions";
-import { colors } from "../util/colors";
+import { getTeamColor } from "../util/colors";
 import { storeComponents } from "../util/components";
-import { countryCodeEmoji, getTeamEmoji } from "../util/emojis";
+import { getTeamEmoji } from "../util/emojis";
 import { getExternalUtils } from "../util/external";
-import {
-  getHtLocale,
-  getKhlLocale,
-  transformLocalizations,
-} from "../util/l10n";
+import { getHtLocale, transformLocalizations } from "../util/l10n";
 import { leagueTeams } from "../ht/teams";
 import { getNow } from "../util/time";
-
-type KhlPartialPlayer = Pick<APILightPlayer, "id" | "name" | "shirt_number"> & {
-  team: { name: string } | null;
-};
 
 const s = transformLocalizations({
   en: {
@@ -65,201 +55,23 @@ const s = transformLocalizations({
   },
 });
 
-// Abramov Mikhail A. -> Mikhail A. Abramov
-// We assume nobody has a last name with a space in it here
-// (e.g. "van Pelt"), which might happen, TBD
-// Also, this might be a sort of Englishism, I'm not sure if
-// the default format makes more sense to Russians. If so, we'll
-// want to not do this for the Russian locale.
-const reverseName = (name: string) => {
-  const i = name.indexOf(" ");
-  return `${name.slice(i)} ${name.slice(0, i)}`.trim();
-};
-
-const getKhlPlayerEmbed = async (
-  ctx: InteractionContext<APIInteraction>,
-  playerId: number,
-) => {
-  const locale = getKhlLocale(ctx);
-  const player = await api.getPlayer(playerId, { locale, light: false });
-  const name = reverseName(player.name);
-  const embed = new EmbedBuilder()
-    .setAuthor({
-      name: `${name} ${player.shirt_number ? `#${player.shirt_number}` : ""}`,
-      url: `${api.DocBaseEnum[locale]}/players/${player.khl_id}`,
-      iconURL: (player.team ?? player.teams[0])?.image,
-    })
-    .setColor(colors.khl)
-    .setThumbnail(player.image);
-
-  let description = "";
-  if (player.birthday && player.age) {
-    const birthdate = new Date(player.birthday * 1000)
-      .toISOString()
-      .split("T")[0];
-    description += `${s(ctx, "born")} ${birthdate} (${player.age})\n`;
-  }
-  if (player.country) {
-    let emoji = "";
-    if (player.flag_image_url) {
-      const match = player.flag_image_url.match(/([A-Z]{2})\.png$/);
-      if (match) {
-        emoji = countryCodeEmoji(match[1]);
-      }
-    }
-    description += `${emoji} ${player.country}`.trim();
-    description += "\n";
-  }
-  if (player.role) {
-    description += `${s(ctx, "position")} ${player.role} ${
-      player.stick ? `(${player.stick.toUpperCase()})` : ""
-    }\n`;
-  }
-  if (player.height) {
-    const inches = player.height * 0.39;
-    const feet = Math.floor(inches / 12);
-    const imperial = `${feet}'${Math.floor(inches - feet * 12)}"`;
-
-    description += `${s(ctx, "height")} ${player.height} cm / ${imperial}\n`;
-  }
-  if (player.weight) {
-    const pounds = Math.floor(player.weight * 2.2);
-    // const stones = Math.floor(player.weight * 0.15747);
-    description += `${s(ctx, "weight")} ${player.weight} kg / ${pounds} lb\n`;
-  }
-  embed.setDescription(description.slice(0, 4096));
-
-  embed.addFields(
-    player.teams
-      // Sometimes divisions are included with an empty `location`
-      // We could hardcode a list of division IDs or we could just check this
-      .filter((t) => !!t.location)
-      .slice(0, 5)
-      .map((team) => {
-        const emoji = getTeamEmoji("khl", team.id);
-        return {
-          name: `${emoji} ${team.name}`,
-          value: team.seasons.split(",").join(", ").slice(0, 1024),
-          inline: false,
-        };
-      }),
-  );
-
-  return embed;
-};
-
-export const playerCallback: ChatInputAppCommandCallback = (ctx) => {
-  if (["khl"].includes(ctx.getStringOption("league").value)) {
-    return khlPlayerCallback(ctx);
-  } else {
-    return htPlayerCallback(ctx);
-  }
-};
-
-export const khlPlayerCallback: ChatInputAppCommandCallback = async (ctx) => {
-  const query = ctx.getStringOption("name").value.toLowerCase();
-
+export const playerSearchSelectCallback: SelectMenuCallback = async (ctx) => {
+  const value = ctx.interaction.data.values[0];
+  const [league, playerId] = value.split("-");
   return [
     ctx.defer(),
     async () => {
-      // This is really how the KHL app does it. There's no endpoint to
-      // search players, so the entire players list is cached and then
-      // searched. It's really not that much data, especially when reduced
-      // for our KV store, so I'm fine with doing this
-      const locale = getKhlLocale(ctx);
-      const key = `players-khl-${locale}`;
-      const players =
-        (await ctx.env.KV.get<KhlPartialPlayer[]>(key, "json")) ??
-        (await api.getPlayers({ locale, light: true }));
-      await ctx.env.KV.put(
-        key,
-        JSON.stringify(
-          players.map(
-            (p) =>
-              ({
-                id: p.id,
-                name: reverseName(p.name),
-                shirt_number: p.shirt_number,
-                team: p.team ? { name: p.team.name } : undefined,
-              }) as KhlPartialPlayer,
-          ),
-        ),
-        {
-          // 3 days
-          expirationTtl: 259200,
-        },
+      const embed = await getPlayerEmbed(
+        ctx,
+        league as League,
+        Number(playerId),
       );
-
-      const matches = players.filter((p) =>
-        p.name.toLowerCase().includes(query),
-      );
-      if (matches.length === 0) {
-        await ctx.followup.editOriginalMessage({ content: s(ctx, "noPlayer") });
-        return;
-      }
-
-      const embed = await getKhlPlayerEmbed(ctx, matches[0].id);
-      let components;
-      if (matches.length > 1) {
-        components = [
-          new ActionRowBuilder<SelectMenuBuilder>()
-            .addComponents(
-              await storeComponents(ctx.env.KV, [
-                new StringSelectMenuBuilder().setOptions(
-                  matches.slice(0, 25).map((p) =>
-                    new StringSelectMenuOptionBuilder({
-                      description: p.team
-                        ? p.team.name.slice(0, 100)
-                        : undefined,
-                    })
-                      .setValue(`khl-${p.id}`)
-                      .setLabel(
-                        `${p.name} ${
-                          p.shirt_number ? `#${p.shirt_number}` : ""
-                        }`.slice(0, 100),
-                      ),
-                  ),
-                ),
-                {
-                  componentRoutingId: "player-search",
-                  componentTimeout: 600,
-                },
-              ]),
-            )
-            .toJSON(),
-        ];
-      }
-
-      await ctx.followup.editOriginalMessage({
-        embeds: [embed.toJSON()],
-        components,
-      });
+      await ctx.followup.editOriginalMessage({ embeds: [embed.toJSON()] });
     },
   ];
 };
 
-export const playerSearchSelectCallback: SelectMenuCallback = async (ctx) => {
-  const value = ctx.interaction.data.values[0];
-  const [league, playerId] = value.split("-");
-  if (league === "khl") {
-    return [
-      ctx.defer(),
-      async () => {
-        const embed = await getKhlPlayerEmbed(ctx, Number(playerId));
-        await ctx.followup.editOriginalMessage({ embeds: [embed.toJSON()] });
-      },
-    ];
-  } else {
-    const embed = await getHtPlayerEmbed(
-      ctx,
-      league as HockeyTechLeague,
-      Number(playerId),
-    );
-    return ctx.updateMessage({ embeds: [embed.toJSON()] });
-  }
-};
-
-const getHtPlayerEmbed = async (
+const getPlayerEmbed = async (
   ctx: InteractionContext<APIInteraction>,
   league: HockeyTechLeague,
   playerInput: number | RosterPlayer,
@@ -337,7 +149,7 @@ const getHtPlayerEmbed = async (
       url: utils.player(playerId),
       iconURL: teamId ? getHtTeamLogoUrl(league, teamId) : undefined,
     })
-    .setColor(colors[league])
+    .setColor(getTeamColor(league, teamId))
     .setThumbnail(
       ("primary_image" in player
         ? player.primary_image
@@ -495,6 +307,14 @@ const getHtPlayerEmbed = async (
         ],
       );
     }
+    if (isKhl(league)) {
+      // Our KHL proxy is unable to get historical data, so we're going to
+      // take out the middle (total) column
+      for (const row of tableData) {
+        row.splice(1, 1);
+      }
+    }
+
     embed.addFields({
       name: "Stats",
       value: `${
@@ -512,14 +332,19 @@ const getHtPlayerEmbed = async (
 
   embed.setDescription(description.slice(0, 4096));
   embed.setFooter({
-    text: "Some data shown may be from eliteprospects.com",
+    text: [
+      "Some data shown may be from eliteprospects.com.",
+      isKhl(league) ? "Historical data is unavailable for KHL leagues." : "",
+    ]
+      .join("\n")
+      .trim(),
   });
 
   return embed;
 };
 
-export const htPlayerCallback: ChatInputAppCommandCallback = async (ctx) => {
-  const league = ctx.getStringOption("league").value as HockeyTechLeague;
+export const playerCallback: ChatInputAppCommandCallback = async (ctx) => {
+  const league = ctx.getStringOption("league").value as League;
   const query = ctx.getStringOption("name").value.toLowerCase();
 
   return [
@@ -537,7 +362,7 @@ export const htPlayerCallback: ChatInputAppCommandCallback = async (ctx) => {
         return;
       }
 
-      const embed = await getHtPlayerEmbed(
+      const embed = await getPlayerEmbed(
         ctx,
         league,
         Number(players[0].player_id),
@@ -586,30 +411,26 @@ export const whoisCallback: ChatInputAppCommandCallback = async (ctx) => {
   const playerNumber = ctx.getIntegerOption("number").value;
   const teamId = Number(ctx.getStringOption("team").value);
 
-  if (league === "khl") {
-    return ctx.reply({
-      content: "This league is not supported for this command.",
-      flags: MessageFlags.Ephemeral,
-    });
-  }
+  return [
+    ctx.defer({ ephemeral: true }),
+    async () => {
+      const client = getHtClient(league, getHtLocale(ctx));
+      const seasons = (await client.getSeasonList()).SiteKit.Seasons;
+      // All star seasons can behave weirdly
+      const season = seasons.find((s) => s.career === "1") ?? seasons[0];
+      const roster = (await client.getRoster(Number(season.season_id), teamId))
+        .SiteKit.Roster;
+      // We assume no duplicates
+      const player = roster.find(
+        (player) => player.tp_jersey_number === String(playerNumber),
+      );
+      if (!player) {
+        await ctx.followup.editOriginalMessage({ content: s(ctx, "noPlayer") });
+        return;
+      }
 
-  const client = getHtClient(league, getHtLocale(ctx));
-  const seasons = (await client.getSeasonList()).SiteKit.Seasons;
-  // All star seasons can behave weirdly
-  const season = seasons.find((s) => s.career === "1") ?? seasons[0];
-  const roster = (await client.getRoster(Number(season.season_id), teamId))
-    .SiteKit.Roster;
-  // We assume no duplicates
-  const player = roster.find(
-    (player) => player.tp_jersey_number === String(playerNumber),
-  );
-  if (!player) {
-    return ctx.reply({
-      content: s(ctx, "noPlayer"),
-      flags: MessageFlags.Ephemeral,
-    });
-  }
-
-  const embed = await getHtPlayerEmbed(ctx, league, player);
-  return ctx.reply({ embeds: [embed.toJSON()] });
+      const embed = await getPlayerEmbed(ctx, league, player);
+      await ctx.followup.editOriginalMessage({ embeds: [embed.toJSON()] });
+    },
+  ];
 };

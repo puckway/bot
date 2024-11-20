@@ -1,10 +1,11 @@
 import { League } from "../db/schema";
+import { khlProxyOrigin } from "../ht/client";
 
 export const getExternalUtils = <L = League>(league: L, locale_?: string) => {
   const locale = locale_ ?? "en";
   switch (league) {
-    // case "mhl":
-    // case "zhhl":
+    case "mhl":
+    case "zhhl":
     case "khl": {
       const site =
         league === "khl"
@@ -16,14 +17,13 @@ export const getExternalUtils = <L = League>(league: L, locale_?: string) => {
             : "https://whl.khl.ru";
       return {
         site,
-        player: (playerId: string | number) => `${site}/players/${playerId}`,
-        club: (slug: string) => `${site}/clubs/${slug}`,
-        gameCenter: (gameId: string, seasonId?: string) =>
-          `${site}/game/${seasonId}/${gameId}/resume/`,
-        standings: (seasonId?: string, part?: string) =>
-          seasonId
-            ? `${site}/standings/${seasonId}/${part ?? "conference"}/`
-            : `${site}/standings/`,
+        player: (playerId: string | number) =>
+          `${khlProxyOrigin}/${league}/player/${playerId}?lang=${locale}`,
+        team: (teamId: string | number) =>
+          `${khlProxyOrigin}/${league}/team/${teamId}?lang=${locale}`,
+        gameCenter: (gameId: string) =>
+          `${khlProxyOrigin}/${league}/game-center/${gameId}?lang=${locale}`,
+        standings: () => `${site}/standings/`,
       };
     }
     case "pwhl": {
