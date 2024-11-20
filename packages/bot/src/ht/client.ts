@@ -22,8 +22,8 @@ export interface HockeyTechLeagueConfiguration {
   };
 }
 
-export const khlProxyOrigin = "http://localhost:56523";
-// export const khlProxyOrigin = "https://khl.shayy.workers.dev"
+// export const khlProxyOrigin = "http://localhost:51996";
+export const khlProxyOrigin = "https://khl.shayy.workers.dev"
 
 export const isKhl = (league: HockeyTechLeague) =>
   ["khl", "zhhl", "mhl"].includes(league);
