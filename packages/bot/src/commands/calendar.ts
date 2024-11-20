@@ -258,13 +258,13 @@ export const scheduleMonthCallback: ChatInputAppCommandCallback = async (
           games,
           games.length === 0
             ? new Date(
-                // Next year if the provided month is after December but
-                // before the current month (i.e. it's not currently the
-                // end half of the season)
+                // It's currently the first half of the season and the month
+                // provided is in the last half, so add 1 year to the display
+                // date. Assumes winter leagues
                 now.getUTCFullYear() +
-                  (month > 11 && month < now.getUTCMonth() ? 1 : 0),
+                  (month < 6 && now.getUTCMonth() >= 6 ? 1 : 0),
                 month,
-                now.getUTCDate(),
+                5,
               )
             : new Date(isoDate(games[0])),
         );
