@@ -10,13 +10,13 @@ export default ({
     extend: {
       colors: {
         pwhl: {
-          DEFAULT: "#2e0887",
-          bos: "#244635",
-          min: "#2b1b44",
-          mon: "#7b2d35",
-          ny: "#4fafa8",
+          DEFAULT: "#6738B6",
+          bos: "#223E35",
+          min: "#220F5E",
+          mon: "#7B2D35",
+          ny: "#52B3AF",
           ott: "#982932",
-          tor: "#467ddb",
+          tor: "#2B65B3",
         },
         khl: {
           DEFAULT: "#306da9",

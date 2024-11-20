@@ -33,15 +33,16 @@ export default function Index() {
             <ul className="list-disc list-inside">
               <li>Live score updates in a designated channel</li>
               <li>Gameday threads</li>
+              <li>Pickems</li>
               <li>Commands for game schedules and player info</li>
               <li>Partial French support</li>
             </ul>
           </div>
         </div>
-        <div className="flex uppercase font-bold text-slate-200">
+        <div className="flex uppercase font-bold text-black">
           {/* <Link
             to="/scores"
-            className="rounded-xl bg-pwhl-tor p-2 shadow-lg text-center w-1/2 mr-2"
+            className="rounded-xl bg-pwhl-tor p-2 shadow-lg text-center w-1/2 mr-2 text-slate-200"
           >
             Scores
           </Link> */}
