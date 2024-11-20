@@ -47,9 +47,9 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
     generator: "Puckway (https://puckway.shay.cat)",
     language: locale,
     feedLinks: {
-      rss: `${origin}/api/news/pwhl/${locale}.rss`,
-      atom: `${origin}/api/news/pwhl/${locale}.atom`,
-      json: `${origin}/api/news/pwhl/${locale}.json`,
+      rss: `${origin}/feeds/pwhl/${locale}.rss`,
+      atom: `${origin}/feeds/pwhl/${locale}.atom`,
+      json: `${origin}/feeds/pwhl/${locale}.json`,
     },
   });
   for (const tag of data.content_filters.content_tags) feed.addCategory(tag);
