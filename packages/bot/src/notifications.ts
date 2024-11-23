@@ -1628,12 +1628,14 @@ export class DurableNotificationManager implements DurableObject {
             // We've probably been in a loop for several hours; schedule a purge.
             nextAlarm = null;
           }
+          // 3 minutes
           nextAlarm = new Date(now.getTime() + 180_000);
         }
         if (nextAlarm === null) {
           // The games are all over
           await this.state.storage.put("alarmType", AlarmType.Purge);
-          await this.state.storage.setAlarm(now.getTime() + 604_800_000);
+          // 2 days
+          await this.state.storage.setAlarm(now.getTime() + 86400 * 2);
         } else {
           // Wait at least 30 seconds before letting the next alarm happen
           const minimumAlarm = now.getTime() + 30_000;
@@ -1644,7 +1646,7 @@ export class DurableNotificationManager implements DurableObject {
         break;
       }
       case AlarmType.Purge: {
-        // Executed 1 week after the game ends
+        // Executed 2 days after the last game ends
         // We don't need to clean up KV because the keys have TTLs
         await this.state.storage.deleteAll();
         return;
