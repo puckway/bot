@@ -5,6 +5,7 @@ import {
   APIThreadChannel,
   APIUser,
   ChannelType,
+  MessageType,
   RESTGetAPIPollAnswerVotersResult,
   RESTPostAPIChannelMessageJSONBody,
   RESTPostAPIChannelThreadsJSONBody,
@@ -212,15 +213,12 @@ const runPickems = async (
             gameId: game.id,
             day: game.date_played,
           });
-        } catch {
+        } catch (e) {
+          console.error(e);
           break;
         }
       }
     } catch (e) {
-      if (isDiscordError(e)) {
-        // Probably a permission error
-        continue;
-      }
       console.error(e);
     }
   }
@@ -250,9 +248,50 @@ const savePickemsPredictions = async (
   const rest = new REST().setToken(env.DISCORD_TOKEN);
 
   const processedPollMessageIds = new Set<Snowflake>();
-  // const channelIds = allEntries
-  //   .map((e) => e.channelId)
-  //   .filter((c, i, a) => a.indexOf(c) === i);
+  const channelIds = allEntries
+    .map((e) => e.channelId)
+    .filter((c, i, a) => a.indexOf(c) === i);
+  const pollMessageIds = allEntries
+    .map((e) => e.messageId)
+    .filter((c, i, a) => a.indexOf(c) === i);
+  for (const channelId of channelIds) {
+    try {
+      const messages = (await rest.get(Routes.channelMessages(channelId), {
+        query: new URLSearchParams({ limit: "100" }),
+      })) as APIMessage[];
+
+      // Clean up automatic messages stating the poll closed. Normally this
+      // wouldn't matter but they're phrased like "x won" which can be kind
+      // of confusing
+      const pollClosedMsgs = messages.filter(
+        (message) =>
+          message.author.id === env.DISCORD_APPLICATION_ID &&
+          message.type === MessageType.PollResult &&
+          message.message_reference?.message_id &&
+          pollMessageIds.includes(
+            message.message_reference.message_id as Snowflake,
+          ),
+      );
+
+      if (pollClosedMsgs.length === 1) {
+        await rest.delete(
+          Routes.channelMessage(channelId, pollClosedMsgs[0].id),
+        );
+      } else if (pollClosedMsgs.length > 1) {
+        await rest.post(Routes.channelBulkDelete(channelId), {
+          body: { messages: pollClosedMsgs.map((m) => m.id) },
+          reason: `Poll result cleanup (${uni("en", league)})`,
+        });
+      }
+    } catch (e) {
+      if (isDiscordError(e)) {
+        // Probably a permission error
+        continue;
+      }
+      console.error(e);
+    }
+  }
+
   // for (const channelId of channelIds) {
   //   const entries = allEntries.filter((e) => e.channelId === channelId);
   //   // We need to get all the polls at once to get all the answer IDs.
@@ -396,18 +435,6 @@ export const dailyInitNotifications = async (
   ctx: ExecutionContext,
 ) => {
   const now = getNow();
-  const tomorrow = new Date(now.getTime() + 86_400_000);
-
-  const weekFromNow = new Date(now.getTime() + 604_800_000);
-  const weekFromNowDay = `${weekFromNow.getFullYear()}-${
-    weekFromNow.getMonth() + 1
-  }-${weekFromNow.getDate()}`;
-
-  const yesterday = new Date(now.getTime() - 86_400_000);
-  const yesterdayDay = `${yesterday.getFullYear()}-${
-    yesterday.getMonth() + 1
-  }-${yesterday.getDate()}`;
-
   const db = getDb(env.DB);
   const allEntries = await db.query.pickems.findMany({
     where: and(
@@ -447,6 +474,16 @@ export const dailyInitNotifications = async (
     (entry) => entry.guildId && premiumGuildIds.has(entry.guildId),
   );
 
+  const weekFromNow = new Date(now.getTime() + 604_800_000);
+  const weekFromNowDay = `${weekFromNow.getFullYear()}-${
+    weekFromNow.getMonth() + 1
+  }-${weekFromNow.getDate()}`;
+
+  const yesterday = new Date(now.getTime() - 86_400_000);
+  const yesterdayDay = `${yesterday.getFullYear()}-${
+    yesterday.getMonth() + 1
+  }-${yesterday.getDate()}`;
+
   const allPolls =
     premiumGuildIds.size === 0
       ? []
@@ -455,7 +492,6 @@ export const dailyInitNotifications = async (
             inArray(pickemsPolls.league, notificationLeagues),
             inArray(pickemsPolls.guildId, Array.from(premiumGuildIds)),
             eq(pickemsPolls.day, yesterdayDay),
-            // eq(pickemsPolls.ended, false),
           ),
           columns: {
             league: true,
@@ -466,69 +502,84 @@ export const dailyInitNotifications = async (
           },
         });
 
+  const tomorrow = new Date(now.getTime() + 86_400_000);
   for (const league of notificationLeagues) {
     // Notifications (tomorrow; avoid missing early games)
     // The durable object will give itself more precise times to check at
-    const day = `${tomorrow.getFullYear()}-${
-      tomorrow.getMonth() + 1
-    }-${tomorrow.getDate()}`;
-    const stub = env.NOTIFICATIONS.get(
-      env.NOTIFICATIONS.idFromName(`${league}-${day}`),
-    );
-    ctx.waitUntil(
-      stub.fetch("http://do/", {
-        method: "POST",
-        body: JSON.stringify({ day, league }),
-        headers: { "Content-Type": "application/json" },
-      }),
-    );
-
-    // Pickems (7 days from now)
-    const client = getHtClient(league);
-    const leagueEntries = premiumEntries.filter(
-      (e): e is typeof e & { channelId: Snowflake } =>
-        e.league === league && e.channelId !== null,
-    );
-    if (leagueEntries.length !== 0) {
-      // Run next week's game polls
+    try {
+      const day = `${tomorrow.getFullYear()}-${
+        tomorrow.getMonth() + 1
+      }-${tomorrow.getDate()}`;
+      const stub = env.NOTIFICATIONS.get(
+        env.NOTIFICATIONS.idFromName(`${league}-${day}`),
+      );
       ctx.waitUntil(
-        (async () => {
-          try {
-            const now = getNow();
-            const games = (
-              await client.getDailySchedule(weekFromNowDay)
-            ).SiteKit.Gamesbydate.filter((game) => {
-              const diff = new Date(game.date_played).getTime() - now.getTime();
-              // Discord bounds: 1-768 hours
-              return diff > 3_600_000 && diff < 2_764_800_000;
-            });
-            if (games.length === 0) return;
-
-            await runPickems(env, db, leagueEntries, league, games);
-          } catch (e) {
-            console.error(e);
-          }
-        })(),
+        stub
+          .fetch("http://do/", {
+            method: "POST",
+            body: JSON.stringify({ day, league }),
+            headers: { "Content-Type": "application/json" },
+          })
+          .catch(console.error),
+      );
+    } catch (e) {
+      console.error(
+        `[${league}] [${tomorrow}] Error starting notifications:`,
+        e,
       );
     }
-    // Save yesterday's predictions
-    // We could move this to the event handler for the final period if we ever
-    // have a more reliable-feeling event delivery system.
-    const leaguePolls = allPolls.filter((e) => e.league === league);
-    if (leaguePolls.length !== 0) {
-      ctx.waitUntil(
-        (async () => {
-          try {
-            const games = (await client.getDailySchedule(yesterdayDay)).SiteKit
-              .Gamesbydate;
-            if (games.length === 0) return;
 
-            await savePickemsPredictions(env, db, leaguePolls, league, games);
-          } catch (e) {
-            console.error(e);
-          }
-        })(),
+    // Pickems (7 days from now)
+    try {
+      const client = getHtClient(league);
+      const leagueEntries = premiumEntries.filter(
+        (e): e is typeof e & { channelId: Snowflake } =>
+          e.league === league && e.channelId !== null,
       );
+      if (leagueEntries.length !== 0) {
+        // Run next week's game polls
+        ctx.waitUntil(
+          (async () => {
+            try {
+              const now = getNow();
+              const games = (
+                await client.getDailySchedule(weekFromNowDay)
+              ).SiteKit.Gamesbydate.filter((game) => {
+                const diff =
+                  new Date(game.date_played).getTime() - now.getTime();
+                // Discord bounds: 1-768 hours
+                return diff > 3_600_000 && diff < 2_764_800_000;
+              });
+              if (games.length === 0) return;
+
+              await runPickems(env, db, leagueEntries, league, games);
+            } catch (e) {
+              console.error(e);
+            }
+          })(),
+        );
+      }
+      // Save yesterday's predictions
+      // We could move this to the event handler for the final period if we ever
+      // have a more reliable-feeling event delivery system.
+      const leaguePolls = allPolls.filter((e) => e.league === league);
+      if (leaguePolls.length !== 0) {
+        ctx.waitUntil(
+          (async () => {
+            try {
+              const games = (await client.getDailySchedule(yesterdayDay))
+                .SiteKit.Gamesbydate;
+              if (games.length === 0) return;
+
+              await savePickemsPredictions(env, db, leaguePolls, league, games);
+            } catch (e) {
+              console.error(e);
+            }
+          })(),
+        );
+      }
+    } catch (e) {
+      console.error(`[${league}] [${tomorrow}] Error running pickems:`, e);
     }
   }
 };
