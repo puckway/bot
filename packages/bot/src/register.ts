@@ -375,50 +375,50 @@ const payload: RESTPutAPIApplicationCommandsJSONBody = [
       }),
     ],
   },
-  {
-    name: "pickems",
-    description: "Interact with Pickems in this server",
-    dm_permission: false,
-    default_member_permissions: new PermissionsBitField(
-      PermissionFlags.ManageGuild,
-    ).toString(),
-    options: [
-      {
-        type: ApplicationCommandOptionType.Subcommand,
-        name: "leaderboard",
-        description: "See the Pickems leaderboard",
-        options: [
-          getLeagueOption({
-            description: "The league to see the leaderboard for",
-            noKhl: true,
-          }),
-          {
-            type: ApplicationCommandOptionType.String,
-            name: "season",
-            description:
-              "The season to get stats for. If not specified, uses the current season",
-            autocomplete: true,
-          },
-        ],
-      },
-      {
-        type: ApplicationCommandOptionType.Subcommand,
-        name: "me",
-        description: "See your personal Pickems stats",
-        options: [
-          getLeagueOption({
-            description: "The league to see the leaderboard for",
-            noKhl: true,
-          }),
-        ],
-      },
-      {
-        type: ApplicationCommandOptionType.Subcommand,
-        name: "purge",
-        description: "Erase all your Pickems data",
-      },
-    ],
-  },
+  // {
+  //   name: "pickems",
+  //   description: "Interact with Pickems in this server",
+  //   dm_permission: false,
+  //   default_member_permissions: new PermissionsBitField(
+  //     PermissionFlags.ManageGuild,
+  //   ).toString(),
+  //   options: [
+  //     {
+  //       type: ApplicationCommandOptionType.Subcommand,
+  //       name: "leaderboard",
+  //       description: "See the Pickems leaderboard",
+  //       options: [
+  //         getLeagueOption({
+  //           description: "The league to see the leaderboard for",
+  //           noKhl: true,
+  //         }),
+  //         {
+  //           type: ApplicationCommandOptionType.String,
+  //           name: "season",
+  //           description:
+  //             "The season to get stats for. If not specified, uses the current season",
+  //           autocomplete: true,
+  //         },
+  //       ],
+  //     },
+  //     {
+  //       type: ApplicationCommandOptionType.Subcommand,
+  //       name: "me",
+  //       description: "See your personal Pickems stats",
+  //       options: [
+  //         getLeagueOption({
+  //           description: "The league to see the leaderboard for",
+  //           noKhl: true,
+  //         }),
+  //       ],
+  //     },
+  //     {
+  //       type: ApplicationCommandOptionType.Subcommand,
+  //       name: "purge",
+  //       description: "Erase all your Pickems data",
+  //     },
+  //   ],
+  // },
   {
     name: "about",
     description: "About this bot",
