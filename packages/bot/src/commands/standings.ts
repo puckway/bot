@@ -149,7 +149,7 @@ export const getHtStandings = async (
     // The KHL proxy won't return non-career seasons so
     //  we can just use the latest one
     sid = "latest";
-  } else {
+  } else if (seasonId === undefined) {
     const seasons = (await client.getSeasonList()).SiteKit.Seasons;
     if (seasons.length === 0 && seasonId === undefined) {
       return null;
@@ -199,9 +199,14 @@ export const standingsCallback: ChatInputAppCommandCallback = async (ctx) => {
     return ctx.reply(utils.standings!());
   }
   const sort = ctx.getStringOption("sort").value || undefined;
+  const seasonId = ctx.getStringOption("season").value || undefined;
 
   const client = getHtClient(league, getHtLocale(ctx));
-  const standings = await getHtStandings(client, sort);
+  const standings = await getHtStandings(
+    client,
+    sort,
+    seasonId ? Number(seasonId) : undefined,
+  );
   if (!standings) {
     return ctx.reply({
       content: s(ctx, "noSeasons"),

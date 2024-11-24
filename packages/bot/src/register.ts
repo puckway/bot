@@ -305,6 +305,14 @@ const payload: RESTPutAPIApplicationCommandsJSONBody = [
           },
         ],
       },
+      {
+        type: ApplicationCommandOptionType.String,
+        name: "season",
+        description:
+          "The season to get standings for. If not specified, uses the current season",
+        required: false,
+        autocomplete: true,
+      },
     ],
   },
   {

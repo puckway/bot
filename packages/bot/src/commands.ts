@@ -88,6 +88,7 @@ export const appCommands: Record<
     },
     standings: {
       handlers: { BASE: standingsCallback },
+      autocompleteHandlers: { BASE: seasonAutocomplete },
     },
     whois: {
       handlers: { BASE: whoisCallback },
