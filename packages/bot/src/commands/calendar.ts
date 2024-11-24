@@ -221,8 +221,9 @@ export const scheduleMonthCallback: ChatInputAppCommandCallback = async (
   const league = ctx.getStringOption("league").value as League;
 
   const client = getHtClient(league);
-  const teamId = ctx.getStringOption("team")?.value;
-  const monthVal = ctx.getStringOption("month")?.value;
+  const teamId = ctx.getStringOption("team")?.value || undefined;
+  const monthVal = ctx.getStringOption("month")?.value || undefined;
+  const seasonId = ctx.getStringOption("season")?.value || undefined;
   const excludeFinishedGames = ctx.getBooleanOption(
     "exclude-finished-games",
   ).value;
@@ -236,7 +237,7 @@ export const scheduleMonthCallback: ChatInputAppCommandCallback = async (
       const games = (
         await client.getSeasonSchedule(
           // @ts-expect-error
-          "latest",
+          seasonId ? Number(seasonId) : "latest",
           teamId ? Number(teamId) : undefined,
         )
       ).SiteKit.Schedule.filter(

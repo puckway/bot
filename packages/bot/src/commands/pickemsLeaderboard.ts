@@ -29,7 +29,7 @@ import { storeComponents } from "../util/components";
 //   },
 // });
 
-export const seasonAutocomplete: AppCommandAutocompleteCallback = async (
+export const seasonAutocompleteWithAll: AppCommandAutocompleteCallback = async (
   ctx,
 ) => {
   const guildId = ctx.interaction.guild_id;

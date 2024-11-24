@@ -25,8 +25,9 @@ import {
   pickemsLeaderboardCallback,
   pickemsMeCallback,
   pickemsPurgeCallback,
-  seasonAutocomplete,
+  seasonAutocompleteWithAll,
 } from "./commands/pickemsLeaderboard";
+import { seasonAutocomplete } from "./commands/seasonAutocomplete";
 
 export type AppCommandCallbackT<T extends APIInteraction> = (
   ctx: InteractionContext<T>,
@@ -64,7 +65,19 @@ export const appCommands: Record<
   [ApplicationCommandType.ChatInput]: {
     schedule: {
       handlers: { day: scheduleDayCallback, month: scheduleMonthCallback },
-      autocompleteHandlers: { day: teamAutocomplete, month: teamAutocomplete },
+      autocompleteHandlers: {
+        day: teamAutocomplete,
+        month: (ctx) => {
+          switch (true) {
+            case ctx.getStringOption("team").focused:
+              return teamAutocomplete(ctx);
+            case ctx.getStringOption("season").focused:
+              return seasonAutocomplete(ctx);
+            default:
+              return new Promise((r) => r([]));
+          }
+        },
+      },
     },
     gameday: {
       handlers: { BASE: htGamedayCallback },
@@ -93,7 +106,7 @@ export const appCommands: Record<
         purge: pickemsPurgeCallback,
       },
       autocompleteHandlers: {
-        leaderboard: seasonAutocomplete,
+        leaderboard: seasonAutocompleteWithAll,
       },
     },
     about: {

@@ -212,6 +212,14 @@ const payload: RESTPutAPIApplicationCommandsJSONBody = [
               "Exclude games that have already happened from the list",
             required: false,
           },
+          {
+            type: ApplicationCommandOptionType.String,
+            name: "season",
+            description:
+              "The season to get games for. If not specified, uses the current season",
+            required: false,
+            autocomplete: true,
+          },
         ],
       },
     ],
