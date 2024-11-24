@@ -26,7 +26,7 @@ import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { getLeagueLogoUrl, getTeamEmoji } from "../util/emojis";
 import { transformLocalizations, uni } from "../util/l10n";
-import { getOffset } from "../util/time";
+import { getOffset, sleep } from "../util/time";
 import { leagueTeams } from "../ht/teams";
 import { InteractionContext } from "../interactions";
 import { getNow } from "../util/time";
@@ -454,9 +454,7 @@ export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
             // We don't really care if this succeeds
           }
         }
-        // This can make it appear more consistent but ultimately
-        // it will take longer. Function > form?
-        // await sleep(5000);
+        await sleep(1500);
       }
 
       await ctx.followup.editOriginalMessage({
