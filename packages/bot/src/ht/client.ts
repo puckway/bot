@@ -23,7 +23,7 @@ export interface HockeyTechLeagueConfiguration {
 }
 
 // export const khlProxyOrigin = "http://localhost:51996";
-export const khlProxyOrigin = "https://khl.shayy.workers.dev"
+export const khlProxyOrigin = "https://khl.shayy.workers.dev";
 
 export const isKhl = (league: HockeyTechLeague) =>
   ["khl", "zhhl", "mhl"].includes(league);
@@ -143,7 +143,7 @@ export const getPointsPct = (
   // much an individual game is "worth". Hockeytech uses a static value for
   // this and doesn't account for the PWHL's max 3 points per game.
   const gamesWorth = league === "pwhl" ? 3 : 2;
-  return (points / (gamesPlayed * gamesWorth || 1)).toPrecision(3);
+  return (points / (gamesPlayed * gamesWorth || 1)).toFixed(3);
 };
 
 export const GLOBAL_GAME_ID_REGEX =
