@@ -19,6 +19,7 @@ export interface HockeyTechLeagueConfiguration {
   watch?: {
     platform: string;
     url: string;
+    regions?: string[];
   };
 }
 
@@ -39,6 +40,7 @@ export const hockeyTechLeagues: Record<
     watch: {
       platform: "YouTube",
       url: "https://youtube.com/@thepwhlofficial/streams",
+      regions: ["US"],
     },
   },
   ahl: {

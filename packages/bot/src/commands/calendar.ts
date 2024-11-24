@@ -146,26 +146,33 @@ const sendScheduleMessage = async (
               league,
               games: games
                 .filter((game) => game.status === GameStatus.NotStarted)
-                .map((game) => ({
-                  id: game.id,
-                  title: `${game.visiting_team_nickname} at ${game.home_team_nickname}`,
-                  location: game.venue_location,
-                  description: [
-                    hockeyTechLeagues[league].watch
-                      ? `📺 Watch live on ${hockeyTechLeagues[league].watch.platform}: ${hockeyTechLeagues[league].watch.url}`
-                      : "",
-                    `🏟️ ${game.visiting_team_code} @ ${game.home_team_code} - ${
-                      "venue" in game ? game.venue : game.venue_name
-                    }`,
-                    `🎟️ Buy tickets: ${
-                      game.tickets_url || "no link available for this game"
-                    }`,
-                    `🆔 ${league}:${game.id}`,
-                  ]
-                    .join("\n\n")
-                    .trim(),
-                  date: isoDate(game),
-                })),
+                .map((game) => {
+                  const watch = hockeyTechLeagues[league].watch;
+                  return {
+                    id: game.id,
+                    title: `${game.visiting_team_nickname} at ${game.home_team_nickname}`,
+                    location: game.venue_location,
+                    description: [
+                      watch
+                        ? `📺 Watch live on ${watch.platform}: ${watch.url}${
+                            watch.regions
+                              ? ` (${watch.regions.join(", ")})`
+                              : ""
+                          }`
+                        : "",
+                      `🏟️ ${game.visiting_team_code} @ ${
+                        game.home_team_code
+                      } - ${"venue" in game ? game.venue : game.venue_name}`,
+                      `🎟️ Buy tickets: ${
+                        game.tickets_url || "no link available for this game"
+                      }`,
+                      `🆔 ${league}:${game.id}`,
+                    ]
+                      .join("\n\n")
+                      .trim(),
+                    date: isoDate(game),
+                  };
+                }),
             },
           ])),
         )
