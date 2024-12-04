@@ -86,6 +86,7 @@ const sendScheduleMessage = async (
     month: "long",
     day: subcommand === "day" ? "numeric" : undefined,
     year: "numeric",
+    timeZone: games[0]?.timezone,
   })}`;
 
   const embed = new EmbedBuilder()

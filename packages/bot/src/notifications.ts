@@ -1170,6 +1170,7 @@ const runNotifications = async ({
                               month: "short",
                               day: "numeric",
                               year: "numeric",
+                              timeZone: game.timezone,
                             },
                           )}`,
                         },
@@ -1316,6 +1317,7 @@ const runNotifications = async ({
                   month: "short",
                   day: "numeric",
                   year: "numeric",
+                  timeZone: game.timezone,
                 },
               );
 

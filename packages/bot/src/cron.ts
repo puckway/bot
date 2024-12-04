@@ -149,6 +149,7 @@ const runPickems = async (
               month: "short",
               day: "numeric",
               year: "numeric",
+              timeZone: entryGames[0].timezone,
             },
           )}`,
           auto_archive_duration: ThreadAutoArchiveDuration.OneWeek,
