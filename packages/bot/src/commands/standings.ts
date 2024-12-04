@@ -114,14 +114,14 @@ const getStandingsEmbed = (
     .setColor(colors[league]);
 
   const dashes = (length: number) => Array(length).fill("-").join("");
-  const tableData = [["Rank", "Team", ...headers]];
+  const tableData = [["Rank", "Team", ...headers.filter(Boolean)]];
   tableData.push(tableData[0].map((e) => dashes(e.length + 1)));
 
   tableData.push(
     ...stats.map((stat, i) => [
       String(i + 1),
       `${stat.teamCode}${stat.clinch ? ` (${stat.clinch})` : ""}`,
-      ...stat.values,
+      ...stat.values.filter(Boolean),
     ]),
   );
 
@@ -222,7 +222,7 @@ export const standingsCallback: ChatInputAppCommandCallback = async (ctx) => {
       // "GR",
       "PTS",
       "W",
-      // "OTW",
+      league === "pwhl" ? "OTW" : "",
       "OTL",
       "L",
       "PCT",
@@ -234,9 +234,11 @@ export const standingsCallback: ChatInputAppCommandCallback = async (ctx) => {
         team.games_played,
         // team.games_remaining,
         team.points,
-        team.wins,
-        // team.ot_wins,
-        team.ot_losses,
+        league === "pwhl" ? team.regulation_wins : team.wins,
+        league === "pwhl"
+          ? String(Number(team.ot_wins) + Number(team.shootout_wins))
+          : "",
+        String(Number(team.ot_losses) + Number(team.shootout_losses)),
         team.losses,
         getPointsPct(
           league as HockeyTechLeague,
