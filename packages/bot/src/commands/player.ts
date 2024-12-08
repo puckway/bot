@@ -20,13 +20,13 @@ import { League } from "../db/schema";
 import { getEpHtPlayer } from "../ep/rest";
 import { HockeyTechLeague, getHtClient, isKhl } from "../ht/client";
 import { getHtTeamLogoUrl } from "../ht/team";
+import { leagueTeams } from "../ht/teams";
 import { InteractionContext } from "../interactions";
 import { getTeamColor } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { getTeamEmoji } from "../util/emojis";
 import { getExternalUtils } from "../util/external";
 import { getHtLocale, transformLocalizations } from "../util/l10n";
-import { leagueTeams } from "../ht/teams";
 import { getNow } from "../util/time";
 
 const s = transformLocalizations({

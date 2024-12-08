@@ -11,8 +11,6 @@ import {
   selectNotificationTeamCallback,
   toggleNotificationActiveButtonCallback,
 } from "./commands/notifications";
-import { playerSearchSelectCallback } from "./commands/player";
-import { InteractionContext } from "./interactions";
 import {
   selectPickemsChannelCallback,
   selectPickemsTeamCallback,
@@ -22,6 +20,8 @@ import {
   pickemsPurgeCancelCallback,
   pickemsPurgeConfirmCallback,
 } from "./commands/pickemsLeaderboard";
+import { playerSearchSelectCallback } from "./commands/player";
+import { InteractionContext } from "./interactions";
 
 export interface MinimumKVComponentState {
   /** The total number of seconds that the component/modal should be stored. */

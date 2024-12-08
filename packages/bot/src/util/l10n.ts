@@ -79,7 +79,7 @@ export const uni = transformLocalizations({
     ahl: "АХЛ",
     pwhl: "ПЖХЛ",
     zhhl: "ЖХЛ",
-    mhl: "MХЛ"
+    mhl: "MХЛ",
   },
   fr: {
     pwhl: "LPHF",

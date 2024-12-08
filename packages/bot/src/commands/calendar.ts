@@ -22,13 +22,13 @@ import { ChatInputAppCommandCallback } from "../commands";
 import { ButtonCallback, MinimumKVComponentState } from "../components";
 import { League } from "../db/schema";
 import { HockeyTechLeague, getHtClient, hockeyTechLeagues } from "../ht/client";
+import { leagueTeams } from "../ht/teams";
+import { InteractionContext } from "../interactions";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { getLeagueLogoUrl, getTeamEmoji } from "../util/emojis";
 import { transformLocalizations, uni } from "../util/l10n";
 import { getOffset, sleep } from "../util/time";
-import { leagueTeams } from "../ht/teams";
-import { InteractionContext } from "../interactions";
 import { getNow } from "../util/time";
 
 export const DATE_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;

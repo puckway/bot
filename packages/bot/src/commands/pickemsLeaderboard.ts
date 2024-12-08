@@ -1,4 +1,9 @@
 import {
+  ActionRowBuilder,
+  ButtonBuilder,
+  EmbedBuilder,
+} from "@discordjs/builders";
+import {
   APIApplicationCommandOptionChoice,
   ButtonStyle,
   MessageFlags,
@@ -8,19 +13,14 @@ import {
   AppCommandAutocompleteCallback,
   ChatInputAppCommandCallback,
 } from "../commands";
+import { ButtonCallback, componentStore } from "../components";
 import { getDb } from "../db";
 import { makeSnowflake, pickemsVotes } from "../db/schema";
-import { uni } from "../util/l10n";
-import { getHtClient, HockeyTechLeague } from "../ht/client";
-import {
-  ActionRowBuilder,
-  ButtonBuilder,
-  EmbedBuilder,
-} from "@discordjs/builders";
+import { HockeyTechLeague, getHtClient } from "../ht/client";
 import { colors } from "../util/colors";
-import { getLeagueLogoUrl } from "../util/emojis";
-import { ButtonCallback, componentStore } from "../components";
 import { storeComponents } from "../util/components";
+import { getLeagueLogoUrl } from "../util/emojis";
+import { uni } from "../util/l10n";
 
 // const s = transformLocalizations({
 //   en: {

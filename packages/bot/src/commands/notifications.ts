@@ -15,12 +15,12 @@ import {
 } from "../components";
 import { getDb } from "../db";
 import { League, makeSnowflake, notifications } from "../db/schema";
+import { leagueTeams } from "../ht/teams";
 import { InteractionContext } from "../interactions";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { getLeagueLogoUrl, getTeamPartialEmoji } from "../util/emojis";
 import { transformLocalizations, uni } from "../util/l10n";
-import { leagueTeams } from "../ht/teams";
 
 export interface NotificationSendConfig {
   preview?: boolean;

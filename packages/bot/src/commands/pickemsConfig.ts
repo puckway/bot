@@ -11,6 +11,7 @@ import {
   MessageFlags,
   SelectMenuDefaultValueType,
 } from "discord-api-types/v10";
+import { Snowflake } from "discord-snowflake";
 import { and, eq } from "drizzle-orm";
 import { ChatInputAppCommandCallback } from "../commands";
 import {
@@ -20,15 +21,14 @@ import {
 } from "../components";
 import { getDb } from "../db";
 import { League, makeSnowflake, pickems } from "../db/schema";
+import { leagueTeams } from "../ht/teams";
 import { InteractionContext } from "../interactions";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { getLeagueLogoUrl, getTeamPartialEmoji } from "../util/emojis";
 import { transformLocalizations, uni } from "../util/l10n";
-import { leagueTeams } from "../ht/teams";
-import { emojiBool } from "./notifications";
-import { Snowflake } from "discord-snowflake";
 import { isPremium } from "../util/premium";
+import { emojiBool } from "./notifications";
 
 const s = transformLocalizations({
   en: {

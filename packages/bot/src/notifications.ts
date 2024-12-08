@@ -1,18 +1,7 @@
-import { REST } from "@discordjs/rest";
-import { getDb } from "./db";
-import { and, eq } from "drizzle-orm";
-import {
-  League,
-  leagues,
-  notifications,
-  hypeMinutes,
-  HypeMinute,
-  pickemsPolls,
-} from "./db/schema";
-import { NotificationSendConfig } from "./commands/notifications";
-import { getHtClient, HockeyTechLeague, getPointsPct } from "./ht/client";
 import { EmbedBuilder, time } from "@discordjs/builders";
+import { REST } from "@discordjs/rest";
 import { APIMessage, ChannelType, Routes } from "discord-api-types/v10";
+import { and, eq } from "drizzle-orm";
 import {
   type GCGamePlayByPlay,
   GamePlayByPlayEvent,
@@ -32,15 +21,26 @@ import {
   type ScorebarMatch,
 } from "hockeytech";
 import { getBorderCharacters, table } from "table";
+import { isoDate } from "./commands/calendar";
+import { NotificationSendConfig } from "./commands/notifications";
 import { HockeyTechTeamStanding, getHtStandings } from "./commands/standings";
+import { NotificationEntry } from "./cron";
+import { getDb } from "./db";
+import {
+  HypeMinute,
+  League,
+  hypeMinutes,
+  leagues,
+  notifications,
+  pickemsPolls,
+} from "./db/schema";
+import { HockeyTechLeague, getHtClient, getPointsPct } from "./ht/client";
 import { htPlayerImageUrl } from "./ht/player";
 import { getHtTeamLogoUrl } from "./ht/team";
 import { getTeamColor } from "./util/colors";
 import { getTeamEmoji } from "./util/emojis";
 import { ExternalUtils, getExternalUtils } from "./util/external";
 import { getNow, toHMS } from "./util/time";
-import { NotificationEntry } from "./cron";
-import { isoDate } from "./commands/calendar";
 
 enum AlarmType {
   Check = 0,

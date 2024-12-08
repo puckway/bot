@@ -1,7 +1,7 @@
 import { APIApplicationCommandOptionChoice } from "discord-api-types/v10";
 import { AppCommandAutocompleteCallback } from "../commands";
-import { HockeyTechLeague, getHtClient } from "../ht/client";
 import { leagues } from "../db/schema";
+import { HockeyTechLeague, getHtClient } from "../ht/client";
 
 export const seasonAutocomplete: AppCommandAutocompleteCallback = async (
   ctx,

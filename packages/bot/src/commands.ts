@@ -15,11 +15,6 @@ import {
   scheduleMonthCallback,
 } from "./commands/calendar";
 import { notificationsCallback } from "./commands/notifications";
-import { playerCallback, whoisCallback } from "./commands/player";
-import { standingsCallback } from "./commands/standings";
-import { teamAutocomplete } from "./commands/teamAutocomplete";
-import { threadCloseCallback } from "./commands/thread";
-import { InteractionContext } from "./interactions";
 import { pickemsConfigCallback } from "./commands/pickemsConfig";
 import {
   pickemsLeaderboardCallback,
@@ -27,7 +22,12 @@ import {
   pickemsPurgeCallback,
   seasonAutocompleteWithAll,
 } from "./commands/pickemsLeaderboard";
+import { playerCallback, whoisCallback } from "./commands/player";
 import { seasonAutocomplete } from "./commands/seasonAutocomplete";
+import { standingsCallback } from "./commands/standings";
+import { teamAutocomplete } from "./commands/teamAutocomplete";
+import { threadCloseCallback } from "./commands/thread";
+import { InteractionContext } from "./interactions";
 
 export type AppCommandCallbackT<T extends APIInteraction> = (
   ctx: InteractionContext<T>,

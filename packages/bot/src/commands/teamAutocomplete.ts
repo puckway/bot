@@ -1,7 +1,7 @@
 import { AppCommandAutocompleteCallback } from "../commands";
 import { League } from "../db/schema";
-import { leagueTeams } from "../ht/teams";
 import { isKhl } from "../ht/client";
+import { leagueTeams } from "../ht/teams";
 
 export const teamAutocomplete: AppCommandAutocompleteCallback = async (ctx) => {
   const league = ctx.getStringOption("league").value as League;

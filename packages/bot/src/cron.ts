@@ -1,4 +1,4 @@
-import { RequestMethod, REST, RouteLike } from "@discordjs/rest";
+import { REST, RequestMethod, RouteLike } from "@discordjs/rest";
 import {
   APIEntitlement,
   APIMessage,
@@ -12,6 +12,7 @@ import {
   Routes,
   ThreadAutoArchiveDuration,
 } from "discord-api-types/v10";
+import type { Snowflake } from "discord-snowflake";
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { GamesByDate } from "hockeytech";
 import { DBWithSchema, getDb } from "./db";
@@ -22,12 +23,11 @@ import {
   pickemsPolls,
   pickemsVotes,
 } from "./db/schema";
-import { getHtClient, HockeyTechLeague } from "./ht/client";
+import { HockeyTechLeague, getHtClient } from "./ht/client";
 import { getTeamPartialEmoji } from "./util/emojis";
 import { isDiscordError } from "./util/errors";
-import { getNow } from "./util/time";
-import type { Snowflake } from "discord-snowflake";
 import { uni } from "./util/l10n";
+import { getNow } from "./util/time";
 
 export type NotificationEntry = Pick<
   typeof notifications.$inferSelect,
