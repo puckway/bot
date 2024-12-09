@@ -532,7 +532,7 @@ export const dailyInitNotifications = async (
 
     // Pickems (7 days from now)
     try {
-      const client = getHtClient(league);
+      const client = getHtClient(env, league);
       const leagueEntries = premiumEntries.filter(
         (e): e is typeof e & { channelId: Snowflake } =>
           e.league === league && e.channelId !== null,

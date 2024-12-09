@@ -185,7 +185,7 @@ const sendScheduleMessage = async (
 
 export const scheduleDayCallback: ChatInputAppCommandCallback = async (ctx) => {
   const league = ctx.getStringOption("league").value as League;
-  const client = getHtClient(league);
+  const client = getHtClient(ctx.env, league);
   const teamId = ctx.getStringOption("team")?.value;
 
   const dateVal = ctx.getStringOption("date")?.value;
@@ -228,7 +228,7 @@ export const scheduleMonthCallback: ChatInputAppCommandCallback = async (
 ) => {
   const league = ctx.getStringOption("league").value as League;
 
-  const client = getHtClient(league);
+  const client = getHtClient(ctx.env, league);
   const teamId = ctx.getStringOption("team")?.value || undefined;
   const monthVal = ctx.getStringOption("month")?.value || undefined;
   const seasonId = ctx.getStringOption("season")?.value || undefined;
@@ -288,7 +288,7 @@ export const htGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
   const today = getNow();
   today.setUTCHours(6, 0, 0, 0);
   const league = ctx.getStringOption("league").value as HockeyTechLeague;
-  const client = getHtClient(league);
+  const client = getHtClient(ctx.env, league);
   const teamId = ctx.getStringOption("team")?.value;
   const team = teamId
     ? leagueTeams[league].find((t) => t.id === teamId)

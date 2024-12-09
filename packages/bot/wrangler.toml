@@ -8,6 +8,8 @@ compatibility_date = "2023-12-18"
 # season takes place during NA's standard time period
 triggers.crons = ["0 17 * * *"]
 
+services = [{ binding = "KHL", service = "khl" }]
+
 [[durable_objects.bindings]]
 name = "NOTIFICATIONS"
 class_name = "DurableNotificationManager"

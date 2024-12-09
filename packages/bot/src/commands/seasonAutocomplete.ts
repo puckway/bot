@@ -13,7 +13,7 @@ export const seasonAutocomplete: AppCommandAutocompleteCallback = async (
   if (!leagues.includes(league)) return [];
 
   const query = ctx.getStringOption("season").value;
-  const client = getHtClient(league);
+  const client = getHtClient(ctx.env, league);
   const seasons = (await client.getSeasonList()).SiteKit.Seasons;
 
   return seasons

@@ -37,7 +37,7 @@ export const seasonAutocompleteWithAll: AppCommandAutocompleteCallback = async (
 
   const league = ctx.getStringOption("league").value as HockeyTechLeague;
   const query = ctx.getStringOption("season").value;
-  const client = getHtClient(league);
+  const client = getHtClient(ctx.env, league);
   const seasons = (await client.getSeasonList()).SiteKit.Seasons;
 
   return [
@@ -69,7 +69,7 @@ export const pickemsLeaderboardCallback: ChatInputAppCommandCallback = async (
     | string
     | undefined;
 
-  const client = getHtClient(league);
+  const client = getHtClient(ctx.env, league);
   const seasons = (await client.getSeasonList()).SiteKit.Seasons;
   if (seasons.length === 0) {
     return ctx.reply({
@@ -157,7 +157,7 @@ export const pickemsMeCallback: ChatInputAppCommandCallback = async (ctx) => {
 
   const league = ctx.getStringOption("league").value as HockeyTechLeague;
 
-  const client = getHtClient(league);
+  const client = getHtClient(ctx.env, league);
   const db = getDb(ctx.env.DB);
   const votes = await db
     .select({

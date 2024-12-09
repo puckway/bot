@@ -247,7 +247,7 @@ router
   })
   // .get("/t", async (request, env: Env) => {
   //   const gameId = Number(new URL(request.url).searchParams.get("game"));
-  //   const client = getHtClient("pwhl");
+  //   const client = getHtClient(env, "pwhl");
   //   const plays = (await client.getGamePlayByPlay(gameId)).GC.Pxpverbose;
   //   return json(
   //     plays

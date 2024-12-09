@@ -1,4 +1,4 @@
-import fetchAdapter from "@haverstack/axios-fetch-adapter";
+import { createFetchAdapter } from "@haverstack/axios-fetch-adapter";
 import HockeyTech from "hockeytech";
 
 export type HockeyTechLeague =
@@ -129,10 +129,35 @@ export const hockeyTechLeagues: Record<
   },
 };
 
-export const getHtClient = (league: HockeyTechLeague, locale?: "en" | "fr") => {
+export const getHtClient = (
+  env: Env,
+  league: HockeyTechLeague,
+  locale?: "en" | "fr",
+) => {
   const config = hockeyTechLeagues[league];
+
+  let adapter: ReturnType<typeof createFetchAdapter>;
+  if (isKhl(league) && env.KHL) {
+    // We use a service binding for our first-party KHL hockeytech proxy
+    // because Cloudflare was causing issues with intra-zone requests. This
+    // should be faster and reduce costs. If you aren't also hosting a KHL
+    // proxy on your CF zone, this will adapt automatically and use the
+    // public instance.
+    adapter = createFetchAdapter({
+      // @ts-expect-error technically incompatible due to missing `webSocket`
+      // Instead of doing this, I wanted to just pass `env.KHL.fetch`. While
+      // type-valid, it caused network errors and wouldn't send the request
+      // to the worker.
+      fetch(input, init) {
+        return fetch(input, { ...init, fetcher: env.KHL });
+      },
+    });
+  } else {
+    adapter = createFetchAdapter();
+  }
+
   return new HockeyTech(config.key, config.clientCode, locale, config.proxy, {
-    adapter: fetchAdapter,
+    adapter,
   });
 };
 

@@ -7,4 +7,5 @@ interface Env {
   NOTIFICATIONS: DurableObjectNamespace;
   MONTHLY_SKU?: string;
   LIFETIME_SKU?: string;
+  KHL?: Fetcher;
 }

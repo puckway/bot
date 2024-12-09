@@ -201,7 +201,7 @@ export const standingsCallback: ChatInputAppCommandCallback = async (ctx) => {
   const sort = ctx.getStringOption("sort").value || undefined;
   const seasonId = ctx.getStringOption("season").value || undefined;
 
-  const client = getHtClient(league, getHtLocale(ctx));
+  const client = getHtClient(ctx.env, league, getHtLocale(ctx));
   const standings = await getHtStandings(
     client,
     sort,

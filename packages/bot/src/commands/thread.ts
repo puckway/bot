@@ -71,7 +71,7 @@ export const threadCloseCallback: ChatInputAppCommandCallback = async (ctx) => {
   return [
     ctx.defer({ ephemeral: false, thinking: true }),
     async () => {
-      const client = getHtClient(league, getHtLocale(ctx));
+      const client = getHtClient(ctx.env, league, getHtLocale(ctx));
       const summary = (await client.getGameSummary(gameId)).GC.Gamesummary;
 
       await ctx.followup.editOriginalMessage({

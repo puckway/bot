@@ -78,7 +78,7 @@ const getPlayerEmbed = async (
   db?: DBWithSchema,
 ) => {
   const locale = getHtLocale(ctx);
-  const client = getHtClient(league, locale);
+  const client = getHtClient(ctx.env, league, locale);
   const player =
     typeof playerInput === "number"
       ? (await client.getPlayerProfileBio(playerInput)).SiteKit.Player
@@ -351,7 +351,7 @@ export const playerCallback: ChatInputAppCommandCallback = async (ctx) => {
     ctx.defer(),
     async () => {
       const locale = getHtLocale(ctx);
-      const client = getHtClient(league, locale);
+      const client = getHtClient(ctx.env, league, locale);
       const data = await client.searchPerson(query);
       const players = data.SiteKit.Searchplayers.filter(
         (p) => p.role_name === "Player",
@@ -414,7 +414,7 @@ export const whoisCallback: ChatInputAppCommandCallback = async (ctx) => {
   return [
     ctx.defer({ ephemeral: true }),
     async () => {
-      const client = getHtClient(league, getHtLocale(ctx));
+      const client = getHtClient(ctx.env, league, getHtLocale(ctx));
       const seasons = (await client.getSeasonList()).SiteKit.Seasons;
       // All star seasons can behave weirdly
       const season = seasons.find((s) => s.career === "1") ?? seasons[0];

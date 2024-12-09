@@ -1095,7 +1095,7 @@ const runNotifications = async ({
   switch (league) {
     case "ahl":
     case "pwhl": {
-      const client = getHtClient(league);
+      const client = getHtClient(env, league);
       const games = (await client.getDailySchedule(day)).SiteKit.Gamesbydate;
 
       for (const game of games) {
@@ -1517,7 +1517,7 @@ export class DurableNotificationManager implements DurableObject {
       return new Response("Invalid `league`", { status: 400 });
     }
 
-    const client = getHtClient(data.league);
+    const client = getHtClient(this.env, data.league);
     const games = (await client.getDailySchedule(data.day)).SiteKit.Gamesbydate;
     console.log(
       data.league,
