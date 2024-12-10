@@ -84,6 +84,19 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
     }
   }
 
+  // The reader I made this for just reposts the base feed info
+  // when there are no entries
+  if (feed.items.length === 0) {
+    feed.addItem({
+      id: "pwhl:placeholder",
+      title: "Placeholder",
+      link: "https://thepwhl.com",
+      description:
+        "Prevents the items from being empty, confusing some readers",
+      date: new Date(2024, 1, 1),
+    });
+  }
+
   return new Response(feed.rss2(), {
     status: 200,
     headers: { "Content-Type": "application/xml" },
