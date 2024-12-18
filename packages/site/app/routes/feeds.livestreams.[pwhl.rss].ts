@@ -29,7 +29,10 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
   );
   if (ytResponse.ok) {
     const ytFeed = parser.parse(await ytResponse.text()).feed;
-    const entries = ytFeed.entry as YTFeedEntry[];
+    const entries = (
+      Array.isArray(ytFeed.entry) ? ytFeed.entry : [ytFeed.entry]
+    ) as YTFeedEntry[];
+
     for (const video of entries) {
       if (!video["yt:videoId"]) continue;
       const link = `https://www.youtube.com/watch?v=${video["yt:videoId"]}`;
@@ -66,7 +69,12 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
       );
       if (twResponse.ok) {
         const twFeed = parser.parse(await twResponse.text())?.rss?.channel;
-        const vods = (twFeed.item ?? []) as TwitchFeedEntry[];
+        if (!twFeed || !twFeed.item) continue;
+
+        // if there's only one item it doesn't return an array
+        const vods = (
+          Array.isArray(twFeed.item) ? twFeed.item : [twFeed.item]
+        ) as TwitchFeedEntry[];
         const live = vods.find((v) => v.category === "live");
         if (live) {
           feed.addItem({
