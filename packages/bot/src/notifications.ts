@@ -297,7 +297,7 @@ export const getHtGoalEmbed = (
       {
         name: "Period",
         value: `${toHMS(Number(period.length) - goal.s)} left in the ${
-          period.long_name
+          ensurePeriodName(period.id, period.long_name).name
         } period`,
         inline: true,
       },
@@ -571,7 +571,9 @@ export const getHtGoalsEmbed = (
         .map((period: Period) => {
           const goals = game.goals.filter((g) => g.period_id === period.id);
           return {
-            name: `${period.long_name} Period`,
+            name: `${
+              ensurePeriodName(period.id, period.long_name).name
+            } Period`,
             value:
               goals.length === 0
                 ? "No goals"
@@ -920,6 +922,18 @@ export interface GamePlayByPlayEventPeriodEnd
   period_name: string;
 }
 
+export const ensurePeriodName = (
+  periodId: string,
+  periodName?: string,
+): { id: string; name: string } => {
+  let name = periodName;
+  // inexplicably french
+  if (periodName?.includes("è") || periodName?.startsWith("PROL")) {
+    name = periodNameFromId(periodId);
+  }
+  return { id: periodId, name: name ?? periodNameFromId(periodId) };
+};
+
 /*
   This is technically susceptible to a condition where a period is omitted
   because nothing happened during it. I think this is unlikely because faceoffs
@@ -937,20 +951,16 @@ export const getPlaysWithPeriods = (
   const periods = pxp
     .map((p) =>
       "period_id" in p
-        ? {
-            id: p.period_id,
-            name:
-              "period_long_name" in p
-                ? p.period_long_name
-                : "period" in p
-                  ? p.period
-                  : periodNameFromId(p.period_id),
-          }
+        ? ensurePeriodName(
+            p.period_id,
+            "period_long_name" in p
+              ? p.period_long_name
+              : "period" in p
+                ? p.period
+                : undefined,
+          )
         : "period" in p
-          ? {
-              id: p.period,
-              name: periodNameFromId(p.period),
-            }
+          ? ensurePeriodName(p.period)
           : // This case shouldn't happen assuming we have typed every
             // event, which we might not have
             undefined,
@@ -971,7 +981,7 @@ export const getPlaysWithPeriods = (
         event: ExtraPXPEvent.PeriodStart,
         id: `period_start:${period.id}`,
         period_id: period.id,
-        period_name: period.name,
+        period_name: ensurePeriodName(period.id, period.name).name,
         time: "0:00",
         s: 0,
       }) satisfies GamePlayByPlayEventPeriodStart,
@@ -987,7 +997,7 @@ export const getPlaysWithPeriods = (
       event: ExtraPXPEvent.PeriodEnd,
       id: `period_end:${period.id}`,
       period_id: period.id,
-      period_name: period.name,
+      period_name: ensurePeriodName(period.id, period.name).name,
       time: "20:00",
       // Overtime period ends as soon as the final goal is scored
       s: Number(period) > 3 ? lastPlay.s : 1200,
@@ -1011,7 +1021,7 @@ export const getPlaysWithPeriods = (
   //       event: ExtraPXPEvent.PeriodEnd,
   //       id: `period_end:${period.id}`,
   //       period_id: period.id,
-  //       period_name: period.name,
+  //       period_name: ensurePeriodName(period.id, period.name).name,
   //       time: "20:00",
   //       s: 1200,
   //     } as GamePlayByPlayEventPeriodEnd);
@@ -1329,7 +1339,14 @@ const runNotifications = async ({
                         Routes.channelMessages(channelId),
                         {
                           body: {
-                            content: `**${period.period_name} Period Starting - ${game.visiting_team_code} @ ${game.home_team_code}**`,
+                            content: `**${
+                              ensurePeriodName(
+                                period.period_id,
+                                period.period_name,
+                              ).name
+                            } Period Starting - ${game.visiting_team_code} @ ${
+                              game.home_team_code
+                            }**`,
                             embeds: [
                               getHtPeriodStatusEmbed(league, game, allPlays),
                             ],
