@@ -253,7 +253,13 @@ export const scheduleMonthCallback: ChatInputAppCommandCallback = async (
           (teamId
             ? game.home_team === teamId || game.visiting_team === teamId
             : true) &&
-          new Date(game.GameDateISO8601).getUTCMonth() === month &&
+          Number(
+            new Date(game.GameDateISO8601).toLocaleDateString("en-US", {
+              month: "numeric",
+              timeZone: game.timezone,
+            }),
+          ) ===
+            month + 1 &&
           (excludeFinishedGames
             ? ![GameStatus.Final, GameStatus.UnofficialFinal].includes(
                 game.status,
