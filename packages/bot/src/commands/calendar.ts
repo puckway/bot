@@ -424,6 +424,7 @@ export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
   return [
     ctx.reply({
       content: `Importing ${newGames.length} events, this might take a while!`,
+      flags: MessageFlags.Ephemeral,
     }),
     async () => {
       let imported = 0;
@@ -449,19 +450,16 @@ export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
           console.error(e);
         }
         if (imported % 5 === 0) {
-          try {
-            await ctx.followup.editOriginalMessage({
+          ctx.followup
+            .editOriginalMessage({
               content: `Imported ${imported}/${newGames.length} events, ${
                 newGames.length - imported <= 1
                   ? "almost finished..."
                   : "this might take a while. If it appears stuck, it probably isn't!"
               }`,
-            });
-          } catch {
-            // We don't really care if this succeeds
-          }
+            })
+            .catch(() => {});
         }
-        await sleep(1500);
       }
 
       await ctx.followup.editOriginalMessage({
