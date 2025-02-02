@@ -14,17 +14,14 @@ import {
   type GamePlayByPlayEventShot,
   GameStatus,
   type GameSummary,
-  GameSummaryResponse,
   GamesByDate,
   type Period,
   type PlayerInfo,
-  type ScorebarMatch,
 } from "hockeytech";
 import { getBorderCharacters, table } from "table";
 import { isoDate } from "./commands/calendar";
 import { NotificationSendConfig } from "./commands/notifications";
 import { HockeyTechTeamStanding, getHtStandings } from "./commands/standings";
-import { NotificationEntry } from "./cron";
 import { getDb } from "./db";
 import {
   HypeMinute,
@@ -72,6 +69,8 @@ const roundToHypeMinute = (minutes: number): HypeMinute | undefined => {
   }
 };
 
+const dashes = (length: number) => Array(length).fill("-").join("");
+
 export const getHtGamePreviewEmbed = (
   league: HockeyTechLeague,
   game: GamesByDate,
@@ -100,35 +99,44 @@ export const getHtGamePreviewEmbed = (
       visitorStd && homeStd
         ? [visitorStd, homeStd]
             .sort((a, b) => a.rank - b.rank)
-            .map((std) => ({
-              name: `#${std.rank} - ${getTeamEmoji(league, std.team_id)} ${
-                std.team_name
-              }`,
-              value: `\`\`\`apache\n${table(
-                [
-                  ["GP", "PTS", "W", "OTL", "L", "PCT"],
-                  ["---", "----", "--", "----", "--", "----"],
-                  [
-                    std.games_played,
-                    std.points,
-                    std.wins,
-                    std.ot_losses,
-                    std.losses,
-                    getPointsPct(
-                      league,
-                      Number(std.points),
-                      Number(std.games_played),
-                    ),
-                  ],
-                ],
-                {
-                  border: getBorderCharacters("void"),
-                  columnDefault: { paddingLeft: 0, paddingRight: 1 },
-                  drawHorizontalLine: () => false,
-                },
-              )}\`\`\``,
-              inline: false,
-            }))
+            .map((std) => {
+              const headers = ["GP", "PTS", "W", "OTL", "L", "PCT"];
+              const data = [
+                std.games_played,
+                std.points,
+                std.wins,
+                std.ot_losses,
+                std.losses,
+                getPointsPct(
+                  league,
+                  Number(std.points),
+                  Number(std.games_played),
+                ),
+              ];
+              if (league === "pwhl") {
+                headers.splice(3, 0, "OTW");
+                data.splice(
+                  2,
+                  1,
+                  std.regulation_wins,
+                  String(Number(std.ot_wins) + Number(std.shootout_wins)),
+                );
+              }
+              return {
+                name: `#${std.rank} - ${getTeamEmoji(league, std.team_id)} ${
+                  std.team_name
+                }`,
+                value: `\`\`\`apache\n${table(
+                  [headers, headers.map((str) => dashes(str.length)), data],
+                  {
+                    border: getBorderCharacters("void"),
+                    columnDefault: { paddingLeft: 0, paddingRight: 1 },
+                    drawHorizontalLine: () => false,
+                  },
+                )}\`\`\``,
+                inline: false,
+              };
+            })
         : [
             {
               name: "Season Records",

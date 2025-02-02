@@ -248,14 +248,15 @@ router
   // .get("/t", async (request, env: Env) => {
   //   const gameId = Number(new URL(request.url).searchParams.get("game"));
   //   const client = getHtClient(env, "pwhl");
-  //   const plays = (await client.getGamePlayByPlay(gameId)).GC.Pxpverbose;
+  //   // const plays = (await client.getGamePlayByPlay(gameId)).GC.Pxpverbose;
+  //   const games = (await client.getDailySchedule("2025-01-31")).SiteKit
+  //     .Gamesbydate;
+  //   const standings = await getHtStandings(client);
+  //   // const game = schedule.SiteKit.Gamesbydate.find(g => g.id === gameId)
   //   return json(
-  //     plays
-  //       .filter(
-  //         (p): p is GamePlayByPlayEventPenalty =>
-  //           p.event === GamePlayByPlayEvent.Penalty,
-  //       )
-  //       .map((p) => ({ offence: p.offence, id: p.lang_penalty_description })),
+  //     games.map((game) =>
+  //       getHtGamePreviewEmbed("pwhl", game, standings ?? undefined),
+  //     ),
   //   );
   // })
   .all("*", () => new Response("Not Found.", { status: 404 }));
