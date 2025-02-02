@@ -771,16 +771,18 @@ export const getHtLineupEmbed = (
   league: HockeyTechLeague,
   game: GameSummary,
 ) => {
+  const awayPlayers = game.visitor_team_lineup.players ?? [];
+  const homePlayers = game.home_team_lineup.players ?? [];
   const lines = {
     visitor: {
-      f: game.visitor_team_lineup.players.filter((p) => p.position === "8"),
-      d: game.visitor_team_lineup.players.filter((p) => p.position === "1"),
-      g: game.visitor_team_lineup.goalies,
+      f: awayPlayers.filter((p) => p.position === "8"),
+      d: awayPlayers.filter((p) => p.position === "1"),
+      g: game.visitor_team_lineup.goalies ?? [],
     },
     home: {
-      f: game.home_team_lineup.players.filter((p) => p.position === "8"),
-      d: game.home_team_lineup.players.filter((p) => p.position === "1"),
-      g: game.home_team_lineup.goalies,
+      f: homePlayers.filter((p) => p.position === "8"),
+      d: homePlayers.filter((p) => p.position === "1"),
+      g: game.home_team_lineup.goalies ?? [],
     },
   };
   const utils = getExternalUtils(league);
@@ -1235,6 +1237,7 @@ const runNotifications = async ({
               (c) => c.lineups,
             );
 
+            let hasPlayers = true;
             if (channelIds.length !== 0) {
               const summary = (await client.getGameSummary(Number(game.id))).GC
                 .Gamesummary;
@@ -1256,9 +1259,11 @@ const runNotifications = async ({
                     ),
                   );
                 }
+              } else {
+                hasPlayers = false;
               }
             }
-            postedLineups = true;
+            postedLineups = hasPlayers;
           }
 
           if (
