@@ -92,8 +92,10 @@ export const getHtGamePreviewEmbed = (
       [
         `🏒 ${time(getGameDate(game), "t")}`,
         `🏟️ ${game.venue}`,
-        `🎟️ [Tickets](${game.tickets_url})`,
-      ].join("\n"),
+        game.tickets_url ? `🎟️ [Tickets](${game.tickets_url})` : "",
+      ]
+        .filter(Boolean)
+        .join("\n"),
     )
     .addFields(
       visitorStd && homeStd
