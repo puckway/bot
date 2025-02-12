@@ -787,12 +787,13 @@ export const getHtLineupEmbed = (
     visitor: {
       // F, C, LW, RW
       f: awayPlayers.filter((p) => ["8", "4", "3", "2"].includes(p.position)),
-      d: awayPlayers.filter((p) => p.position === "1"),
+      // D, LD, RD
+      d: awayPlayers.filter((p) => ["1", "5", "6"].includes(p.position)),
       g: game.visitor_team_lineup.goalies ?? [],
     },
     home: {
       f: homePlayers.filter((p) => ["8", "4", "3", "2"].includes(p.position)),
-      d: homePlayers.filter((p) => p.position === "1"),
+      d: homePlayers.filter((p) => ["1", "5", "6"].includes(p.position)),
       g: game.home_team_lineup.goalies ?? [],
     },
   };
@@ -809,57 +810,86 @@ export const getHtLineupEmbed = (
         name: `${getTeamEmoji(league, game.visitor.id)} ${
           game.visitor.nickname
         }\nForwards`,
-        value: lines.visitor.f
-          .map(
-            (player) =>
-              `#${player.jersey_number} ${player.last_name}${
-                player.position !== "8" ? ` (${player.position_str})` : ""
-              }`,
-          )
-          .join("\n")
-          .slice(0, 1024),
+        value:
+          lines.visitor.f
+            .map(
+              (player) =>
+                `#${player.jersey_number} ${player.last_name}${
+                  player.position !== "8" ? ` (${player.position_str})` : ""
+                }`,
+            )
+            .join("\n")
+            .slice(0, 1024) || "_ _",
         inline: true,
       },
       {
         name: "_ _\nDefense",
-        value: lines.visitor.d
-          .map((player) => `#${player.jersey_number} ${player.last_name}`)
-          .join("\n")
-          .slice(0, 1024),
+        value:
+          lines.visitor.d
+            .map(
+              (player) =>
+                `#${player.jersey_number} ${player.last_name}${
+                  player.position === "5"
+                    ? " (L)"
+                    : player.position === "6"
+                      ? " (R)"
+                      : ""
+                }`,
+            )
+            .join("\n")
+            .slice(0, 1024) || "_ _",
         inline: true,
       },
       {
         name: "_ _\nGoalie",
-        value: lines.visitor.g
-          .map((player) => `#${player.jersey_number} ${player.last_name}`)
-          .join("\n")
-          .slice(0, 1024),
+        value:
+          lines.visitor.g
+            .map((player) => `#${player.jersey_number} ${player.last_name}`)
+            .join("\n")
+            .slice(0, 1024) || "_ _",
         inline: true,
       },
       {
         name: `${getTeamEmoji(league, game.home.id)} ${
           game.home.nickname
         }\nForwards`,
-        value: lines.home.f
-          .map((player) => `#${player.jersey_number} ${player.last_name}`)
-          .join("\n")
-          .slice(0, 1024),
+        value:
+          lines.home.f
+            .map(
+              (player) =>
+                `#${player.jersey_number} ${player.last_name}${
+                  player.position !== "8" ? ` (${player.position_str})` : ""
+                }`,
+            )
+            .join("\n")
+            .slice(0, 1024) || "_ _",
         inline: true,
       },
       {
         name: "_ _\nDefense",
-        value: lines.home.d
-          .map((player) => `#${player.jersey_number} ${player.last_name}`)
-          .join("\n")
-          .slice(0, 1024),
+        value:
+          lines.home.d
+            .map(
+              (player) =>
+                `#${player.jersey_number} ${player.last_name}${
+                  player.position === "5"
+                    ? " (L)"
+                    : player.position === "6"
+                      ? " (R)"
+                      : ""
+                }`,
+            )
+            .join("\n")
+            .slice(0, 1024) || "_ _",
         inline: true,
       },
       {
         name: "_ _\nGoalie",
-        value: lines.home.g
-          .map((player) => `#${player.jersey_number} ${player.last_name}`)
-          .join("\n")
-          .slice(0, 1024),
+        value:
+          lines.home.g
+            .map((player) => `#${player.jersey_number} ${player.last_name}`)
+            .join("\n")
+            .slice(0, 1024) || "_ _",
         inline: true,
       },
     )
