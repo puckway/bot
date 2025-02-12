@@ -785,12 +785,13 @@ export const getHtLineupEmbed = (
   const homePlayers = game.home_team_lineup.players ?? [];
   const lines = {
     visitor: {
-      f: awayPlayers.filter((p) => p.position === "8"),
+      // F, C, LW, RW
+      f: awayPlayers.filter((p) => ["8", "4", "3", "2"].includes(p.position)),
       d: awayPlayers.filter((p) => p.position === "1"),
       g: game.visitor_team_lineup.goalies ?? [],
     },
     home: {
-      f: homePlayers.filter((p) => p.position === "8"),
+      f: homePlayers.filter((p) => ["8", "4", "3", "2"].includes(p.position)),
       d: homePlayers.filter((p) => p.position === "1"),
       g: game.home_team_lineup.goalies ?? [],
     },
@@ -809,7 +810,12 @@ export const getHtLineupEmbed = (
           game.visitor.nickname
         }\nForwards`,
         value: lines.visitor.f
-          .map((player) => `#${player.jersey_number} ${player.last_name}`)
+          .map(
+            (player) =>
+              `#${player.jersey_number} ${player.last_name}${
+                player.position !== "8" ? ` (${player.position_str})` : ""
+              }`,
+          )
           .join("\n")
           .slice(0, 1024),
         inline: true,
