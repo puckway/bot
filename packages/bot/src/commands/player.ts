@@ -71,6 +71,37 @@ export const playerSearchSelectCallback: SelectMenuCallback = async (ctx) => {
   ];
 };
 
+const cmToImperialHeight = (cm: number) => {
+  const inches = cm * 0.39;
+  const feet = Math.floor(inches / 12);
+  return `${feet}' ${Math.min(Math.round(inches - feet * 12), 11)}"`;
+};
+
+/**
+ * Convert a player height value to cm
+ * @param height Raw value from the player object
+ */
+const parseHeight = (height: string): number | null => {
+  // already in cm
+  if (!Number.isNaN(Number(height))) {
+    return Number(height);
+  }
+
+  // AHL
+  const [feet, inches] = height.split("-").map(Number);
+  if (!Number.isNaN(feet) && !Number.isNaN(inches)) {
+    return Math.floor((feet * 12 + inches) / 0.39);
+  }
+
+  // PWHL
+  const match = height.match(/(\d+)' ?(\d+)"/);
+  if (match) {
+    const [, feet, inches] = match.map(Number);
+    return Math.floor((feet * 12 + inches) / 0.39);
+  }
+  return null;
+};
+
 const getPlayerEmbed = async (
   ctx: InteractionContext<APIInteraction>,
   league: HockeyTechLeague,
@@ -188,18 +219,15 @@ const getPlayerEmbed = async (
   }
   // Hockeytech returns imperial units but we also deal with metric units
   if (playerDetails?.height) {
-    const inches = playerDetails.height * 0.39;
-    const feet = Math.floor(inches / 12);
-    const imperial = `${feet}' ${Math.floor(inches - feet * 12)}"`;
-
-    description += `${s(ctx, "height")} ${
-      playerDetails.height
-    } cm / ${imperial}\n`;
+    const cm = playerDetails.height;
+    const imperial = cmToImperialHeight(cm);
+    description += `${s(ctx, "height")} ${cm} cm / ${imperial}\n`;
   } else if (player.height && player.height !== "0") {
-    const [feet, inches] = player.height.split("-").map(Number);
-    const cm = Math.floor((feet * 12 + inches) / 0.39);
-
-    description += `${s(ctx, "height")} ${cm} cm / ${feet}' ${inches}"\n`;
+    const cm = parseHeight(player.height);
+    if (cm !== null) {
+      const imperial = cmToImperialHeight(cm);
+      description += `${s(ctx, "height")} ${cm} cm / ${imperial}\n`;
+    }
   }
   if (playerDetails?.weight) {
     const pounds = Math.floor(playerDetails.weight * 2.2);
