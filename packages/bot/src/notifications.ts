@@ -1697,9 +1697,10 @@ export class DurableNotificationManager implements DurableObject {
           if (new Date(day).getTime() - now.getTime() < 0) {
             // We've probably been in a loop for several hours; schedule a purge.
             nextAlarm = null;
+          } else {
+            // 3 minutes
+            nextAlarm = new Date(now.getTime() + 180_000);
           }
-          // 3 minutes
-          nextAlarm = new Date(now.getTime() + 180_000);
         }
         if (nextAlarm === null) {
           // The games are all over
