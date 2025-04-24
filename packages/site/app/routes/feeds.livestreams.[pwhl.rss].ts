@@ -1,6 +1,6 @@
 import { LoaderFunctionArgs } from "@remix-run/cloudflare";
-import { Feed } from "feed";
 import { XMLParser } from "fast-xml-parser";
+import { Feed } from "feed";
 
 const parser = new XMLParser();
 
