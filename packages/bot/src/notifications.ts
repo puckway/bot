@@ -1695,7 +1695,7 @@ export class DurableNotificationManager implements DurableObject {
         } catch (e) {
           console.error(e);
           if (new Date(day).getTime() - now.getTime() < 0) {
-            // We've probably been in a loop for several hours; schedule a purge.
+            // We've probably been in a loop for several hours; time to clean up.
             nextAlarm = null;
           } else {
             // 3 minutes
@@ -1704,20 +1704,19 @@ export class DurableNotificationManager implements DurableObject {
         }
         if (nextAlarm === null) {
           // The games are all over
-          await this.state.storage.put("alarmType", AlarmType.Purge);
-          // 2 days
-          await this.state.storage.setAlarm(now.getTime() + 86400 * 2);
-        } else {
-          // Wait at least 30 seconds before letting the next alarm happen
-          const minimumAlarm = now.getTime() + 30_000;
-          await this.state.storage.setAlarm(
-            Math.max(nextAlarm.getTime(), minimumAlarm),
-          );
+          await this.state.storage.deleteAll();
+          return;
         }
+        // Wait at least 30 seconds before letting the next alarm happen
+        const minimumAlarm = now.getTime() + 30_000;
+        await this.state.storage.setAlarm(
+          Math.max(nextAlarm.getTime(), minimumAlarm),
+        );
         break;
       }
+      // Deprecated. We previously waited for 2 days before purging but this
+      // was pointless since the data is never accessed after a purge is set.
       case AlarmType.Purge: {
-        // Executed 2 days after the last game ends
         // We don't need to clean up KV because the keys have TTLs
         await this.state.storage.deleteAll();
         return;
