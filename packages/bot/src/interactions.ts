@@ -37,7 +37,11 @@ import {
   RESTPostAPIInteractionFollowupResult,
   Routes,
 } from "discord-api-types/v10";
-import { PermissionFlags, PermissionsBitField } from "discord-bitflag";
+import {
+  MessageFlagsBitField,
+  PermissionFlags,
+  PermissionsBitField,
+} from "discord-bitflag";
 import { Snowflake, getDate } from "discord-snowflake";
 import { MinimumKVComponentState } from "./components.js";
 
@@ -306,11 +310,21 @@ export class InteractionContext<
   defer(options?: {
     /** Whether the response will eventually be ephemeral */
     ephemeral?: boolean;
+    /** Whether the response will contain V2 components */
+    componentsV2?: boolean;
     /** Whether the bot should be displayed as "thinking" in the UI */
     thinking?: boolean;
   }):
     | APIInteractionResponseDeferredMessageUpdate
     | APIInteractionResponseDeferredChannelMessageWithSource {
+    const flags = new MessageFlagsBitField();
+    if (options?.ephemeral) {
+      flags.add(MessageFlags.Ephemeral);
+    }
+    if (options?.componentsV2) {
+      flags.add(MessageFlags.IsComponentsV2);
+    }
+
     if (
       this.interaction.type === InteractionType.MessageComponent ||
       this.interaction.type === InteractionType.ModalSubmit
@@ -320,16 +334,14 @@ export class InteractionContext<
           ? InteractionResponseType.DeferredChannelMessageWithSource
           : InteractionResponseType.DeferredMessageUpdate,
         data:
-          options?.thinking && options?.ephemeral
-            ? { flags: MessageFlags.Ephemeral }
+          options?.thinking && flags.value !== 0n
+            ? { flags: Number(flags.value) }
             : undefined,
       };
     } else if (this.interaction.type === InteractionType.ApplicationCommand) {
       return {
         type: InteractionResponseType.DeferredChannelMessageWithSource,
-        data: options?.ephemeral
-          ? { flags: MessageFlags.Ephemeral }
-          : undefined,
+        data: flags.value !== 0n ? { flags: Number(flags.value) } : undefined,
       };
     }
     throw Error(
