@@ -65,8 +65,12 @@ export type KhlListedPartialGame = Pick<
   "game_state_key" | "score" | "team_a" | "team_b" | "start_at" | "end_at"
 >;
 
-export const isoDate = (game: GamesByDate | Schedule) =>
-  `${game.date_played}T${game.schedule_time}${getOffset(game.timezone)}`;
+export const isoDate = (
+  game: Pick<
+    GamesByDate | Schedule,
+    "date_played" | "schedule_time" | "timezone"
+  >,
+) => `${game.date_played}T${game.schedule_time}${getOffset(game.timezone)}`;
 
 const sendScheduleMessage = async (
   ctx: InteractionContext<APIChatInputApplicationCommandInteraction>,

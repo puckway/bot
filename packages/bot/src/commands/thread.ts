@@ -16,6 +16,7 @@ import {
   getHtGamePreviewFinalEmbed,
   getHtGoalsEmbed,
   getHtStatusEmbed,
+  getPlayoffBrackets,
 } from "../notifications";
 import { getHtLocale } from "../util/l10n";
 
@@ -81,9 +82,17 @@ export const threadCloseCallback: ChatInputAppCommandCallback = async (ctx) => {
         ],
       });
 
+      // I don't think you can tell that a game is definitely a playoff game
+      // from the summary data, so we just always get the brackets and let the
+      // builders find out that it's empty.
+      const brackets = await getPlayoffBrackets(
+        client,
+        Number(summary.meta.season_id),
+      );
+
       await ctx.rest.patch(Routes.channelMessage(parentId, channel.id), {
         body: {
-          embeds: [getHtGamePreviewFinalEmbed(league, summary)],
+          embeds: [getHtGamePreviewFinalEmbed(league, summary, { brackets })],
         } satisfies RESTPatchAPIChannelMessageJSONBody,
       });
 

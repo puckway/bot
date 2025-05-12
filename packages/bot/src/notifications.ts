@@ -2,6 +2,7 @@ import { EmbedBuilder, time } from "@discordjs/builders";
 import { REST } from "@discordjs/rest";
 import { APIMessage, ChannelType, Routes } from "discord-api-types/v10";
 import { and, eq } from "drizzle-orm";
+import type HockeyTech from "hockeytech";
 import {
   type GCGamePlayByPlay,
   GamePlayByPlayEvent,
@@ -14,9 +15,11 @@ import {
   type GamePlayByPlayEventShot,
   GameStatus,
   type GameSummary,
-  GamesByDate,
+  type GamesByDate,
+  type NumericBoolean,
   type Period,
   type PlayerInfo,
+  type TeamsBySeason,
 } from "hockeytech";
 import { getBorderCharacters, table } from "table";
 import { isoDate } from "./commands/calendar";
@@ -71,15 +74,114 @@ const roundToHypeMinute = (minutes: number): HypeMinute | undefined => {
 
 const dashes = (length: number) => Array(length).fill("-").join("");
 
+const boldIf = (input: string, condition: boolean) =>
+  condition ? `**${input}**` : String(input);
+
 export const getHtGamePreviewEmbed = (
   league: HockeyTechLeague,
   game: GamesByDate,
   standings?: HockeyTechTeamStanding[],
+  brackets?: ModuleKitBrackets,
 ) => {
   const utils = getExternalUtils(league);
   const visitorStd = standings?.find((t) => t.team_id === game.visiting_team);
   const homeStd = standings?.find((t) => t.team_id === game.home_team);
   const showingStandings = !!visitorStd && !!homeStd;
+
+  const description = [
+    `🏒 ${time(getGameDate(game), "t")}`,
+    `🏟️ ${game.venue}`,
+    game.tickets_url ? `🎟️ [Tickets](${game.tickets_url})` : "",
+  ]
+    .filter(Boolean)
+    .join("\n");
+
+  if (brackets) {
+    let round: BracketRound | undefined;
+    let matchup: RoundMatchup | undefined;
+    let gameNumber: number | undefined;
+    for (const bracketRound of brackets.rounds) {
+      for (const roundMatchup of bracketRound.matchups) {
+        let i = -1;
+        for (const matchupGame of roundMatchup.games) {
+          i += 1;
+          if (matchupGame.game_id === game.id) {
+            round = bracketRound;
+            matchup = roundMatchup;
+            gameNumber = i + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    if (round && matchup && gameNumber !== undefined) {
+      const team1 = brackets.teams[matchup.team1];
+      const team2 = brackets.teams[matchup.team2];
+      const score = `${matchup.team1_wins}-${matchup.team2_wins}`;
+
+      return (
+        new EmbedBuilder()
+          .setAuthor({
+            name: `${game.visiting_team_name} @ ${game.home_team_name} - Round ${round.round}, Game ${gameNumber}`,
+            url: utils.gameCenter(game.id),
+          })
+          .setThumbnail(getHtTeamLogoUrl(league, game.home_team))
+          .setColor(getTeamColor(league, game.home_team))
+          .setDescription(
+            `${description}\n\n${
+              matchup.team1_wins === matchup.team2_wins
+                ? `Series is tied **${score}**`
+                : matchup.team1_wins > matchup.team2_wins
+                  ? `${getTeamEmoji(league, matchup.team1)} ${
+                      team1?.team_code
+                    } leads **${score}**`
+                  : `${getTeamEmoji(league, matchup.team2)} ${
+                      team2?.team_code
+                    } leads **${matchup.team2_wins}-${matchup.team1_wins}**`
+            }\n-# \\* if necessary`,
+          )
+          .addFields(
+            matchup.games.map((g, i) => {
+              // const homeTimezone =
+              const away = brackets.teams[g.visiting_team];
+              const home = brackets.teams[g.home_team];
+              return {
+                name: `Game ${i + 1} - ${time(
+                  // TODO: make sure this is UTC, it probably isn't
+                  new Date(g.date_time),
+                  "d",
+                )}${g.if_necessary === "1" ? "*" : ""}`,
+                value:
+                  g.status === GameStatus.NotStarted
+                    ? `${getTeamEmoji(league, g.visiting_team)} ${
+                        away?.team_code
+                      } @ ${getTeamEmoji(league, g.home_team)} ${
+                        home?.team_code
+                      }`
+                    : `${getTeamEmoji(league, g.visiting_team)} ${
+                        away?.team_code
+                      } ${boldIf(
+                        g.visiting_goal_count,
+                        g.visiting_goal_count > g.home_goal_count,
+                      )} @ ${boldIf(
+                        g.home_goal_count,
+                        g.home_goal_count > g.visiting_goal_count,
+                      )} ${getTeamEmoji(league, g.home_team)} ${
+                        home?.team_code
+                      }`,
+              };
+            }),
+          )
+          // Really wanted to use this but it's just so ugly
+          // .setImage(brackets.logo || null)
+          .setFooter({
+            text: `${round.round_name}\n🆔 ${league}:${game.id}`,
+          })
+          .toJSON()
+      );
+    }
+  }
 
   return new EmbedBuilder()
     .setAuthor({
@@ -88,15 +190,7 @@ export const getHtGamePreviewEmbed = (
     })
     .setThumbnail(getHtTeamLogoUrl(league, game.home_team))
     .setColor(getTeamColor(league, game.home_team))
-    .setDescription(
-      [
-        `🏒 ${time(getGameDate(game), "t")}`,
-        `🏟️ ${game.venue}`,
-        game.tickets_url ? `🎟️ [Tickets](${game.tickets_url})` : "",
-      ]
-        .filter(Boolean)
-        .join("\n"),
-    )
+    .setDescription(description)
     .addFields(
       visitorStd && homeStd
         ? [visitorStd, homeStd]
@@ -170,15 +264,36 @@ export const getHtGamePreviewEmbed = (
     .toJSON();
 };
 
-const getGameDate = (game: GamesByDate) => new Date(isoDate(game));
+const getSeriesWinner = (matchup: RoundMatchup): string | null => {
+  const lastGame = matchup.games[matchup.games.length - 1];
+  if (
+    lastGame.status === GameStatus.UnofficialFinal ||
+    lastGame.status === GameStatus.Final
+  ) {
+    // series is definitely over
+    return matchup.team1_wins > matchup.team2_wins
+      ? matchup.team1
+      : matchup.team2;
+  }
+  // } else if (matchup.games.find((g) => g.if_necessary === "1")) {
+  // the series isn't over
+  return null;
+};
+
+const getGameDate = (
+  game: Pick<GamesByDate, "date_played" | "schedule_time" | "timezone">,
+) => new Date(isoDate(game));
 
 export const getHtGamePreviewFinalEmbed = (
   league: HockeyTechLeague,
   game: GameSummary,
-  spoilerScores = false,
+  options?: {
+    brackets?: ModuleKitBrackets;
+    spoilerScores?: boolean;
+  },
 ) => {
   const utils = getExternalUtils(league);
-  const embed = getHtStatusEmbed(league, game, spoilerScores);
+  const embed = getHtStatusEmbed(league, game, options?.spoilerScores);
 
   let startDate = new Date(game.game_date_iso_8601);
   let endDate: Date | undefined;
@@ -196,19 +311,92 @@ export const getHtGamePreviewFinalEmbed = (
     }
   }
 
+  const description = [
+    `🏒 ${time(startDate, "t")}${endDate ? ` - ${time(endDate, "t")}` : ""}`,
+    `🏟️ ${game.venue}`,
+  ].join("\n");
+
+  if (options?.brackets) {
+    const { brackets } = options;
+    let round: BracketRound | undefined;
+    let matchup: RoundMatchup | undefined;
+    let gameNumber: number | undefined;
+    for (const bracketRound of brackets.rounds) {
+      for (const roundMatchup of bracketRound.matchups) {
+        let i = -1;
+        for (const matchupGame of roundMatchup.games) {
+          i += 1;
+          if (matchupGame.game_id === game.meta.id) {
+            round = bracketRound;
+            matchup = roundMatchup;
+            gameNumber = i + 1;
+            break;
+          }
+        }
+      }
+    }
+
+    if (round && matchup && gameNumber !== undefined) {
+      const team1 = brackets.teams[matchup.team1];
+      const team2 = brackets.teams[matchup.team2];
+      const score = `${matchup.team1_wins}-${matchup.team2_wins}`;
+
+      const winnerId = getSeriesWinner(matchup);
+      const winner = winnerId ? brackets.teams[winnerId] : undefined;
+      const winnerTeam = winnerId
+        ? matchup.team1 === winnerId
+          ? "team1"
+          : "team2"
+        : null;
+
+      const seriesText =
+        winnerId === null
+          ? matchup.team1_wins > matchup.team2_wins
+            ? `${getTeamEmoji(league, matchup.team1)} ${
+                team1?.team_code
+              } leads **${score}**`
+            : matchup.team2_wins > matchup.team1_wins
+              ? `${getTeamEmoji(league, matchup.team2)} ${
+                  team2?.team_code
+                } leads **${matchup.team2_wins}-${matchup.team1_wins}**`
+              : `Series is tied **${score}**`
+          : `${getTeamEmoji(league, winnerId)} ${
+              winner?.team_code
+            } wins series **${
+              // biome-ignore lint/style/noNonNullAssertion: see definition
+              matchup[`${winnerTeam!}_wins`]
+            }-${
+              matchup[`${winnerTeam === "team1" ? "team2" : "team1"}_wins`]
+            }**`;
+
+      const fieldIndex =
+        embed.fields?.findIndex((f) => f.name === "Score") ?? -1;
+      return new EmbedBuilder(embed)
+        .setAuthor({
+          name: `${game.visitor.name} @ ${game.home.name} - Round ${round.round}, Game ${gameNumber}`,
+          url: utils.gameCenter(game.meta.id),
+        })
+        .setDescription(description)
+        .spliceFields(0, fieldIndex, {
+          name: embed.fields?.[fieldIndex].name ?? "Score",
+          value: (
+            (embed.fields?.[fieldIndex].value ?? "") + `\n\n${seriesText}`
+          ).trim(),
+          inline: true,
+        })
+        .setFooter({
+          text: `${round.round_name}\n🆔 ${league}:${game.meta.id}`,
+        })
+        .toJSON();
+    }
+  }
+
   return new EmbedBuilder(embed)
     .setAuthor({
       name: `Game #${game.meta.game_number} - ${game.visitor.name} @ ${game.home.name}`,
       url: utils.gameCenter(game.meta.id),
     })
-    .setDescription(
-      [
-        `🏒 ${time(startDate, "t")}${
-          endDate ? ` - ${time(endDate, "t")}` : ""
-        }`,
-        `🏟️ ${game.venue}`,
-      ].join("\n"),
-    )
+    .setDescription(description)
     .setFooter({
       text: `🆔 ${league}:${game.meta.id}`,
     })
@@ -1127,6 +1315,88 @@ export const getPlayId = (play: Play, index: number): string => {
   }
 };
 
+interface RoundMatchup {
+  series_letter: string;
+  series_name: string;
+  /** Can be empty */
+  series_logo: string;
+  round: string;
+  active: NumericBoolean;
+  /** N/A if first round, `series_letter` of `team1`'s previous series otherwise */
+  feeder_series1: string;
+  /** N/A if first round, `series_letter` of `team2`'s previous series otherwise */
+  feeder_series2: string;
+  /** Team ID - 0 if contestants not yet known */
+  team1: string;
+  /** Team ID - 0 if contestants not yet known */
+  team2: string;
+  content_en: string;
+  content_fr: string;
+  /** @deprecated empty string */
+  winner: string;
+  games: {
+    game_id: string;
+    /** Team ID */
+    home_team: string;
+    home_goal_count: string;
+    /** Team ID */
+    visiting_team: string;
+    visiting_goal_count: string;
+    status: GameStatus;
+    game_status: string;
+    date_time: string;
+    if_necessary: NumericBoolean;
+    game_notes: string;
+  }[];
+  team1_wins: number;
+  team2_wins: number;
+  ties: number;
+}
+
+interface BracketRound {
+  round: string;
+  round_name: string;
+  season_id: string;
+  round_type_id: string;
+  round_type_name: string;
+  matchups: RoundMatchup[];
+}
+
+interface ModuleKitBrackets {
+  teams: Record<
+    string,
+    Pick<
+      TeamsBySeason,
+      "id" | "city" | "name" | "division_long_name" | "division_short_name"
+    > & {
+      team_code: string;
+      conf_id: string;
+      logo: string;
+    }
+  >;
+  rounds: BracketRound[];
+  /** Can be empty, usually a .jpg? */
+  logo: string;
+  show_ties: boolean;
+}
+
+export const getPlayoffBrackets = async (
+  client: HockeyTech,
+  seasonId: number | "latest",
+): Promise<ModuleKitBrackets> => {
+  // @ts-expect-error not typed but it exists
+  const config = client._getModulekitConfig("brackets");
+  config.params.season_id = String(seasonId);
+  // @ts-expect-error
+  const url = client._getEndpoint(client._modulekitBaseUrl, config);
+
+  const response = await fetch(url, { method: "GET" });
+  const data = (await response.json()) as {
+    SiteKit: { Brackets: ModuleKitBrackets };
+  };
+  return data.SiteKit.Brackets;
+};
+
 const runNotifications = async ({
   rest,
   env,
@@ -1197,7 +1467,19 @@ const runNotifications = async ({
               channelConfigs,
               (c) => c.threads,
             );
-            const standings = await getHtStandings(client);
+            let standings: HockeyTechTeamStanding[] | undefined;
+            let brackets: ModuleKitBrackets | undefined;
+            if (game.playoff === "1") {
+              // Show relevant series info for playoffs
+              brackets = await getPlayoffBrackets(
+                client,
+                Number(game.season_id),
+              );
+            } else {
+              // We don't need the standings for playoff games
+              standings = (await getHtStandings(client)) ?? undefined;
+            }
+
             for (const channelId of previewChannelIds) {
               ctx.waitUntil(
                 logErrors(
@@ -1206,14 +1488,14 @@ const runNotifications = async ({
                       Routes.channelMessages(channelId),
                       {
                         body: {
-                          embeds: [
-                            getHtGamePreviewEmbed(
-                              league,
-                              game,
-                              standings ?? undefined,
-                            ),
-                          ],
-                        },
+                        embeds: [
+                          getHtGamePreviewEmbed(
+                            league,
+                            game,
+                            standings,
+                            brackets,
+                          ),
+                        ],
                       },
                     )) as APIMessage;
                     if (threadChannelIds.includes(channelId)) {

@@ -246,17 +246,24 @@ router
     return respond({ error: "Unknown Type" });
   })
   // .get("/t", async (request, env: Env) => {
-  //   const gameId = Number(new URL(request.url).searchParams.get("game"));
+  //   // const gameId = Number(new URL(request.url).searchParams.get("game"));
   //   const client = getHtClient(env, "pwhl");
   //   // const plays = (await client.getGamePlayByPlay(gameId)).GC.Pxpverbose;
-  //   const games = (await client.getDailySchedule("2025-01-31")).SiteKit
-  //     .Gamesbydate;
-  //   const standings = await getHtStandings(client);
+  //   // const games = (await client.getDailySchedule("2025-05-11")).SiteKit
+  //   //   .Gamesbydate;
+  //   const game = (await client.getGameSummary(95)).GC.Gamesummary;
+  //   // const standings = await getHtStandings(client);
+  //   const brackets = await getPlayoffBrackets(
+  //     client,
+  //     // Number(games[0].season_id),
+  //     Number(game.meta.season_id),
+  //   );
   //   // const game = schedule.SiteKit.Gamesbydate.find(g => g.id === gameId)
   //   return json(
-  //     games.map((game) =>
-  //       getHtGamePreviewEmbed("pwhl", game, standings ?? undefined),
-  //     ),
+  //     // games.map((game) =>
+  //     //   getHtGamePreviewEmbed("pwhl", game, undefined, brackets),
+  //     // ),
+  //     getHtGamePreviewFinalEmbed("pwhl", game, { brackets }),
   //   );
   // })
   .all("*", () => new Response("Not Found.", { status: 404 }));
