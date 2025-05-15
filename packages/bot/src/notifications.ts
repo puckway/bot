@@ -1,6 +1,21 @@
-import { EmbedBuilder, time } from "@discordjs/builders";
+import {
+  ButtonBuilder,
+  channelLink,
+  ContainerBuilder,
+  EmbedBuilder,
+  TextDisplayBuilder,
+  time,
+} from "@discordjs/builders";
 import { REST } from "@discordjs/rest";
-import { APIMessage, ChannelType, Routes } from "discord-api-types/v10";
+import {
+  APIMessage,
+  APIThreadChannel,
+  ButtonStyle,
+  ChannelType,
+  MessageFlags,
+  RESTPostAPIChannelMessageJSONBody,
+  Routes,
+} from "discord-api-types/v10";
 import { and, eq } from "drizzle-orm";
 import type HockeyTech from "hockeytech";
 import {
@@ -21,6 +36,7 @@ import {
   type PlayerInfo,
   type TeamsBySeason,
 } from "hockeytech";
+import { pope } from "pope";
 import { getBorderCharacters, table } from "table";
 import { isoDate } from "./commands/calendar";
 import { NotificationSendConfig } from "./commands/notifications";
@@ -1087,17 +1103,45 @@ export const getHtLineupEmbed = (
     .toJSON();
 };
 
+interface ChannelMirrorInnerConfig {
+  key: keyof NotificationSendConfig;
+  channelId: string;
+  contentTemplate?: string;
+}
+
 const filterConfigChannels = (
-  configs: [string, NotificationSendConfig][],
+  configs: [string, { send: NotificationSendConfig }][],
   filter: (config: NotificationSendConfig) => unknown,
 ) =>
   configs
     // Filter by config value
-    .filter(([_, c]) => filter(c))
+    .filter(([_, c]) => filter(c.send))
     // Get channel ID
     .map((c) => c[0])
     // No duplicates
     .filter((id, i, a) => a.indexOf(id) === i);
+
+const filterMirrorChannels = (
+  channelId: string,
+  configs: [
+    string,
+    {
+      send: NotificationSendConfig;
+      mirrors: ChannelMirrorInnerConfig[];
+    },
+  ][],
+  key:
+    | keyof NotificationSendConfig
+    | ((config: NotificationSendConfig) => unknown),
+): ChannelMirrorInnerConfig[] =>
+  configs
+    .filter(
+      ([id, c]) =>
+        (typeof key === "string" ? c.send[key] : key(c.send)) &&
+        id === channelId,
+    )
+    .flatMap((c) => c[1].mirrors)
+    .filter((c) => c.key === key);
 
 export const periodNameFromId = (id: string) => {
   if (Number.isNaN(Number(id))) {
@@ -1315,6 +1359,124 @@ export const getPlayId = (play: Play, index: number): string => {
   }
 };
 
+/**
+ * @param configs all mirror configurations to send to
+ * @param defaultBody if there is no config.contentTemplate
+ * @param mirrorData template data passed to pope()
+ * @returns map of mirror channel ID to APIMessage
+ */
+const sendMirrorMessages = async (
+  rest: REST,
+  configs: ChannelMirrorInnerConfig[],
+  defaultBody: RESTPostAPIChannelMessageJSONBody,
+  mirrorData?: Record<string, unknown>,
+): Promise<Record<string, APIMessage>> => {
+  const messages: Record<string, APIMessage> = {};
+  const failedChannelIds: string[] = [];
+  for (const config of configs) {
+    if (failedChannelIds.includes(config.channelId)) continue;
+
+    let mirrorBody = defaultBody;
+    if (config.contentTemplate) {
+      mirrorBody = {
+        content: pope(config.contentTemplate, mirrorData ?? {}, {
+          skipUndefined: true,
+        }),
+      };
+    }
+    try {
+      const message = (await rest.post(
+        Routes.channelMessages(config.channelId),
+        { body: mirrorBody },
+      )) as APIMessage;
+      messages[config.channelId] = message;
+    } catch (e) {
+      failedChannelIds.push(config.channelId);
+      console.error(`Failed to post mirror to ${config.channelId}:`, e);
+    }
+  }
+  return messages;
+};
+
+const sendMessageWithMirrors = async (
+  channelId: string,
+  configs: ChannelMirrorInnerConfig[],
+  rest: REST,
+  body: RESTPostAPIChannelMessageJSONBody,
+  mirrorData?: Record<string, unknown>,
+): Promise<APIMessage> => {
+  const message = (await rest.post(Routes.channelMessages(channelId), {
+    body,
+  })) as APIMessage;
+  await sendMirrorMessages(rest, configs, body, mirrorData);
+  return message;
+};
+
+const getPopeData = ({
+  league,
+  game,
+  channelId,
+}: { league: League; game: GamesByDate; channelId: string }) => {
+  const utils = getExternalUtils(league);
+  return {
+    channel_id: channelId,
+    game: {
+      ...game,
+      matchup: `${game.visiting_team_city} ${game.visiting_team_nickname} @ ${game.home_team_city} ${game.home_team_nickname}`,
+      matchup_emojis: `${getTeamEmoji(league, game.visiting_team)} ${
+        game.visiting_team_city
+      } ${game.visiting_team_nickname} @ ${getTeamEmoji(
+        league,
+        game.home_team,
+      )} ${game.home_team_city} ${game.home_team_nickname}`,
+      home_name: `${game.home_team_city} ${game.home_team_nickname}`,
+      home_emoji: getTeamEmoji(league, game.home_team),
+      away_name: `${game.visiting_team_city} ${game.visiting_team_nickname}`,
+      away_emoji: getTeamEmoji(league, game.visiting_team),
+      start_timestamp: new Date(game.start_time).getTime() / 1000,
+    },
+    links: {
+      gamecenter: utils.gameCenter(game.id),
+      standings: utils.standings(),
+    },
+  };
+};
+
+const getThreadMirrorBody = (
+  thread: APIThreadChannel,
+  popeData: Record<string, unknown>,
+): RESTPostAPIChannelMessageJSONBody => ({
+  flags: MessageFlags.IsComponentsV2,
+  components: [
+    new TextDisplayBuilder().setContent(
+      pope(
+        "**{{game.matchup_emojis}}** starts <t:{{game.start_timestamp}}:R>!",
+        popeData,
+        { skipUndefined: true },
+      ),
+    ),
+    new ContainerBuilder().addSectionComponents((s) =>
+      s
+        .addTextDisplayComponents((td) => td.setContent(`**${thread.name}**`))
+        .addTextDisplayComponents((td) =>
+          td.setContent(`-# Thread in <#${thread.parent_id}>`),
+        )
+        .setButtonAccessory(
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Link)
+            .setLabel("Open Thread")
+            .setURL(
+              channelLink(
+                thread.id,
+                // biome-ignore lint/style/noNonNullAssertion: N/A
+                thread.guild_id!,
+              ),
+            ),
+        ),
+    ),
+  ].map((x) => x.toJSON()),
+});
+
 interface RoundMatchup {
   series_letter: string;
   series_name: string;
@@ -1409,11 +1571,20 @@ const runNotifications = async ({
 }: {
   rest: REST;
   env: Env;
-  ctx: DurableObjectState;
+  ctx: Pick<DurableObjectState, "waitUntil">;
   league: League;
   now: Date;
   day: string;
-  channelIds: Record<string, Record<string, NotificationSendConfig>>;
+  channelIds: Record<
+    string,
+    Record<
+      string,
+      {
+        send: NotificationSendConfig;
+        mirrors: ChannelMirrorInnerConfig[];
+      }
+    >
+  >;
   pickemsPollMessageIds: Record<
     string,
     { channelId: string; messageId: string }[]
@@ -1481,13 +1652,24 @@ const runNotifications = async ({
             }
 
             for (const channelId of previewChannelIds) {
+              const previewMirrors = filterMirrorChannels(
+                channelId,
+                channelConfigs,
+                "preview",
+              );
+              const threadMirrors = filterMirrorChannels(
+                channelId,
+                channelConfigs,
+                "threads",
+              );
               ctx.waitUntil(
                 logErrors(
                   (async () => {
-                    const message = (await rest.post(
-                      Routes.channelMessages(channelId),
+                    const message = await sendMessageWithMirrors(
+                      channelId,
+                      previewMirrors,
+                      rest,
                       {
-                        body: {
                         embeds: [
                           getHtGamePreviewEmbed(
                             league,
@@ -1497,24 +1679,38 @@ const runNotifications = async ({
                           ),
                         ],
                       },
-                    )) as APIMessage;
+                      getPopeData({ league, game, channelId }),
+                    );
                     if (threadChannelIds.includes(channelId)) {
-                      await rest.post(Routes.threads(channelId, message.id), {
-                        body: {
-                          name: `${game.visiting_team_code} @ ${
-                            game.home_team_code
-                          } - ${getGameDate(game).toLocaleDateString(
-                            undefined,
-                            {
-                              weekday: "short",
-                              month: "short",
-                              day: "numeric",
-                              year: "numeric",
-                              timeZone: game.timezone,
-                            },
-                          )}`,
+                      const thread = (await rest.post(
+                        Routes.threads(channelId, message.id),
+                        {
+                          body: {
+                            name: `${game.visiting_team_code} @ ${
+                              game.home_team_code
+                            } - ${getGameDate(game).toLocaleDateString(
+                              undefined,
+                              {
+                                weekday: "short",
+                                month: "short",
+                                day: "numeric",
+                                year: "numeric",
+                                timeZone: game.timezone,
+                              },
+                            )}`,
+                          },
                         },
-                      });
+                      )) as APIThreadChannel;
+                      const popeData = {
+                        ...getPopeData({ league, game, channelId }),
+                        thread,
+                      };
+                      await sendMirrorMessages(
+                        rest,
+                        threadMirrors,
+                        getThreadMirrorBody(thread, popeData),
+                        popeData,
+                      );
                     }
                     return undefined;
                   })(),
@@ -1579,11 +1775,17 @@ const runNotifications = async ({
                 for (const channelId of channelIds) {
                   ctx.waitUntil(
                     logErrors(
-                      rest.post(Routes.channelMessages(channelId), {
-                        body: {
-                          embeds: [getHtLineupEmbed(league, summary)],
-                        },
-                      }),
+                      sendMessageWithMirrors(
+                        channelId,
+                        filterMirrorChannels(
+                          channelId,
+                          channelConfigs,
+                          "lineups",
+                        ),
+                        rest,
+                        { embeds: [getHtLineupEmbed(league, summary)] },
+                        getPopeData({ league, game, channelId }),
+                      ),
                     ),
                   );
                 }
@@ -1607,8 +1809,8 @@ const runNotifications = async ({
                 postedLineups,
               } satisfies EventData),
               {
-                // 2 weeks
-                expirationTtl: 14 * 86400,
+                // 3 days
+                expirationTtl: 3 * 86400,
               },
             );
           }
@@ -1668,33 +1870,56 @@ const runNotifications = async ({
                 ctx.waitUntil(
                   logErrors(
                     (async () => {
-                      const message = (await rest.post(
-                        Routes.channelMessages(channelId),
+                      const message = (await sendMessageWithMirrors(
+                        channelId,
+                        filterMirrorChannels(
+                          channelId,
+                          channelConfigs,
+                          (c) =>
+                            c.periods || (c.start && period.period_id === "1"),
+                        ),
+                        rest,
                         {
-                          body: {
-                            content: `**${
-                              ensurePeriodName(
-                                period.period_id,
-                                period.period_name,
-                              ).name
-                            } Period Starting - ${game.visiting_team_code} @ ${
-                              game.home_team_code
-                            }**`,
-                            embeds: [
-                              getHtPeriodStatusEmbed(league, game, allPlays),
-                            ],
-                          },
+                          content: `**${
+                            ensurePeriodName(
+                              period.period_id,
+                              period.period_name,
+                            ).name
+                          } Period Starting - ${game.visiting_team_code} @ ${
+                            game.home_team_code
+                          }**`,
+                          embeds: [
+                            getHtPeriodStatusEmbed(league, game, allPlays),
+                          ],
                         },
+                        getPopeData({ league, game, channelId }),
                       )) as APIMessage;
                       if (
                         threadChannelIds.includes(channelId) &&
                         period.period_id === "1"
                       ) {
-                        await rest.post(Routes.threads(channelId, message.id), {
-                          body: {
-                            name: `${game.visiting_team_code} @ ${game.home_team_code} - ${dateString}`,
+                        const thread = (await rest.post(
+                          Routes.threads(channelId, message.id),
+                          {
+                            body: {
+                              name: `${game.visiting_team_code} @ ${game.home_team_code} - ${dateString}`,
+                            },
                           },
-                        });
+                        )) as APIThreadChannel;
+                        const popeData = {
+                          ...getPopeData({ league, game, channelId }),
+                          thread,
+                        };
+                        await sendMirrorMessages(
+                          rest,
+                          filterMirrorChannels(
+                            channelId,
+                            channelConfigs,
+                            "threads",
+                          ),
+                          getThreadMirrorBody(thread, popeData),
+                          popeData,
+                        );
                       }
                       return undefined;
                     })(),
@@ -1713,15 +1938,34 @@ const runNotifications = async ({
                 )) {
                   ctx.waitUntil(
                     logErrors(
-                      rest.post(Routes.threads(channelId), {
-                        body: {
-                          name: `${game.visiting_team_code} @ ${game.home_team_code} - ${dateString}`,
-                          // We need some extra statefulness to have this
-                          // work with announcement channels due to the separate
-                          // thread type required
-                          type: ChannelType.PublicThread,
-                        },
-                      }),
+                      (async () => {
+                        const thread = (await rest.post(
+                          Routes.threads(channelId),
+                          {
+                            body: {
+                              name: `${game.visiting_team_code} @ ${game.home_team_code} - ${dateString}`,
+                              // We need some extra statefulness to have this
+                              // work with announcement channels due to the separate
+                              // thread type required
+                              type: ChannelType.PublicThread,
+                            },
+                          },
+                        )) as APIThreadChannel;
+                        const popeData = {
+                          ...getPopeData({ league, game, channelId }),
+                          thread,
+                        };
+                        await sendMirrorMessages(
+                          rest,
+                          filterMirrorChannels(
+                            channelId,
+                            channelConfigs,
+                            "threads",
+                          ),
+                          getThreadMirrorBody(thread, popeData),
+                          popeData,
+                        );
+                      })(),
                     ),
                   );
                 }
@@ -1753,13 +1997,17 @@ const runNotifications = async ({
               for (const channelId of channelIds) {
                 ctx.waitUntil(
                   logErrors(
-                    rest.post(Routes.channelMessages(channelId), {
-                      body: {
+                    sendMessageWithMirrors(
+                      channelId,
+                      filterMirrorChannels(channelId, channelConfigs, "goals"),
+                      rest,
+                      {
                         embeds: [
                           getHtGoalEmbed(league, summary, goalPlays, play),
                         ],
                       },
-                    }),
+                      getPopeData({ league, game, channelId }),
+                    ),
                   ),
                 );
               }
@@ -1774,11 +2022,17 @@ const runNotifications = async ({
 
               for (const channelId of channelIds) {
                 ctx.waitUntil(
-                  rest.post(Routes.channelMessages(channelId), {
-                    body: {
-                      embeds: [getHtPenaltyEmbed(league, summary, play)],
-                    },
-                  }),
+                  sendMessageWithMirrors(
+                    channelId,
+                    filterMirrorChannels(
+                      channelId,
+                      channelConfigs,
+                      "penalties",
+                    ),
+                    rest,
+                    { embeds: [getHtPenaltyEmbed(league, summary, play)] },
+                    getPopeData({ league, game, channelId }),
+                  ),
                 );
               }
               break;
@@ -1808,14 +2062,22 @@ const runNotifications = async ({
               for (const channelId of channelIds) {
                 ctx.waitUntil(
                   logErrors(
-                    rest.post(Routes.channelMessages(channelId), {
-                      body: {
+                    sendMessageWithMirrors(
+                      channelId,
+                      filterMirrorChannels(channelId, channelConfigs, (c) =>
+                        game.status === GameStatus.UnofficialFinal
+                          ? c.end
+                          : c.final,
+                      ),
+                      rest,
+                      {
                         embeds: [
                           getHtStatusEmbed(league, summary),
                           getHtGoalsEmbed(league, summary),
                         ],
                       },
-                    }),
+                      getPopeData({ league, game, channelId }),
+                    ),
                   ),
                 );
               }
@@ -1833,8 +2095,8 @@ const runNotifications = async ({
             postedPbpEventIds: allPlays.map(getPlayId),
           } satisfies EventData),
           {
-            // 2 weeks
-            expirationTtl: 14 * 86400,
+            // 3 days
+            expirationTtl: 3 * 86400,
           },
         );
         if (nextAlarm !== null) {
@@ -1907,83 +2169,14 @@ export class DurableNotificationManager implements DurableObject {
         const day = await this.state.storage.get<string>("day");
         if (day === undefined) throw Error("No day was stored");
 
-        console.log("alarm for", league, day);
-        const db = getDb(this.env.DB);
-        const entries = await db.query.notifications.findMany({
-          where: and(
-            eq(notifications.active, true),
-            eq(notifications.league, league),
-          ),
-          columns: {
-            channelId: true,
-            teamIds: true,
-            sendConfig: true,
-          },
-        });
-
-        const channelIds: Record<
-          string,
-          Record<string, NotificationSendConfig>
-        > = {};
-        for (const entry of entries) {
-          for (const teamId of entry.teamIds) {
-            if (!channelIds[teamId]) {
-              channelIds[teamId] = {
-                [entry.channelId]: entry.sendConfig,
-              };
-            } else {
-              channelIds[teamId][entry.channelId] = entry.sendConfig;
-            }
-          }
-        }
-
-        const pickemsPollEntries = await db.query.pickemsPolls.findMany({
-          where: and(
-            eq(pickemsPolls.league, league),
-            eq(pickemsPolls.day, day),
-            // eq(pickemsPolls.ended, false),
-          ),
-          columns: {
-            gameId: true,
-            channelId: true,
-            messageId: true,
-          },
-        });
-        const pickemsPollMessageIds: Record<
-          string,
-          { channelId: string; messageId: string }[]
-        > = {};
-        for (const entry of pickemsPollEntries) {
-          pickemsPollMessageIds[entry.gameId] =
-            pickemsPollMessageIds[entry.gameId] ?? [];
-          pickemsPollMessageIds[entry.gameId].push(entry);
-        }
-
         const now = getNow();
-        const rest = new REST().setToken(this.env.DISCORD_TOKEN);
-
-        let nextAlarm: Date | null;
-        try {
-          nextAlarm = await runNotifications({
-            rest,
-            env: this.env,
-            ctx: this.state,
-            league,
-            now,
-            day,
-            channelIds,
-            pickemsPollMessageIds,
-          });
-        } catch (e) {
-          console.error(e);
-          if (new Date(day).getTime() - now.getTime() < 0) {
-            // We've probably been in a loop for several hours; time to clean up.
-            nextAlarm = null;
-          } else {
-            // 3 minutes
-            nextAlarm = new Date(now.getTime() + 180_000);
-          }
-        }
+        const nextAlarm = await checkAlarm(
+          this.env,
+          this.state,
+          league,
+          day,
+          now,
+        );
         if (nextAlarm === null) {
           // The games are all over
           await this.state.storage.deleteAll();
@@ -1994,6 +2187,7 @@ export class DurableNotificationManager implements DurableObject {
         await this.state.storage.setAlarm(
           Math.max(nextAlarm.getTime(), minimumAlarm),
         );
+
         break;
       }
       // Deprecated. We previously waited for 2 days before purging but this
@@ -2008,3 +2202,109 @@ export class DurableNotificationManager implements DurableObject {
     }
   }
 }
+
+export const checkAlarm = async (
+  env: Env,
+  ctx: Pick<DurableObjectState, "waitUntil">,
+  league: HockeyTechLeague,
+  day: string,
+  now: Date,
+) => {
+  console.log("alarm for", league, day);
+  const db = getDb(env.DB);
+  const entries = await db.query.notifications.findMany({
+    where: and(
+      eq(notifications.active, true),
+      eq(notifications.league, league),
+    ),
+    columns: {
+      channelId: true,
+      teamIds: true,
+      sendConfig: true,
+      mirrorConfig: true,
+    },
+  });
+  console.log(JSON.stringify(entries));
+
+  const channelIds: Record<
+    string,
+    Record<
+      string,
+      {
+        send: NotificationSendConfig;
+        mirrors: ChannelMirrorInnerConfig[];
+      }
+    >
+  > = {};
+  for (const entry of entries) {
+    for (const teamId of entry.teamIds) {
+      const mirrors = Object.entries(
+        entry.mirrorConfig?.[teamId] ?? {},
+      ).flatMap(([key, config]) =>
+        config.channelIds.map((channelId) => ({
+          key: key as keyof NotificationSendConfig,
+          channelId,
+          contentTemplate: config.contentTemplate,
+        })),
+      );
+      if (!channelIds[teamId]) {
+        channelIds[teamId] = {
+          [entry.channelId]: { send: entry.sendConfig, mirrors },
+        };
+      } else {
+        channelIds[teamId][entry.channelId] = {
+          send: entry.sendConfig,
+          mirrors,
+        };
+      }
+    }
+  }
+
+  const pickemsPollEntries = await db.query.pickemsPolls.findMany({
+    where: and(
+      eq(pickemsPolls.league, league),
+      eq(pickemsPolls.day, day),
+      // eq(pickemsPolls.ended, false),
+    ),
+    columns: {
+      gameId: true,
+      channelId: true,
+      messageId: true,
+    },
+  });
+  const pickemsPollMessageIds: Record<
+    string,
+    { channelId: string; messageId: string }[]
+  > = {};
+  for (const entry of pickemsPollEntries) {
+    pickemsPollMessageIds[entry.gameId] =
+      pickemsPollMessageIds[entry.gameId] ?? [];
+    pickemsPollMessageIds[entry.gameId].push(entry);
+  }
+
+  const rest = new REST().setToken(env.DISCORD_TOKEN);
+
+  let nextAlarm: Date | null;
+  try {
+    nextAlarm = await runNotifications({
+      rest,
+      env,
+      ctx,
+      league,
+      now,
+      day,
+      channelIds,
+      pickemsPollMessageIds,
+    });
+  } catch (e) {
+    console.error(e);
+    if (new Date(day).getTime() - now.getTime() < 0) {
+      // We've probably been in a loop for several hours; time to clean up.
+      nextAlarm = null;
+    } else {
+      // 3 minutes
+      nextAlarm = new Date(now.getTime() + 180_000);
+    }
+  }
+  return nextAlarm;
+};

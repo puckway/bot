@@ -1,6 +1,9 @@
-import { Snowflake, isSnowflake } from "discord-snowflake";
+import { type Snowflake, isSnowflake } from "discord-snowflake";
 import { integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
-import { NotificationSendConfig } from "../commands/notifications";
+import type {
+  NotificationMirrorConfig,
+  NotificationSendConfig,
+} from "../commands/notifications";
 
 const snowflake = (name: string) => text(name).$type<Snowflake>();
 
@@ -43,6 +46,10 @@ export const notifications = sqliteTable(
       .default([]),
     sendConfig: text("send", { mode: "json" })
       .$type<NotificationSendConfig>()
+      .notNull()
+      .default({}),
+    mirrorConfig: text("mirror", { mode: "json" })
+      .$type<NotificationMirrorConfig>()
       .notNull()
       .default({}),
     active: boolean("active").default(true),

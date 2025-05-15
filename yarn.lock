@@ -4637,6 +4637,11 @@ pkg-types@^1.0.3:
     mlly "^1.2.0"
     pathe "^1.1.0"
 
+pope@^3.0.0:
+  version "3.0.0"
+  resolved "https://registry.yarnpkg.com/pope/-/pope-3.0.0.tgz#f8297f7ce17d31dd906219725a2a1db3f0c3a484"
+  integrity sha512-/URupyoZhlGQpQ7H/uOljU8ddSJGVsCSnsk1jF0H0feJCeNmeRee7k92BPxnp6HSeRb0oW40fNVZGtLZj2c8uA==
+
 postcss-discard-duplicates@^5.1.0:
   version "5.1.0"
   resolved "https://registry.npmjs.org/postcss-discard-duplicates/-/postcss-discard-duplicates-5.1.0.tgz"

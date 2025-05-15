@@ -1,0 +1,1 @@
+ALTER TABLE notifications ADD `mirror` text NOT NULL;

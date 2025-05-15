@@ -23,6 +23,8 @@ import {
 import { dailyInitNotifications } from "./cron";
 import { InteractionContext } from "./interactions";
 import { getErrorMessage, isDiscordError } from "./util/errors.js";
+// import { checkAlarm } from "./notifications";
+// import { getNow } from "./util/time";
 export { DurableNotificationManager } from "./notifications";
 
 const router = Router();
@@ -197,6 +199,37 @@ router
             status: 500,
           });
         }
+      } else if (customId.startsWith("p_")) {
+        const routingId = customId.replace(/^p_/, "") as ComponentRoutingId;
+        const stored = componentStore[routingId];
+        if (!stored) {
+          return respond({ error: "Unknown routing ID" });
+        }
+
+        const ctx = new InteractionContext(rest, interaction, env);
+        try {
+          const response = await (
+            stored.handler as ComponentCallbackT<APIMessageComponentInteraction>
+          )(ctx);
+          if (Array.isArray(response)) {
+            workerCtx.waitUntil(response[1]());
+            return respond(response[0]);
+          }
+          return respond(response);
+        } catch (e) {
+          if (isDiscordError(e)) {
+            const errorResponse = getErrorMessage(ctx, e.raw);
+            if (errorResponse) {
+              return respond(errorResponse);
+            }
+          } else {
+            console.error(e);
+          }
+          return respond({
+            error: "You've found a super unlucky error. Try again later!",
+            status: 500,
+          });
+        }
       }
     } else if (interaction.type === InteractionType.ModalSubmit) {
       const { custom_id: customId } = interaction.data;
@@ -266,6 +299,18 @@ router
   //     getHtGamePreviewFinalEmbed("pwhl", game, { brackets }),
   //   );
   // })
+  // .get(
+  //   "/test/force-alarm",
+  //   async (request, env: Env, workerCtx: ExecutionContext) => {
+  //     const { searchParams } = new URL(request.url);
+  //     const day = searchParams.get("day");
+  //     const league = searchParams.get("league");
+
+  //     const now = getNow();
+  //     await checkAlarm(env, workerCtx, league, day, now);
+  //     return null;
+  //   },
+  // )
   .all("*", () => new Response("Not Found.", { status: 404 }));
 
 async function verifyDiscordRequest(request: Request, env: Env) {

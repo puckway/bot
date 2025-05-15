@@ -7,7 +7,15 @@ import {
 } from "discord-api-types/v10";
 import { addScheduleEventsCallback } from "./commands/calendar";
 import {
+  deleteNotificationsMirrorCallback,
+  mirrorTemplateHelpCallback,
+  notificationsEnterDefaultSettings,
+  notificationsEnterMirrorSettings,
+  notificationsMirrorModalCallback,
   selectNotificationFeaturesCallback,
+  selectNotificationMirrorChannelsCallback,
+  selectNotificationMirrorFeatureCallback,
+  selectNotificationMirrorTeamCallback,
   selectNotificationTeamCallback,
   toggleNotificationActiveButtonCallback,
 } from "./commands/notifications";
@@ -22,6 +30,7 @@ import {
 } from "./commands/pickemsLeaderboard";
 import { playerSearchSelectCallback } from "./commands/player";
 import { InteractionContext } from "./interactions";
+import { reopenModalFromStateCallback } from "./commands/modal";
 
 export interface MinimumKVComponentState {
   /** The total number of seconds that the component/modal should be stored. */
@@ -55,23 +64,34 @@ export type ComponentCallback = ButtonCallback | SelectMenuCallback;
 export type StoredComponentData = { handler: ComponentCallback };
 export type StoredModalData = { handler: ModalCallback };
 
-export type ModalRoutingId = "";
+export type ModalRoutingId = "select-notifications-mirror-modal";
 
 export type ComponentRoutingId =
+  // temporary
   | "player-search"
   | "add-schedule-events"
   | "select-notifications-teams"
   | "select-notifications-features"
   | "select-notifications-activate-toggle"
+  | "select-notifications-mirror-settings"
+  | "select-notifications-default-settings"
+  | "select-notifications-mirror-team"
+  | "select-notifications-mirror-feature"
+  | "select-notifications-mirror-channels"
+  | "delete-notifications-mirror"
+  | "reopen-modal"
   | "select-pickems-teams"
   | "select-pickems-channel"
   | "select-pickems-activate-toggle"
   | "pickems-purge-confirm"
-  | "pickems-purge-cancel";
+  | "pickems-purge-cancel"
+  // persistent
+  | "mirror-template-help";
 
 export type StorableRoutingId = ComponentRoutingId | ModalRoutingId;
 
 export const componentStore: Record<ComponentRoutingId, StoredComponentData> = {
+  "reopen-modal": { handler: reopenModalFromStateCallback },
   "player-search": { handler: playerSearchSelectCallback },
   "add-schedule-events": { handler: addScheduleEventsCallback },
   "select-notifications-teams": { handler: selectNotificationTeamCallback },
@@ -81,6 +101,24 @@ export const componentStore: Record<ComponentRoutingId, StoredComponentData> = {
   "select-notifications-activate-toggle": {
     handler: toggleNotificationActiveButtonCallback,
   },
+  "select-notifications-default-settings": {
+    handler: notificationsEnterDefaultSettings,
+  },
+  "select-notifications-mirror-settings": {
+    handler: notificationsEnterMirrorSettings,
+  },
+  "select-notifications-mirror-team": {
+    handler: selectNotificationMirrorTeamCallback,
+  },
+  "select-notifications-mirror-feature": {
+    handler: selectNotificationMirrorFeatureCallback,
+  },
+  "select-notifications-mirror-channels": {
+    handler: selectNotificationMirrorChannelsCallback,
+  },
+  "delete-notifications-mirror": {
+    handler: deleteNotificationsMirrorCallback,
+  },
   "select-pickems-teams": { handler: selectPickemsTeamCallback },
   "select-pickems-channel": { handler: selectPickemsChannelCallback },
   "select-pickems-activate-toggle": {
@@ -88,6 +126,12 @@ export const componentStore: Record<ComponentRoutingId, StoredComponentData> = {
   },
   "pickems-purge-confirm": { handler: pickemsPurgeConfirmCallback },
   "pickems-purge-cancel": { handler: pickemsPurgeCancelCallback },
+  // persistent
+  "mirror-template-help": { handler: mirrorTemplateHelpCallback },
 };
 
-export const modalStore: Record<string, StoredModalData> = {};
+export const modalStore: Record<ModalRoutingId, StoredModalData> = {
+  "select-notifications-mirror-modal": {
+    handler: notificationsMirrorModalCallback,
+  },
+};
