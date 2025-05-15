@@ -1,1 +1,1 @@
-ALTER TABLE notifications ADD `mirror` text NOT NULL;
+ALTER TABLE notifications ADD `mirror` text NOT NULL DEFAULT "{}";
