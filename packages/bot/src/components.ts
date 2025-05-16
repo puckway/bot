@@ -6,6 +6,7 @@ import {
   APIModalSubmitInteraction,
 } from "discord-api-types/v10";
 import { addScheduleEventsCallback } from "./commands/calendar";
+import { reopenModalFromStateCallback } from "./commands/modal";
 import {
   deleteNotificationsMirrorCallback,
   mirrorTemplateHelpCallback,
@@ -30,7 +31,6 @@ import {
 } from "./commands/pickemsLeaderboard";
 import { playerSearchSelectCallback } from "./commands/player";
 import { InteractionContext } from "./interactions";
-import { reopenModalFromStateCallback } from "./commands/modal";
 
 export interface MinimumKVComponentState {
   /** The total number of seconds that the component/modal should be stored. */

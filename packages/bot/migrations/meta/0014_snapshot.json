@@ -71,10 +71,7 @@
       "indexes": {
         "notifications_league_channelId_unique": {
           "name": "notifications_league_channelId_unique",
-          "columns": [
-            "league",
-            "channelId"
-          ],
+          "columns": ["league", "channelId"],
           "isUnique": true
         }
       },
@@ -133,10 +130,7 @@
       "indexes": {
         "pickems_league_guildId_unique": {
           "name": "pickems_league_guildId_unique",
-          "columns": [
-            "league",
-            "guildId"
-          ],
+          "columns": ["league", "guildId"],
           "isUnique": true
         }
       },
@@ -265,13 +259,7 @@
       "indexes": {
         "pickems_votes_guildId_userId_league_seasonId_gameId_unique": {
           "name": "pickems_votes_guildId_userId_league_seasonId_gameId_unique",
-          "columns": [
-            "guildId",
-            "userId",
-            "league",
-            "seasonId",
-            "gameId"
-          ],
+          "columns": ["guildId", "userId", "league", "seasonId", "gameId"],
           "isUnique": true
         }
       },
@@ -356,10 +344,7 @@
       "indexes": {
         "players_league_nativeId_unique": {
           "name": "players_league_nativeId_unique",
-          "columns": [
-            "league",
-            "nativeId"
-          ],
+          "columns": ["league", "nativeId"],
           "isUnique": true
         }
       },
