@@ -1433,7 +1433,7 @@ const getPopeData = ({
       home_emoji: getTeamEmoji(league, game.home_team),
       away_name: `${game.visiting_team_city} ${game.visiting_team_nickname}`,
       away_emoji: getTeamEmoji(league, game.visiting_team),
-      start_timestamp: new Date(game.start_time).getTime() / 1000,
+      start_timestamp: Math.floor(getGameDate(game).getTime() / 1000),
     },
     links: {
       gamecenter: utils.gameCenter(game.id),
@@ -1450,7 +1450,7 @@ const getThreadMirrorBody = (
   components: [
     new TextDisplayBuilder().setContent(
       pope(
-        "**{{game.matchup_emojis}}** starts <t:{{game.start_timestamp}}:R>!",
+        "**{{game.away_emoji}} {{game.away_name}}** @ **{{game.home_emoji}} {{game.home_name}}** starts <t:{{game.start_timestamp}}:R>!",
         popeData,
         { skipUndefined: true },
       ),
