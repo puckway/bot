@@ -94,7 +94,7 @@ const parseHeight = (height: string): number | null => {
   }
 
   // PWHL
-  const match = height.match(/(\d+)' ?(\d+)"/);
+  const match = height.match(/(\d+)' ?(\d+)"?/);
   if (match) {
     const [, feet, inches] = match.map(Number);
     return Math.floor((feet * 12 + inches) / 0.39);
@@ -218,28 +218,28 @@ const getPlayerEmbed = async (
     }\n`;
   }
   // Hockeytech returns imperial units but we also deal with metric units
-  if (playerDetails?.height) {
-    const cm = playerDetails.height;
-    const imperial = cmToImperialHeight(cm);
-    description += `${s(ctx, "height")} ${cm} cm / ${imperial}\n`;
-  } else if (player.height && player.height !== "0") {
+  if (player.height && player.height !== "0") {
     const cm = parseHeight(player.height);
     if (cm !== null) {
       const imperial = cmToImperialHeight(cm);
       description += `${s(ctx, "height")} ${cm} cm / ${imperial}\n`;
     }
+  } else if (playerDetails?.height) {
+    const cm = playerDetails.height;
+    const imperial = cmToImperialHeight(cm);
+    description += `${s(ctx, "height")} ${cm} cm / ${imperial}\n`;
   }
-  if (playerDetails?.weight) {
+  if (player.weight && player.weight !== "0") {
+    const kilograms = Math.floor(Number(player.weight) / 2.2);
+    description += `${s(ctx, "weight")} ${kilograms} kg / ${
+      player.weight
+    } lb\n`;
+  } else if (playerDetails?.weight) {
     const pounds = Math.floor(playerDetails.weight * 2.2);
     // const stones = Math.floor(player.weight * 0.15747);
     description += `${s(ctx, "weight")} ${
       playerDetails.weight
     } kg / ${pounds} lb\n`;
-  } else if (player.weight && player.weight !== "0") {
-    const kilograms = Math.floor(Number(player.weight) / 2.2);
-    description += `${s(ctx, "weight")} ${kilograms} kg / ${
-      player.weight
-    } lb\n`;
   }
   if (epUrl) {
     description += `[Elite Prospects](${epUrl})`;
