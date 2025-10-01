@@ -43,18 +43,19 @@ export default ([
     code: "TOR",
     nickname: "Sceptres",
   },
-  // {
-  //   id: "7",
-  //   name: "PWHL Vancouver",
-  //   city: "Vancouver",
-  //   code: "VAN",
-  //   nickname: "Vancouver",
-  // },
-  // {
-  //   id: "8",
-  //   name: "PWHL Seattle",
-  //   city: "Seattle",
-  //   code: "SEA",
-  //   nickname: "Seattle",
-  // },
+  // 7 redirects to boston
+  {
+    id: "8",
+    name: "PWHL Seattle",
+    city: "Seattle",
+    code: "SEA",
+    nickname: "Seattle",
+  },
+  {
+    id: "9",
+    name: "PWHL Vancouver",
+    city: "Vancouver",
+    code: "VAN",
+    nickname: "Vancouver",
+  },
 ] satisfies HockeyTechTeam[]);
