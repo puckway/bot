@@ -200,7 +200,7 @@ router
           });
         }
       } else if (customId.startsWith("p_")) {
-        const routingId = customId.replace(/^p_/, "") as ComponentRoutingId;
+        const routingId = customId.split("_")[1] as ComponentRoutingId;
         const stored = componentStore[routingId];
         if (!stored) {
           return respond({ error: "Unknown routing ID" });
