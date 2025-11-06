@@ -132,6 +132,7 @@ class JsonResponse extends Response {
     const init = init_ || {
       headers: {
         "content-type": "application/json;charset=UTF-8",
+        "User-Agent": `${DefaultUserAgent} ${DefaultUserAgentAppendix}`.trim(),
       },
     };
     super(jsonBody, init);
