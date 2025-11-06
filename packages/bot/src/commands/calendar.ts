@@ -543,7 +543,7 @@ export const removeMessageComponentsCallback: ButtonCallback = async (ctx) => {
 
 export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
   const state = ctx.state as AddScheduleEventsState;
-  const guildId = ctx.interaction.guild_id;
+  const { guild_id: guildId, message } = ctx.interaction;
 
   if (!ctx.userPermissons.has(PermissionFlags.ManageEvents)) {
     return ctx.reply({
@@ -551,14 +551,12 @@ export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
       flags: MessageFlags.Ephemeral,
     });
   }
-
   if (!guildId) {
     return ctx.reply({
       content: s(ctx, "notGuild"),
       flags: MessageFlags.Ephemeral,
     });
   }
-
   if (state.games.length === 0) {
     return ctx.reply({
       content: s(ctx, "noSchedulableGames"),
@@ -582,6 +580,8 @@ export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
     )
     .filter((e) => !!e)
     .map((e) => e as string);
+
+  const perPage = 5;
   const newGames = state.games.filter(
     (game) =>
       !extantGameIds.includes(game.id) && new Date(game.date) > getNow(),
@@ -594,15 +594,35 @@ export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
     });
   }
 
+  const cursor = Math.max(
+    state.games.findIndex((g) => g.id === newGames[0]?.id),
+    0,
+  );
   return [
     ctx.reply({
-      content: `Importing ${newGames.length} events, this might take a while!`,
+      content: `<:loading:1436003811553448018> Importing ${Math.min(
+        newGames.length,
+        perPage,
+      )} events`,
       flags: MessageFlags.Ephemeral,
     }),
     async () => {
+      const willContinue = newGames.length > perPage;
+      await ctx.followup.editMessage(message.id, {
+        components: willContinue
+          ? message.components?.map((row, i) => {
+              if (i === 0 && row.type === ComponentType.ActionRow) {
+                // Make it clear they can't use this button while processing
+                row.components[0].disabled = true;
+              }
+              return row;
+            })
+          : [],
+      });
+
       let imported = 0;
       let failures = 0;
-      for (const game of newGames) {
+      for (const game of newGames.slice(0, perPage)) {
         try {
           await ctx.rest.post(Routes.guildScheduledEvents(guildId), {
             body: {
@@ -622,23 +642,53 @@ export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
           failures += 1;
           console.error(e);
         }
-        if (imported % 5 === 0) {
-          ctx.followup
-            .editOriginalMessage({
-              content: `Imported ${imported}/${newGames.length} events, ${
-                newGames.length - imported <= 1
-                  ? "almost finished..."
-                  : "this might take a while. If it appears stuck, it probably isn't!"
-              }`,
-            })
-            .catch(() => {});
-        }
+        // await sleep(1000);
       }
 
+      const waitTime = 10000;
+      const updatedAt = Math.round((Date.now() + waitTime) / 1000);
       await ctx.followup.editOriginalMessage({
         content: `Imported ${imported} events${
           failures > 0 ? ` with ${failures} failures` : ""
-        }. Feel free to edit these, just don't change the last line of the description.`,
+        }. Feel free to edit these, just don't change the last line of the description.${
+          willContinue
+            ? `\n\nThe schedule message will be updated <t:${updatedAt}:R> so you can add more events. This delay is due to rate limits.`
+            : ""
+        }`,
+      });
+      if (!willContinue) return;
+
+      await sleep(waitTime);
+      await ctx.followup.deleteOriginalMessage();
+
+      const newCursor = cursor + 1 + newGames.length;
+      await ctx.followup.editMessage(message.id, {
+        components: [
+          new ActionRowBuilder<ButtonBuilder>()
+            .addComponents(
+              ...(await storeComponents(ctx.env.KV, [
+                new ButtonBuilder()
+                  .setStyle(ButtonStyle.Primary)
+                  .setLabel(
+                    `Create ${newCursor}-${
+                      newCursor + Math.min(perPage, newGames.length)
+                    } (${newGames.length - perPage} remaining)`,
+                  ),
+                {
+                  componentRoutingId: state.componentRoutingId,
+                  componentTimeout: state.componentTimeout,
+                  componentOnce: true,
+                  league: state.league,
+                  games: state.games,
+                } satisfies AddScheduleEventsState,
+              ])),
+              new ButtonBuilder()
+                .setStyle(ButtonStyle.Secondary)
+                .setLabel("Remove Buttons")
+                .setCustomId("p_remove-message-components"),
+            )
+            .toJSON(),
+        ],
       });
     },
   ];
