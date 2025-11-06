@@ -46,16 +46,16 @@ export default ([
   // 7 redirects to boston
   {
     id: "8",
-    name: "PWHL Seattle",
+    name: "Seattle Torrent",
     city: "Seattle",
     code: "SEA",
-    nickname: "Seattle",
+    nickname: "Torrent",
   },
   {
     id: "9",
-    name: "PWHL Vancouver",
+    name: "Vancouver Goldeneyes",
     city: "Vancouver",
     code: "VAN",
-    nickname: "Vancouver",
+    nickname: "Goldeneyes",
   },
 ] satisfies HockeyTechTeam[]);
