@@ -17,3 +17,5 @@ Puckway is an intragalactic bot for everything hockey (excluding the NHL). You m
 ## KHL compatibility
 
 This project uses an [in-house adapter](https://github.com/puckway/khl-hockeytech) to access the KHL API using the `hockeytech` package.
+
+Unfortunately, the KHL API is slow and prone to random failures so it's not very reliable at the moment.
