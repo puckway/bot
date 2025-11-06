@@ -229,9 +229,9 @@ const payload: RESTPutAPIApplicationCommandsJSONBody = [
           fr: "tout",
         },
         description:
-          "Get all games for a season. Works best for leagues with fewer than 1,000 games per season.",
+          "Get all games in a season. Ideal for smaller leagues with fewer games per season.",
         description_localizations: {
-          fr: "Accédez à tous les matchs d'une saison. Parfait pour les ligues avec moins de 1 000 matchs par saison.",
+          fr: "Accéder à tous les matchs de la saison. Parfait pour les petites ligues avec peu de matchs.",
         },
         options: [
           getLeagueOption({ description: "The league to get games for" }),
