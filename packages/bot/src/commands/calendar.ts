@@ -2,13 +2,16 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   EmbedBuilder,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
   time,
 } from "@discordjs/builders";
 import {
   APIActionRowComponent,
-  APIButtonComponent,
   APIChatInputApplicationCommandInteraction,
+  APIComponentInMessageActionRow,
   ButtonStyle,
+  ComponentType,
   GuildScheduledEventEntityType,
   GuildScheduledEventPrivacyLevel,
   MessageFlags,
@@ -17,9 +20,12 @@ import {
 } from "discord-api-types/v10";
 import { PermissionFlags } from "discord-bitflag";
 import { GameStatus, GamesByDate, Schedule } from "hockeytech";
-import { type APIEvent } from "khl-api-types";
 import { ChatInputAppCommandCallback } from "../commands";
-import { ButtonCallback, MinimumKVComponentState } from "../components";
+import {
+  ButtonCallback,
+  MinimumKVComponentState,
+  SelectMenuCallback,
+} from "../components";
 import { League } from "../db/schema";
 import { HockeyTechLeague, getHtClient, hockeyTechLeagues } from "../ht/client";
 import { leagueTeams } from "../ht/teams";
@@ -60,11 +66,6 @@ const s = transformLocalizations({
   },
 });
 
-export type KhlListedPartialGame = Pick<
-  APIEvent,
-  "game_state_key" | "score" | "team_a" | "team_b" | "start_at" | "end_at"
->;
-
 export const isoDate = (
   game: Pick<
     GamesByDate | Schedule,
@@ -72,10 +73,46 @@ export const isoDate = (
   >,
 ) => `${game.date_played}T${game.schedule_time}${getOffset(game.timezone)}`;
 
+const getPaginatedStrings = <T>(
+  data: T[],
+  formatter: (item: T) => string,
+  options: {
+    maxLength: number;
+    separator?: string;
+  },
+): string[] => {
+  const sep = options.separator ?? "";
+  const pages = [];
+  let lines: string[] = [];
+  for (const item of data) {
+    const formatted = formatter(item);
+    if (formatted.length > options.maxLength) {
+      // Maybe in the future I'll make this more advanced (roll the string
+      // onto the next page) but it's not necessary for now
+      throw Error(
+        `Single item is longer than max length for an entire page: ${options.maxLength} < ${formatted}`,
+      );
+    }
+
+    if ([...lines, formatted].join(sep).length > options.maxLength) {
+      pages.push(lines.join(sep));
+      lines = [formatted];
+    } else {
+      lines.push(formatted);
+    }
+  }
+  // Remaining data that wasn't too long
+  if (lines.length !== 0) {
+    pages.push(lines.join(sep));
+  }
+  return pages;
+};
+
 const sendScheduleMessage = async (
   ctx: InteractionContext<APIChatInputApplicationCommandInteraction>,
   games: (GamesByDate | Schedule)[],
-  displayDate: Date,
+  displayDate: Date | string,
+  page?: number,
 ) => {
   const league = ctx.getStringOption("league").value as League;
   const teamId = ctx.getStringOption("team")?.value;
@@ -84,14 +121,153 @@ const sendScheduleMessage = async (
     : undefined;
   const subcommand = ctx.interaction.data.options?.[0].name;
 
-  const title = `${s(ctx, "schedule")}${
-    team ? ` - ${team.nickname}` : ""
-  } - ${displayDate.toLocaleString(ctx.getLocale(), {
-    month: "long",
-    day: subcommand === "day" ? "numeric" : undefined,
-    year: "numeric",
-    timeZone: games[0]?.timezone,
-  })}`;
+  const title = `${s(ctx, "schedule")}${team ? ` - ${team.nickname}` : ""} - ${
+    typeof displayDate === "string"
+      ? displayDate
+      : displayDate.toLocaleString(ctx.getLocale(), {
+          month: "long",
+          day: subcommand === "day" ? "numeric" : undefined,
+          year: "numeric",
+          timeZone: games[0]?.timezone,
+        })
+  }`;
+
+  const embed = new EmbedBuilder()
+    .setAuthor({
+      name: uni(ctx, league),
+      iconURL: getLeagueLogoUrl(league),
+    })
+    .setTitle(title)
+    .setColor(colors[league]);
+
+  const descriptions = getPaginatedStrings(
+    games,
+    (game) => {
+      const startAt = new Date(isoDate(game));
+      const style = subcommand === "day" ? "t" : "d";
+      const homeEmoji = getTeamEmoji(league, game.home_team);
+      const awayEmoji = getTeamEmoji(league, game.visiting_team);
+      return game.status === GameStatus.NotStarted
+        ? `🔴 ${time(startAt, style)} ${awayEmoji} ${
+            game.visiting_team_code
+          } @ ${homeEmoji} ${game.home_team_code}`
+        : `${
+            game.status === GameStatus.Final ||
+            game.status === GameStatus.UnofficialFinal
+              ? "🏁"
+              : "🟢"
+          } ${time(startAt, style)} ${awayEmoji} ${game.visiting_team_code} **${
+            game.visiting_goal_count
+          }** - **${game.home_goal_count}** ${homeEmoji} ${
+            game.home_team_code
+          }\n${game.game_status}`;
+    },
+    {
+      // The actual max length is 4096, but I reduced it here because all of
+      // the markdown causes the last line to become invisible when rendered
+      // in the desktop app due to too many 'nodes'.
+      maxLength: 3900,
+      separator: games.length > 30 ? "\n" : "\n\n",
+    },
+  );
+  if (descriptions.length === 0) {
+    embed.setDescription(s(ctx, "noGames"));
+  } else {
+    embed.setDescription(descriptions[0]);
+  }
+
+  const components: APIActionRowComponent<APIComponentInMessageActionRow>[] =
+    [];
+  const notStarted = games.filter((g) => g.status === GameStatus.NotStarted);
+  if (notStarted.length !== 0) {
+    const watch = hockeyTechLeagues[league].watch;
+    components.push(
+      new ActionRowBuilder<ButtonBuilder>()
+        .addComponents(
+          ...(await storeComponents(ctx.env.KV, [
+            new ButtonBuilder()
+              .setStyle(ButtonStyle.Primary)
+              .setLabel("Create Server Events"),
+            {
+              componentRoutingId: "add-schedule-events",
+              componentTimeout: 600,
+              componentOnce: true,
+              league,
+              games: notStarted.map((game) => ({
+                id: game.id,
+                title: `${game.visiting_team_nickname} at ${game.home_team_nickname}`,
+                location: game.venue_location,
+                description: [
+                  watch
+                    ? `📺 Watch live on ${watch.platform}: ${watch.url}${
+                        watch.regions ? ` (${watch.regions.join(", ")})` : ""
+                      }`
+                    : "",
+                  `🏟️ ${game.visiting_team_code} @ ${game.home_team_code} - ${
+                    "venue" in game ? game.venue : game.venue_name
+                  }`,
+                  `🎟️ Buy tickets: ${
+                    game.tickets_url || "no link available for this game"
+                  }`,
+                  `🆔 ${league}:${game.id}`,
+                ]
+                  .join("\n\n")
+                  .trim(),
+                date: isoDate(game),
+              })),
+            } satisfies AddScheduleEventsState,
+          ])),
+          new ButtonBuilder()
+            .setStyle(ButtonStyle.Secondary)
+            .setLabel("Remove Buttons")
+            .setCustomId("p_remove-message-components"),
+        )
+        .toJSON(),
+    );
+  }
+
+  if (descriptions.length > 1) {
+    components.push(
+      new ActionRowBuilder<StringSelectMenuBuilder>()
+        .addComponents(
+          await storeComponents(ctx.env.KV, [
+            new StringSelectMenuBuilder()
+              .setPlaceholder("Select Page")
+              .addOptions(
+                descriptions.slice(0, 25).map((_, i) =>
+                  new StringSelectMenuOptionBuilder()
+                    .setLabel(`Page ${i + 1}`)
+                    .setDefault(page === i)
+                    .setValue(String(i)),
+                ),
+              ),
+            {
+              componentRoutingId: "select-schedule-page",
+              componentTimeout: 600,
+              league,
+              title,
+              descriptions,
+            },
+          ]),
+        )
+        .toJSON(),
+    );
+  }
+
+  await ctx.followup.editOriginalMessage({
+    embeds: [embed.toJSON()],
+    components,
+  });
+};
+
+export const selectSchedulePageCallback: SelectMenuCallback = async (ctx) => {
+  const { league, title, descriptions } = ctx.state as {
+    league: League;
+    title: string;
+    descriptions: string[];
+  };
+  const { message } = ctx.interaction;
+  const page = Number(ctx.interaction.data.values[0]);
 
   const embed = new EmbedBuilder()
     .setAuthor({
@@ -100,91 +276,27 @@ const sendScheduleMessage = async (
     })
     .setTitle(title)
     .setColor(colors[league])
-    .setDescription(
-      games
-        .map((game) => {
-          const startAt = new Date(isoDate(game));
-          const style = subcommand === "day" ? "t" : "d";
-          const homeEmoji = getTeamEmoji(league, game.home_team);
-          const awayEmoji = getTeamEmoji(league, game.visiting_team);
-          const line =
-            game.status === GameStatus.NotStarted
-              ? `🔴 ${time(startAt, style)} ${awayEmoji} ${
-                  game.visiting_team_code
-                } @ ${homeEmoji} ${game.home_team_code}`
-              : `${
-                  game.status === GameStatus.Final ||
-                  game.status === GameStatus.UnofficialFinal
-                    ? "🏁"
-                    : "🟢"
-                } ${time(startAt, style)} ${awayEmoji} ${
-                  game.visiting_team_code
-                } **${game.visiting_goal_count}** - **${
-                  game.home_goal_count
-                }** ${homeEmoji} ${game.home_team_code}\n${game.game_status}`;
+    .setDescription(descriptions[page]);
 
-          return line;
-        })
-        .join(games.length > 30 ? "\n" : "\n\n")
-        .trim()
-        .slice(0, 4096) || s(ctx, "noGames"),
-    )
-    .toJSON();
-
-  let components: APIActionRowComponent<APIButtonComponent>[] = [];
-  if (games.length > 0) {
-    components = [
-      new ActionRowBuilder<ButtonBuilder>()
-        .addComponents(
-          ...(await storeComponents(ctx.env.KV, [
-            new ButtonBuilder()
-              .setStyle(ButtonStyle.Primary)
-              .setLabel("Add all as server events")
-              .setDisabled(
-                games.filter((g) => g.status === GameStatus.NotStarted)
-                  .length === 0,
-              ),
-            {
-              componentRoutingId: "add-schedule-events",
-              componentTimeout: 600,
-              componentOnce: true,
-              league,
-              games: games
-                .filter((game) => game.status === GameStatus.NotStarted)
-                .map((game) => {
-                  const watch = hockeyTechLeagues[league].watch;
-                  return {
-                    id: game.id,
-                    title: `${game.visiting_team_nickname} at ${game.home_team_nickname}`,
-                    location: game.venue_location,
-                    description: [
-                      watch
-                        ? `📺 Watch live on ${watch.platform}: ${watch.url}${
-                            watch.regions
-                              ? ` (${watch.regions.join(", ")})`
-                              : ""
-                          }`
-                        : "",
-                      `🏟️ ${game.visiting_team_code} @ ${
-                        game.home_team_code
-                      } - ${"venue" in game ? game.venue : game.venue_name}`,
-                      `🎟️ Buy tickets: ${
-                        game.tickets_url || "no link available for this game"
-                      }`,
-                      `🆔 ${league}:${game.id}`,
-                    ]
-                      .join("\n\n")
-                      .trim(),
-                    date: isoDate(game),
-                  };
-                }),
-            },
-          ])),
-        )
-        .toJSON(),
-    ];
-  }
-  await ctx.followup.editOriginalMessage({ embeds: [embed], components });
+  const components = message.components ?? [];
+  return ctx.updateMessage({
+    embeds: [embed.toJSON()],
+    components: components.map((row, i) => {
+      if (
+        i === components.length - 1 &&
+        row.type === ComponentType.ActionRow &&
+        row.components[0].type === ComponentType.StringSelect
+      ) {
+        row.components[0].options = row.components[0].options.map(
+          (opt, pageI) => {
+            opt.default = pageI === page;
+            return opt;
+          },
+        );
+      }
+      return row;
+    }),
+  });
 };
 
 export const scheduleDayCallback: ChatInputAppCommandCallback = async (ctx) => {
@@ -294,6 +406,54 @@ export const scheduleMonthCallback: ChatInputAppCommandCallback = async (
   ];
 };
 
+export const scheduleAllCallback: ChatInputAppCommandCallback = async (ctx) => {
+  const league = ctx.getStringOption("league").value as League;
+
+  const client = getHtClient(ctx.env, league);
+  const teamId = ctx.getStringOption("team")?.value || undefined;
+  const seasonId = ctx.getStringOption("season")?.value || undefined;
+  const excludeFinishedGames = ctx.getBooleanOption(
+    "exclude-finished-games",
+  ).value;
+
+  return [
+    ctx.defer(),
+    async () => {
+      const seasons = (await client.getSeasonList()).SiteKit.Seasons;
+      const season = seasonId
+        ? seasons.find((s) => s.season_id === seasonId)
+        : seasons[0];
+      const games = (
+        await client.getSeasonSchedule(
+          // @ts-expect-error
+          season?.season_id ?? "latest",
+          teamId ? Number(teamId) : undefined,
+        )
+      ).SiteKit.Schedule.filter(
+        (game) =>
+          (teamId
+            ? game.home_team === teamId || game.visiting_team === teamId
+            : true) &&
+          (excludeFinishedGames
+            ? ![GameStatus.Final, GameStatus.UnofficialFinal].includes(
+                game.status,
+              )
+            : true),
+      );
+
+      try {
+        await sendScheduleMessage(
+          ctx,
+          games,
+          season?.season_name ?? new Date(),
+        );
+      } catch (e) {
+        console.error(e);
+      }
+    },
+  ];
+};
+
 export const htGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
   const today = getNow();
   today.setUTCHours(6, 0, 0, 0);
@@ -303,13 +463,12 @@ export const htGamedayCallback: ChatInputAppCommandCallback = async (ctx) => {
   const team = teamId
     ? leagueTeams[league].find((t) => t.id === teamId)
     : undefined;
+  // The PWHL doesn't play many games so we can request an extra day
+  const scorebarData = await client.getScorebar(1, league === "pwhl" ? 1 : 0);
   const games =
-    // The PWHL doesn't play many games
-    (
-      await client.getScorebar(1, league === "pwhl" ? 1 : 0)
-    ).SiteKit.Scorebar.filter((game) =>
+    scorebarData.SiteKit.Scorebar?.filter((game) =>
       teamId ? [game.HomeID, game.VisitorID].includes(teamId) : true,
-    );
+    ) ?? [];
 
   const embed = new EmbedBuilder()
     .setAuthor({
@@ -371,6 +530,16 @@ export interface AddScheduleEventsState extends MinimumKVComponentState {
     date: string;
   }[];
 }
+
+export const removeMessageComponentsCallback: ButtonCallback = async (ctx) => {
+  if (!ctx.userPermissons.has(PermissionFlags.ManageMessages)) {
+    return ctx.reply({
+      content: `${s(ctx, "missingPermissions")} **Manage Messages**`,
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+  return ctx.updateMessage({ components: [] });
+};
 
 export const addScheduleEventsCallback: ButtonCallback = async (ctx) => {
   const state = ctx.state as AddScheduleEventsState;

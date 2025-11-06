@@ -1,3 +1,4 @@
+import { DefaultUserAgent, DefaultUserAgentAppendix } from "@discordjs/rest";
 import {
   APIApplicationCommandAutocompleteInteraction,
   APIApplicationCommandAutocompleteResponse,
@@ -11,6 +12,7 @@ import {
 import { aboutCallback } from "./commands/about";
 import {
   htGamedayCallback,
+  scheduleAllCallback,
   scheduleDayCallback,
   scheduleMonthCallback,
 } from "./commands/calendar";
@@ -64,10 +66,24 @@ export const appCommands: Record<
 > = {
   [ApplicationCommandType.ChatInput]: {
     schedule: {
-      handlers: { day: scheduleDayCallback, month: scheduleMonthCallback },
+      handlers: {
+        day: scheduleDayCallback,
+        month: scheduleMonthCallback,
+        all: scheduleAllCallback,
+      },
       autocompleteHandlers: {
         day: teamAutocomplete,
         month: (ctx) => {
+          switch (true) {
+            case ctx.getStringOption("team").focused:
+              return teamAutocomplete(ctx);
+            case ctx.getStringOption("season").focused:
+              return seasonAutocomplete(ctx);
+            default:
+              return new Promise((r) => r([]));
+          }
+        },
+        all: (ctx) => {
           switch (true) {
             case ctx.getStringOption("team").focused:
               return teamAutocomplete(ctx);

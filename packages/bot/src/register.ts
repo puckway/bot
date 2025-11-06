@@ -222,6 +222,45 @@ const payload: RESTPutAPIApplicationCommandsJSONBody = [
           },
         ],
       },
+      {
+        type: ApplicationCommandOptionType.Subcommand,
+        name: "all",
+        name_localizations: {
+          fr: "tout",
+        },
+        description:
+          "Get all games for a season. Works best for leagues with fewer than 1,000 games per season.",
+        description_localizations: {
+          fr: "Accédez à tous les matchs d'une saison. Parfait pour les ligues avec moins de 1 000 matchs par saison.",
+        },
+        options: [
+          getLeagueOption({ description: "The league to get games for" }),
+          {
+            type: ApplicationCommandOptionType.String,
+            name: "team",
+            name_localizations: { fr: "equipe" },
+            description: "The team to get games for",
+            required: false,
+            autocomplete: true,
+          },
+          {
+            type: ApplicationCommandOptionType.Boolean,
+            name: "exclude-finished-games",
+            name_localizations: { fr: "exclure-les-jeux-terminés" },
+            description:
+              "Exclude games that have already happened from the list",
+            required: false,
+          },
+          {
+            type: ApplicationCommandOptionType.String,
+            name: "season",
+            description:
+              "The season to get games for. If not specified, uses the current season",
+            required: false,
+            autocomplete: true,
+          },
+        ],
+      },
     ],
   },
   {

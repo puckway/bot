@@ -5,7 +5,11 @@ import {
   APIMessageComponentSelectMenuInteraction,
   APIModalSubmitInteraction,
 } from "discord-api-types/v10";
-import { addScheduleEventsCallback } from "./commands/calendar";
+import {
+  addScheduleEventsCallback,
+  removeMessageComponentsCallback,
+  selectSchedulePageCallback,
+} from "./commands/calendar";
 import { reopenModalFromStateCallback } from "./commands/modal";
 import {
   deleteNotificationsMirrorCallback,
@@ -70,6 +74,7 @@ export type ComponentRoutingId =
   // temporary
   | "player-search"
   | "add-schedule-events"
+  | "select-schedule-page"
   | "select-notifications-teams"
   | "select-notifications-features"
   | "select-notifications-activate-toggle"
@@ -86,7 +91,8 @@ export type ComponentRoutingId =
   | "pickems-purge-confirm"
   | "pickems-purge-cancel"
   // persistent
-  | "mirror-template-help";
+  | "mirror-template-help"
+  | "remove-message-components";
 
 export type StorableRoutingId = ComponentRoutingId | ModalRoutingId;
 
@@ -94,6 +100,7 @@ export const componentStore: Record<ComponentRoutingId, StoredComponentData> = {
   "reopen-modal": { handler: reopenModalFromStateCallback },
   "player-search": { handler: playerSearchSelectCallback },
   "add-schedule-events": { handler: addScheduleEventsCallback },
+  "select-schedule-page": { handler: selectSchedulePageCallback },
   "select-notifications-teams": { handler: selectNotificationTeamCallback },
   "select-notifications-features": {
     handler: selectNotificationFeaturesCallback,
@@ -128,6 +135,7 @@ export const componentStore: Record<ComponentRoutingId, StoredComponentData> = {
   "pickems-purge-cancel": { handler: pickemsPurgeCancelCallback },
   // persistent
   "mirror-template-help": { handler: mirrorTemplateHelpCallback },
+  "remove-message-components": { handler: removeMessageComponentsCallback },
 };
 
 export const modalStore: Record<ModalRoutingId, StoredModalData> = {
