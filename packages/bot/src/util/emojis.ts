@@ -133,7 +133,7 @@ export const getTeamPartialEmoji = (
 
 export const getTeamEmoji = (league: League, teamId: string | number) => {
   const emoji = getTeamPartialEmoji(league, teamId);
-  // biome-ignore lint/style/noNonNullAssertion:
+  // biome-ignore lint/style/noNonNullAssertion: required if id is null
   return emoji.id ? `<:_:${emoji.id}>` : emoji.name!;
 };
 
@@ -143,6 +143,6 @@ export const getLeagueLogoUrl = (league: League) => {
 
 export const countryCodeEmoji = (cc: string) =>
   String.fromCodePoint(
-    // biome-ignore lint/style/noNonNullAssertion:
+    // biome-ignore lint/style/noNonNullAssertion: constant value
     ...[...cc.toUpperCase()].map((c) => c.codePointAt(0)! + 127397),
   );

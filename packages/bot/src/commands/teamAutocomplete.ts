@@ -1,5 +1,5 @@
-import { AppCommandAutocompleteCallback } from "../commands";
-import { League } from "../db/schema";
+import type { AppCommandAutocompleteCallback } from "../commands";
+import type { League } from "../db/schema";
 import { isKhl } from "../ht/client";
 import { leagueTeams } from "../ht/teams";
 

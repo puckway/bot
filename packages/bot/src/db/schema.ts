@@ -1,4 +1,4 @@
-import { type Snowflake, isSnowflake } from "discord-snowflake";
+import { isSnowflake, type Snowflake } from "discord-snowflake";
 import { integer, sqliteTable, text, unique } from "drizzle-orm/sqlite-core";
 import type {
   NotificationMirrorConfig,

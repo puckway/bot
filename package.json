@@ -11,13 +11,13 @@
   ],
   "scripts": {
     "lint": "biome lint .",
-    "fix": "biome check --apply .",
+    "fix": "biome check . --write",
     "dev:site": "cd packages/site && npm run dev",
     "dev:bot": "cd packages/bot && npm run dev",
     "ngrok:bot": "cd packages/bot && npm run ngrok",
     "register": "cd packages/bot && npm run register"
   },
   "devDependencies": {
-    "@biomejs/biome": "1.4.1"
+    "@biomejs/biome": "2.0.6"
   }
 }

@@ -1,6 +1,6 @@
-import { HockeyTechTeam } from "../team";
+import type { HockeyTechTeam } from "../team";
 
-export default ([
+export default [
   {
     id: "375",
     name: "Omskie Yastreby",
@@ -267,4 +267,4 @@ export default ([
     code: "AKN",
     nickname: "AKM-Novomoskovsk",
   },
-] satisfies HockeyTechTeam[]);
+] satisfies HockeyTechTeam[];

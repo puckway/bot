@@ -4,19 +4,19 @@ import {
   EmbedBuilder,
 } from "@discordjs/builders";
 import {
-  APIApplicationCommandOptionChoice,
+  type APIApplicationCommandOptionChoice,
   ButtonStyle,
   MessageFlags,
 } from "discord-api-types/v10";
 import { and, count, desc, eq, sql } from "drizzle-orm";
-import {
+import type {
   AppCommandAutocompleteCallback,
   ChatInputAppCommandCallback,
 } from "../commands";
-import { ButtonCallback, componentStore } from "../components";
+import type { ButtonCallback } from "../components";
 import { getDb } from "../db";
 import { makeSnowflake, pickemsVotes } from "../db/schema";
-import { HockeyTechLeague, getHtClient } from "../ht/client";
+import { getHtClient, type HockeyTechLeague } from "../ht/client";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { getLeagueLogoUrl } from "../util/emojis";
@@ -138,8 +138,7 @@ export const pickemsLeaderboardCallback: ChatInputAppCommandCallback = async (
         .map(
           (vote, i) =>
             `${i + 1}. <@${vote.userId}>: ${vote.correct}/${vote.total} (${(
-              (vote.correct / (vote.total ?? 1)) *
-              100
+              (vote.correct / (vote.total ?? 1)) * 100
             ).toFixed(1)}%)`,
         )
         .join("\n"),
@@ -210,8 +209,7 @@ export const pickemsMeCallback: ChatInputAppCommandCallback = async (ctx) => {
             ? season.season_name
             : `Unknown Season (${vote.seasonId})`,
           value: `${vote.correct}/${vote.total} (${(
-            (vote.correct / (vote.total ?? 1)) *
-            100
+            (vote.correct / (vote.total ?? 1)) * 100
           ).toFixed(1)}%)`,
           inline: true,
         };

@@ -1,4 +1,4 @@
-import { InteractionContext } from "../interactions";
+import type { InteractionContext } from "../interactions";
 
 // If there are no SKUs defined, it is assumed that the owner of this
 // instance does not want to utilize premium-only features

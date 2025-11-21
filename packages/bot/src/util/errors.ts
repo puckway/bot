@@ -1,10 +1,10 @@
 import {
-  APIInteraction,
-  APIInteractionResponse,
+  type APIInteraction,
+  type APIInteractionResponse,
   MessageFlags,
-  RESTError,
+  type RESTError,
 } from "discord-api-types/v10";
-import { InteractionContext } from "../interactions";
+import type { InteractionContext } from "../interactions";
 
 interface DiscordError {
   code: number;

@@ -1,6 +1,6 @@
 // import { JSDOM, ConstructorOptions } from "jsdom";
 
-import { APIRouteBases } from "khl-api-types";
+import type { APIRouteBases } from "khl-api-types";
 
 export const DocBaseEnum = {
   ru: "https://www.khl.ru",

@@ -1,16 +1,16 @@
 import { EmbedBuilder } from "@discordjs/builders";
 import { MessageFlags } from "discord-api-types/v10";
-import HockeyTech from "hockeytech";
+import type HockeyTech from "hockeytech";
 import { getBorderCharacters, table } from "table";
-import { ChatInputAppCommandCallback } from "../commands";
-import { League } from "../db/schema";
+import type { ChatInputAppCommandCallback } from "../commands";
+import type { League } from "../db/schema";
 import {
-  HockeyTechLeague,
   getHtClient,
   getPointsPct,
+  type HockeyTechLeague,
   isKhl,
 } from "../ht/client";
-import { InteractionContext } from "../interactions";
+import type { InteractionContext } from "../interactions";
 import { colors } from "../util/colors";
 import { getLeagueLogoUrl } from "../util/emojis";
 import { getExternalUtils } from "../util/external";

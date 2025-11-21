@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs } from "@remix-run/cloudflare";
+import type { LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { XMLParser } from "fast-xml-parser";
 import { Feed } from "feed";
 

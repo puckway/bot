@@ -1,9 +1,8 @@
 import {
-  APIModalComponent,
-  APIModalInteractionResponseCallbackData,
+  type APIModalInteractionResponseCallbackData,
   MessageFlags,
 } from "discord-api-types/v10";
-import { ButtonCallback } from "../components";
+import type { ButtonCallback } from "../components";
 
 export const reopenModalFromStateCallback: ButtonCallback = async (ctx) => {
   const state = ctx.state as {

@@ -1,5 +1,5 @@
-import { TeamsBySeason } from "hockeytech";
-import { HockeyTechLeague, khlProxyOrigin } from "./client";
+import type { TeamsBySeason } from "hockeytech";
+import { type HockeyTechLeague, khlProxyOrigin } from "./client";
 
 export const getHtTeamLogoUrl = (
   league: HockeyTechLeague,

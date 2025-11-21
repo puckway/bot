@@ -1,4 +1,4 @@
-import { League } from "../db/schema";
+import type { League } from "../db/schema";
 import { khlProxyOrigin } from "../ht/client";
 
 export const getExternalUtils = <L = League>(league: L, locale_?: string) => {

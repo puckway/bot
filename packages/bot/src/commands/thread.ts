@@ -1,16 +1,16 @@
 import {
-  APIMessage,
+  type APIMessage,
   ChannelType,
   MessageFlags,
-  RESTPatchAPIChannelJSONBody,
-  RESTPatchAPIChannelMessageJSONBody,
+  type RESTPatchAPIChannelJSONBody,
+  type RESTPatchAPIChannelMessageJSONBody,
   Routes,
 } from "discord-api-types/v10";
-import { ChatInputAppCommandCallback } from "../commands";
+import type { ChatInputAppCommandCallback } from "../commands";
 import {
   GLOBAL_GAME_ID_REGEX,
-  HockeyTechLeague,
   getHtClient,
+  type HockeyTechLeague,
 } from "../ht/client";
 import {
   getHtGamePreviewFinalEmbed,
@@ -33,7 +33,7 @@ export const threadCloseCallback: ChatInputAppCommandCallback = async (ctx) => {
     });
   }
   const parentId = channel.parent_id;
-  let message;
+  let message: APIMessage;
   try {
     message = (await ctx.rest.get(
       Routes.channelMessage(parentId, channel.id),

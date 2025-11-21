@@ -4,7 +4,7 @@
  * For more information, see https://remix.run/file-conventions/entry.server
  */
 
-import type { AppLoadContext, EntryContext } from "@remix-run/cloudflare";
+import type { EntryContext } from "@remix-run/cloudflare";
 import { RemixServer } from "@remix-run/react";
 import isbot from "isbot";
 import { renderToReadableStream } from "react-dom/server";
@@ -14,10 +14,6 @@ export default async function handleRequest(
   responseStatusCode: number,
   responseHeaders: Headers,
   remixContext: EntryContext,
-  // This is ignored so we can keep it in the template for visibility.  Feel
-  // free to delete this parameter in your app if you're not using it!
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  loadContext: AppLoadContext,
 ) {
   let code = responseStatusCode;
   const body = await renderToReadableStream(

@@ -1,12 +1,12 @@
 import {
-  APILightPlayer,
-  APIPlayer,
+  type APILightPlayer,
+  type APIPlayer,
   APIRouteBases,
   type RESTGetAPIPlayers,
   type RESTGetAPIPlayersLight,
   Routes,
 } from "khl-api-types";
-import { KhlApiError, KhlClientMethodOptions, requestJson } from "./rest";
+import { KhlApiError, type KhlClientMethodOptions, requestJson } from "./rest";
 
 export async function getPlayers(
   options?: KhlClientMethodOptions & {

@@ -1,4 +1,4 @@
-import {
+import type {
   APIInteractionResponse,
   APIMessageComponentButtonInteraction,
   APIMessageComponentInteraction,
@@ -34,7 +34,7 @@ import {
   pickemsPurgeConfirmCallback,
 } from "./commands/pickemsLeaderboard";
 import { playerSearchSelectCallback } from "./commands/player";
-import { InteractionContext } from "./interactions";
+import type { InteractionContext } from "./interactions";
 
 export interface MinimumKVComponentState {
   /** The total number of seconds that the component/modal should be stored. */

@@ -1,14 +1,14 @@
 import {
-  ButtonBuilder,
-  ChannelSelectMenuBuilder,
-  MentionableSelectMenuBuilder,
+  type ButtonBuilder,
+  type ChannelSelectMenuBuilder,
+  type MentionableSelectMenuBuilder,
   ModalBuilder,
-  RoleSelectMenuBuilder,
-  StringSelectMenuBuilder,
-  UserSelectMenuBuilder,
+  type RoleSelectMenuBuilder,
+  type StringSelectMenuBuilder,
+  type UserSelectMenuBuilder,
 } from "@discordjs/builders";
 import { ButtonStyle, ComponentType } from "discord-api-types/v10";
-import { MinimumKVComponentState } from "../components";
+import type { MinimumKVComponentState } from "../components";
 
 export const getCustomId = (temporary = false) => {
   const chars =

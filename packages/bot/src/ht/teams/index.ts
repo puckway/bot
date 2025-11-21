@@ -1,5 +1,5 @@
-import { HockeyTechLeague } from "../client";
-import { HockeyTechTeam } from "../team";
+import type { HockeyTechLeague } from "../client";
+import type { HockeyTechTeam } from "../team";
 
 import ahlTeams from "./ahl";
 import khlTeams from "./khl";

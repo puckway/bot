@@ -1,6 +1,6 @@
-import { HockeyTechTeam } from "../team";
+import type { HockeyTechTeam } from "../team";
 
-export default ([
+export default [
   {
     id: "601",
     name: "Agidel",
@@ -57,4 +57,4 @@ export default ([
     code: "SCS",
     nickname: "SCSSO",
   },
-] satisfies HockeyTechTeam[]);
+] satisfies HockeyTechTeam[];

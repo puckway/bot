@@ -4,7 +4,7 @@ import {
   type RESTGetAPITeams,
   Routes,
 } from "khl-api-types";
-import { KhlClientMethodOptions, requestJson } from "./rest";
+import { type KhlClientMethodOptions, requestJson } from "./rest";
 
 // I didn't want to hardcode the teams like this but it tends to make a lot of
 // things easier, especially since the API is scant on providing abbreviations.

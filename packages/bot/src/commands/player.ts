@@ -1,27 +1,30 @@
 import {
   ActionRowBuilder,
   EmbedBuilder,
-  SelectMenuBuilder,
+  type SelectMenuBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
 } from "@discordjs/builders";
-import { APIInteraction } from "discord-api-types/v10";
-import {
+import type {
+  APIInteraction,
+  APIMessageTopLevelComponent,
+} from "discord-api-types/v10";
+import type {
   NumericBoolean,
   PlayerSeasonStat,
   PlayerSeasonStatTotal,
   RosterPlayer,
 } from "hockeytech";
 import { getBorderCharacters, table } from "table";
-import { ChatInputAppCommandCallback } from "../commands";
-import { SelectMenuCallback } from "../components";
-import { DBWithSchema, getDb } from "../db";
-import { League } from "../db/schema";
+import type { ChatInputAppCommandCallback } from "../commands";
+import type { SelectMenuCallback } from "../components";
+import { type DBWithSchema, getDb } from "../db";
+import type { League } from "../db/schema";
 import { getEpHtPlayer } from "../ep/rest";
-import { HockeyTechLeague, getHtClient, isKhl } from "../ht/client";
+import { getHtClient, type HockeyTechLeague, isKhl } from "../ht/client";
 import { getHtTeamLogoUrl } from "../ht/team";
 import { leagueTeams } from "../ht/teams";
-import { InteractionContext } from "../interactions";
+import type { InteractionContext } from "../interactions";
 import { getTeamColor } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { getTeamEmoji } from "../util/emojis";
@@ -395,7 +398,7 @@ export const playerCallback: ChatInputAppCommandCallback = async (ctx) => {
         league,
         Number(players[0].player_id),
       );
-      let components;
+      let components: APIMessageTopLevelComponent[] | undefined;
       if (players.length > 1) {
         components = [
           new ActionRowBuilder<SelectMenuBuilder>()

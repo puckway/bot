@@ -1,4 +1,4 @@
-import { LoaderFunctionArgs, json } from "@remix-run/cloudflare";
+import { json, type LoaderFunctionArgs } from "@remix-run/cloudflare";
 import { Feed } from "feed";
 
 const base = "https://www.thepwhl.com";

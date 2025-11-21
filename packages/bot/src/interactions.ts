@@ -1,40 +1,40 @@
-import { REST } from "@discordjs/rest";
+import type { REST } from "@discordjs/rest";
 import {
-  APIApplicationCommandInteractionDataBooleanOption,
-  APIApplicationCommandInteractionDataIntegerOption,
-  APIApplicationCommandInteractionDataNumberOption,
-  APIApplicationCommandInteractionDataOption,
-  APIApplicationCommandInteractionDataStringOption,
-  APIApplicationCommandInteractionDataSubcommandOption,
-  APIAttachment,
-  APIInteraction,
-  APIInteractionDataResolved,
-  APIInteractionResponseCallbackData,
-  APIInteractionResponseChannelMessageWithSource,
-  APIInteractionResponseDeferredChannelMessageWithSource,
-  APIInteractionResponseDeferredMessageUpdate,
-  APIInteractionResponseUpdateMessage,
-  APIMessage,
-  APIMessageApplicationCommandInteraction,
-  APIMessageComponentInteraction,
-  APIModalInteractionResponse,
-  APIModalInteractionResponseCallbackData,
-  APIModalSubmitInteraction,
-  APIPartialChannel,
-  APIPremiumRequiredInteractionResponse,
-  APIThreadChannel,
+  type APIApplicationCommandInteractionDataBooleanOption,
+  type APIApplicationCommandInteractionDataIntegerOption,
+  type APIApplicationCommandInteractionDataNumberOption,
+  type APIApplicationCommandInteractionDataOption,
+  type APIApplicationCommandInteractionDataStringOption,
+  type APIApplicationCommandInteractionDataSubcommandOption,
+  type APIAttachment,
+  type APIInteraction,
+  type APIInteractionDataResolved,
+  type APIInteractionResponseCallbackData,
+  type APIInteractionResponseChannelMessageWithSource,
+  type APIInteractionResponseDeferredChannelMessageWithSource,
+  type APIInteractionResponseDeferredMessageUpdate,
+  type APIInteractionResponseUpdateMessage,
+  type APIMessage,
+  type APIMessageApplicationCommandInteraction,
+  type APIMessageComponentInteraction,
+  type APIModalInteractionResponse,
+  type APIModalInteractionResponseCallbackData,
+  type APIModalSubmitInteraction,
+  type APIPartialChannel,
+  type APIPremiumRequiredInteractionResponse,
+  type APIThreadChannel,
   ApplicationCommandOptionType,
   ApplicationCommandType,
-  ChannelType,
+  type ChannelType,
   InteractionResponseType,
   InteractionType,
   MessageFlags,
-  ModalSubmitComponent,
-  RESTGetAPIInteractionFollowupResult,
-  RESTPatchAPIInteractionFollowupJSONBody,
-  RESTPatchAPIInteractionFollowupResult,
-  RESTPostAPIInteractionFollowupJSONBody,
-  RESTPostAPIInteractionFollowupResult,
+  type ModalSubmitComponent,
+  type RESTGetAPIInteractionFollowupResult,
+  type RESTPatchAPIInteractionFollowupJSONBody,
+  type RESTPatchAPIInteractionFollowupResult,
+  type RESTPostAPIInteractionFollowupJSONBody,
+  type RESTPostAPIInteractionFollowupResult,
   Routes,
 } from "discord-api-types/v10";
 import {
@@ -42,8 +42,8 @@ import {
   PermissionFlags,
   PermissionsBitField,
 } from "discord-bitflag";
-import { Snowflake, getDate } from "discord-snowflake";
-import { MinimumKVComponentState } from "./components.js";
+import { getDate, type Snowflake } from "discord-snowflake";
+import type { MinimumKVComponentState } from "./components.js";
 
 export type APIPartialResolvedChannelBase = APIPartialChannel & {
   permissions: string;
@@ -100,10 +100,10 @@ export class InteractionContext<
       this.interaction.member
         ? BigInt(this.interaction.member.permissions)
         : PermissionFlags.ViewChannel |
-          PermissionFlags.ReadMessageHistory |
-          PermissionFlags.SendMessages |
-          PermissionFlags.AddReactions |
-          PermissionFlags.EmbedLinks,
+            PermissionFlags.ReadMessageHistory |
+            PermissionFlags.SendMessages |
+            PermissionFlags.AddReactions |
+            PermissionFlags.EmbedLinks,
     );
   }
 
@@ -117,7 +117,7 @@ export class InteractionContext<
   getLocale(defaultLocale = "en") {
     return "locale" in this.interaction
       ? this.interaction.locale
-      : this.interaction.guild_locale ?? defaultLocale;
+      : (this.interaction.guild_locale ?? defaultLocale);
   }
 
   getMessage(): T extends APIMessageApplicationCommandInteraction

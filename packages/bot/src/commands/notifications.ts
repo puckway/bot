@@ -5,7 +5,6 @@ import {
   ContainerBuilder,
   EmbedBuilder,
   ModalBuilder,
-  SectionBuilder,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
   TextDisplayBuilder,
@@ -14,30 +13,30 @@ import {
 import {
   ButtonStyle,
   ChannelType,
-  ComponentType,
   MessageFlags,
   TextInputStyle,
 } from "discord-api-types/v10";
 import { and, eq } from "drizzle-orm";
-import { ChatInputAppCommandCallback } from "../commands";
-import {
+import type { ChatInputAppCommandCallback } from "../commands";
+import type {
   ButtonCallback,
   MinimumKVComponentState,
   ModalCallback,
   SelectMenuCallback,
 } from "../components";
 import { getDb } from "../db";
-import { League, makeSnowflake, notifications } from "../db/schema";
+import { type League, makeSnowflake, notifications } from "../db/schema";
 import { leagueTeams } from "../ht/teams";
-import { InteractionContext } from "../interactions";
+import type { InteractionContext } from "../interactions";
 import { colors } from "../util/colors";
-import { getCustomId, storeComponents } from "../util/components";
+import { storeComponents } from "../util/components";
 import {
   getLeagueLogoUrl,
   getTeamEmoji,
   getTeamPartialEmoji,
 } from "../util/emojis";
 import { transformLocalizations, uni } from "../util/l10n";
+
 // import { BitField, UserFlagsBitField } from "discord-bitflag";
 
 const features = [
@@ -863,7 +862,9 @@ const getMirrorConfigContainer = ({
 }): ContainerBuilder => {
   const team = leagueTeams[league].find((t) => t.id === teamId);
   const configData =
-    config && feature ? config[teamId]?.[feature] ?? { channelIds: [] } : null;
+    config && feature
+      ? (config[teamId]?.[feature] ?? { channelIds: [] })
+      : null;
 
   const container = new ContainerBuilder()
     .setAccentColor(colors.main)

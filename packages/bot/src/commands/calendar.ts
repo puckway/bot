@@ -7,35 +7,38 @@ import {
   time,
 } from "@discordjs/builders";
 import {
-  APIActionRowComponent,
-  APIChatInputApplicationCommandInteraction,
-  APIComponentInMessageActionRow,
+  type APIActionRowComponent,
+  type APIChatInputApplicationCommandInteraction,
+  type APIComponentInMessageActionRow,
   ButtonStyle,
   ComponentType,
   GuildScheduledEventEntityType,
   GuildScheduledEventPrivacyLevel,
   MessageFlags,
-  RESTGetAPIGuildScheduledEventsResult,
+  type RESTGetAPIGuildScheduledEventsResult,
   Routes,
 } from "discord-api-types/v10";
 import { PermissionFlags } from "discord-bitflag";
-import { GameStatus, GamesByDate, Schedule } from "hockeytech";
-import { ChatInputAppCommandCallback } from "../commands";
-import {
+import { GameStatus, type GamesByDate, type Schedule } from "hockeytech";
+import type { ChatInputAppCommandCallback } from "../commands";
+import type {
   ButtonCallback,
   MinimumKVComponentState,
   SelectMenuCallback,
 } from "../components";
-import { League } from "../db/schema";
-import { HockeyTechLeague, getHtClient, hockeyTechLeagues } from "../ht/client";
+import type { League } from "../db/schema";
+import {
+  getHtClient,
+  type HockeyTechLeague,
+  hockeyTechLeagues,
+} from "../ht/client";
 import { leagueTeams } from "../ht/teams";
-import { InteractionContext } from "../interactions";
+import type { InteractionContext } from "../interactions";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { getLeagueLogoUrl, getTeamEmoji } from "../util/emojis";
 import { transformLocalizations, uni } from "../util/l10n";
-import { getOffset, sleep } from "../util/time";
-import { getNow } from "../util/time";
+import { getNow, getOffset, sleep } from "../util/time";
 
 export const DATE_REGEX = /^(\d{4})-(\d{1,2})-(\d{1,2})$/;
 

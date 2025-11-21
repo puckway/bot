@@ -1,4 +1,4 @@
-import { League } from "../db/schema";
+import type { League } from "../db/schema";
 
 type PwhlTeamId = "1" | "2" | "3" | "4" | "5" | "6" | "8" | "9";
 
@@ -25,7 +25,7 @@ export const colors = {
   sphl: 0x0d2959,
 };
 
-export const getTeamColor = (league: League, teamId: string) =>
+export const getTeamColor = (league: League, teamId: string): number =>
   league === "pwhl"
-    ? colors.pwhlTeams[teamId as PwhlTeamId] ?? colors[league]
+    ? (colors.pwhlTeams[teamId as PwhlTeamId] ?? colors[league])
     : colors[league];

@@ -1,8 +1,9 @@
 import * as dotenv from "dotenv";
 import type { Config } from "drizzle-kit";
+
 dotenv.config();
 
-export default ({
+export default {
   schema: "./src/db/schema.ts",
   out: "./migrations",
   driver: "d1",
@@ -10,4 +11,4 @@ export default ({
     dbName: "puckway --local",
     wranglerConfigPath: "wrangler.toml",
   },
-} satisfies Config);
+} satisfies Config;

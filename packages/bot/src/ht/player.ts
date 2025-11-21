@@ -1,4 +1,4 @@
-import { HockeyTechLeague, isKhl, khlProxyOrigin } from "./client";
+import { type HockeyTechLeague, isKhl, khlProxyOrigin } from "./client";
 
 export const htPlayerImageUrl = (
   league: HockeyTechLeague,

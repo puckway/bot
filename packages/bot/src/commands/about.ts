@@ -1,6 +1,6 @@
 import { ButtonBuilder, EmbedBuilder } from "@discordjs/builders";
 import { ButtonStyle } from "discord-api-types/v10";
-import { ChatInputAppCommandCallback } from "../commands";
+import type { ChatInputAppCommandCallback } from "../commands";
 import { colors } from "../util/colors";
 import { transformLocalizations } from "../util/l10n";
 

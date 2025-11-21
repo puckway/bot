@@ -1,29 +1,29 @@
-import { REST, RequestMethod, RouteLike } from "@discordjs/rest";
+import { REST, RequestMethod, type RouteLike } from "@discordjs/rest";
 import {
-  APIEntitlement,
-  APIMessage,
-  APIThreadChannel,
-  APIUser,
+  type APIEntitlement,
+  type APIMessage,
+  type APIThreadChannel,
+  type APIUser,
   ChannelType,
   MessageType,
-  RESTGetAPIPollAnswerVotersResult,
-  RESTPostAPIChannelMessageJSONBody,
-  RESTPostAPIChannelThreadsJSONBody,
+  type RESTGetAPIPollAnswerVotersResult,
+  type RESTPostAPIChannelMessageJSONBody,
+  type RESTPostAPIChannelThreadsJSONBody,
   Routes,
   ThreadAutoArchiveDuration,
 } from "discord-api-types/v10";
 import type { Snowflake } from "discord-snowflake";
 import { and, eq, inArray, sql } from "drizzle-orm";
-import { GamesByDate } from "hockeytech";
-import { DBWithSchema, getDb } from "./db";
+import type { GamesByDate } from "hockeytech";
+import { type DBWithSchema, getDb } from "./db";
 import {
-  League,
-  notifications,
+  type League,
+  type notifications,
   pickems,
   pickemsPolls,
   pickemsVotes,
 } from "./db/schema";
-import { HockeyTechLeague, getHtClient } from "./ht/client";
+import { getHtClient, type HockeyTechLeague } from "./ht/client";
 import { getTeamPartialEmoji } from "./util/emojis";
 import { isDiscordError } from "./util/errors";
 import { uni } from "./util/l10n";

@@ -11,18 +11,18 @@ import {
   MessageFlags,
   SelectMenuDefaultValueType,
 } from "discord-api-types/v10";
-import { Snowflake } from "discord-snowflake";
+import type { Snowflake } from "discord-snowflake";
 import { and, eq } from "drizzle-orm";
-import { ChatInputAppCommandCallback } from "../commands";
-import {
+import type { ChatInputAppCommandCallback } from "../commands";
+import type {
   ButtonCallback,
   MinimumKVComponentState,
   SelectMenuCallback,
 } from "../components";
 import { getDb } from "../db";
-import { League, makeSnowflake, pickems } from "../db/schema";
+import { type League, makeSnowflake, pickems } from "../db/schema";
 import { leagueTeams } from "../ht/teams";
-import { InteractionContext } from "../interactions";
+import type { InteractionContext } from "../interactions";
 import { colors } from "../util/colors";
 import { storeComponents } from "../util/components";
 import { getLeagueLogoUrl, getTeamPartialEmoji } from "../util/emojis";

@@ -1,25 +1,24 @@
 import {
   ButtonBuilder,
   ContainerBuilder,
+  channelLink,
   EmbedBuilder,
   TextDisplayBuilder,
-  channelLink,
   time,
 } from "@discordjs/builders";
 import { REST } from "@discordjs/rest";
 import {
-  APIMessage,
-  APIThreadChannel,
+  type APIMessage,
+  type APIThreadChannel,
   ButtonStyle,
   ChannelType,
   MessageFlags,
-  RESTPostAPIChannelMessageJSONBody,
+  type RESTPostAPIChannelMessageJSONBody,
   Routes,
 } from "discord-api-types/v10";
 import { and, eq } from "drizzle-orm";
 import type HockeyTech from "hockeytech";
 import {
-  type GCGamePlayByPlay,
   GamePlayByPlayEvent,
   type GamePlayByPlayEventBase,
   type GamePlayByPlayEventFaceoff,
@@ -31,6 +30,7 @@ import {
   GameStatus,
   type GameSummary,
   type GamesByDate,
+  type GCGamePlayByPlay,
   type NumericBoolean,
   type Period,
   type PlayerInfo,
@@ -39,32 +39,31 @@ import {
 import { pope } from "pope";
 import { getBorderCharacters, table } from "table";
 import { isoDate } from "./commands/calendar";
-import { NotificationSendConfig } from "./commands/notifications";
-import { HockeyTechTeamStanding, getHtStandings } from "./commands/standings";
+import type { NotificationSendConfig } from "./commands/notifications";
+import {
+  getHtStandings,
+  type HockeyTechTeamStanding,
+} from "./commands/standings";
 import { getDb } from "./db";
 import {
-  HypeMinute,
-  League,
+  type HypeMinute,
   hypeMinutes,
+  type League,
   leagues,
   notifications,
   pickemsPolls,
 } from "./db/schema";
-import { HockeyTechLeague, getHtClient, getPointsPct } from "./ht/client";
+import { getHtClient, getPointsPct, type HockeyTechLeague } from "./ht/client";
 import { htPlayerImageUrl } from "./ht/player";
 import { getHtTeamLogoUrl } from "./ht/team";
 import { getTeamColor } from "./util/colors";
 import { getTeamEmoji } from "./util/emojis";
-import { ExternalUtils, getExternalUtils } from "./util/external";
+import { type ExternalUtils, getExternalUtils } from "./util/external";
 import { getNow, toHMS } from "./util/time";
 
 enum AlarmType {
   Check = 0,
   Purge = 1,
-}
-
-interface GameCache {
-  id: string;
 }
 
 const logErrors = async (promise: Promise<any>) => {
@@ -80,7 +79,7 @@ const logErrors = async (promise: Promise<any>) => {
  * it to a "hype minute" interval (e.g. 60 minutes). This is mostly a rounding
  * function for cron regularity and to avoid sending excessive hype messages.
  */
-const roundToHypeMinute = (minutes: number): HypeMinute | undefined => {
+const _roundToHypeMinute = (minutes: number): HypeMinute | undefined => {
   // We only round up
   if (minutes > hypeMinutes[hypeMinutes.length - 1]) return undefined;
   for (const min of hypeMinutes) {
@@ -395,9 +394,8 @@ export const getHtGamePreviewFinalEmbed = (
         .setDescription(description)
         .spliceFields(0, fieldIndex, {
           name: embed.fields?.[fieldIndex].name ?? "Score",
-          value: (
-            (embed.fields?.[fieldIndex].value ?? "") + `\n\n${seriesText}`
-          ).trim(),
+          value:
+            `${embed.fields?.[fieldIndex].value ?? ""}\n\n${seriesText}`.trim(),
           inline: true,
         })
         .setFooter({
@@ -1416,7 +1414,11 @@ const getPopeData = ({
   league,
   game,
   channelId,
-}: { league: League; game: GamesByDate; channelId: string }) => {
+}: {
+  league: League;
+  game: GamesByDate;
+  channelId: string;
+}) => {
   const utils = getExternalUtils(league);
   return {
     channel_id: channelId,
@@ -1819,7 +1821,7 @@ const runNotifications = async ({
           continue;
         }
 
-        let summary: GameSummary | undefined = undefined;
+        let summary: GameSummary | undefined;
         const getSummary = async () =>
           (await client.getGameSummary(Number(game.id))).GC.Gamesummary;
 
@@ -2115,7 +2117,10 @@ const runNotifications = async ({
 
 /** One of these exists for a single day for each league */
 export class DurableNotificationManager implements DurableObject {
-  constructor(private state: DurableObjectState, private env: Env) {}
+  constructor(
+    private state: DurableObjectState,
+    private env: Env,
+  ) {}
 
   async fetch(request: Request) {
     const data = (await request.json()) as {

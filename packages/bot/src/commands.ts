@@ -1,12 +1,12 @@
 import { DefaultUserAgent, DefaultUserAgentAppendix } from "@discordjs/rest";
 import {
-  APIApplicationCommandAutocompleteInteraction,
-  APIApplicationCommandAutocompleteResponse,
-  APIChatInputApplicationCommandInteraction,
-  APIInteraction,
-  APIInteractionResponse,
-  APIMessageApplicationCommandInteraction,
-  APIUserApplicationCommandInteraction,
+  type APIApplicationCommandAutocompleteInteraction,
+  type APIApplicationCommandAutocompleteResponse,
+  type APIChatInputApplicationCommandInteraction,
+  type APIInteraction,
+  type APIInteractionResponse,
+  type APIMessageApplicationCommandInteraction,
+  type APIUserApplicationCommandInteraction,
   ApplicationCommandType,
 } from "discord-api-types/v10";
 import { aboutCallback } from "./commands/about";
@@ -29,7 +29,7 @@ import { seasonAutocomplete } from "./commands/seasonAutocomplete";
 import { standingsCallback } from "./commands/standings";
 import { teamAutocomplete } from "./commands/teamAutocomplete";
 import { threadCloseCallback } from "./commands/thread";
-import { InteractionContext } from "./interactions";
+import type { InteractionContext } from "./interactions";
 
 export type AppCommandCallbackT<T extends APIInteraction> = (
   ctx: InteractionContext<T>,
