@@ -2131,11 +2131,6 @@ export class DurableNotificationManager implements DurableObject {
 
     const client = getHtClient(this.env, data.league);
     const games = (await client.getDailySchedule(data.day)).SiteKit.Gamesbydate;
-    console.log(
-      data.league,
-      "notifs",
-      games.map((g) => g.id),
-    );
     if (games.length === 0) {
       return new Response(null, { status: 204 });
     }
@@ -2210,7 +2205,6 @@ export const checkAlarm = async (
   day: string,
   now: Date,
 ) => {
-  console.log("alarm for", league, day);
   const db = getDb(env.DB);
   const entries = await db.query.notifications.findMany({
     where: and(
@@ -2224,7 +2218,6 @@ export const checkAlarm = async (
       mirrorConfig: true,
     },
   });
-  console.log(JSON.stringify(entries));
 
   const channelIds: Record<
     string,

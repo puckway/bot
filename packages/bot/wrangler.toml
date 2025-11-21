@@ -1,7 +1,7 @@
 name = "puckway-bot"
 main = "src/index.ts"
-node_compat = true
-compatibility_date = "2023-12-18"
+compatibility_flags = [ "nodejs_compat" ]
+compatibility_date = "2025-11-21"
 
 # Every day at 17:00 UTC (12:00 EST)
 # There is drift here due to DST but most of the typical hockey
@@ -9,6 +9,11 @@ compatibility_date = "2023-12-18"
 triggers.crons = ["0 17 * * *"]
 
 services = [{ binding = "KHL", service = "khl" }]
+
+[observability]
+enabled = true
+head_sampling_rate = 1
+logs.invocation_logs = true
 
 [[durable_objects.bindings]]
 name = "NOTIFICATIONS"
