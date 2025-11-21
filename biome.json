@@ -1,12 +1,13 @@
 {
-  "$schema": "https://biomejs.dev/schemas/2.0.6/schema.json",
+  "$schema": "node_modules/@biomejs/biome/configuration_schema.json",
   "files": {
     "includes": [
       "**",
       "!packages/site/public",
       "!packages/site/functions",
       "!packages/bot/migrations",
-      "!packages/bot/.wrangler"
+      "!packages/bot/.wrangler",
+      "!**/*.css"
     ]
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },

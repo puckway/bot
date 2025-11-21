@@ -234,7 +234,7 @@ export class InteractionContext<
     }
 
     const id = option.value;
-    // @ts-ignore
+    // @ts-expect-error
     const objects = this.interaction.data.resolved[key];
     if (!objects) return null;
 
