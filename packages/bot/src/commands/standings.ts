@@ -1,5 +1,4 @@
 import { EmbedBuilder } from "@discordjs/builders";
-import { MessageFlags } from "discord-api-types/v10";
 import type HockeyTech from "hockeytech";
 import { getBorderCharacters, table } from "table";
 import type { ChatInputAppCommandCallback } from "../commands";
@@ -201,53 +200,58 @@ export const standingsCallback: ChatInputAppCommandCallback = async (ctx) => {
   const sort = ctx.getStringOption("sort").value || undefined;
   const seasonId = ctx.getStringOption("season").value || undefined;
 
-  const client = getHtClient(ctx.env, league, getHtLocale(ctx));
-  const standings = await getHtStandings(
-    client,
-    sort,
-    seasonId ? Number(seasonId) : undefined,
-  );
-  if (!standings) {
-    return ctx.reply({
-      content: s(ctx, "noSeasons"),
-      flags: MessageFlags.Ephemeral,
-    });
-  }
+  return [
+    ctx.defer({ thinking: true }),
+    async () => {
+      const client = getHtClient(ctx.env, league, getHtLocale(ctx));
+      const standings = await getHtStandings(
+        client,
+        sort,
+        seasonId ? Number(seasonId) : undefined,
+      );
+      if (!standings) {
+        await ctx.followup.editOriginalMessage({
+          content: s(ctx, "noSeasons"),
+        });
+        return;
+      }
 
-  const embed = getStandingsEmbed(
-    ctx,
-    league,
-    [
-      "GP",
-      // "GR",
-      "PTS",
-      "W",
-      league === "pwhl" ? "OTW" : "",
-      "OTL",
-      "L",
-      "PCT",
-    ],
-    standings.map((team) => ({
-      teamCode: team.team_code,
-      clinch: team.clinched || undefined,
-      values: [
-        team.games_played,
-        // team.games_remaining,
-        team.points,
-        league === "pwhl" ? team.regulation_wins : team.wins,
-        league === "pwhl"
-          ? String(Number(team.ot_wins) + Number(team.shootout_wins))
-          : "",
-        String(Number(team.ot_losses) + Number(team.shootout_losses)),
-        team.losses,
-        getPointsPct(
-          league as HockeyTechLeague,
-          Number(team.points),
-          Number(team.games_played),
-        ),
-      ],
-    })),
-  );
+      const embed = getStandingsEmbed(
+        ctx,
+        league,
+        [
+          "GP",
+          // "GR",
+          "PTS",
+          "W",
+          league === "pwhl" ? "OTW" : "",
+          "OTL",
+          "L",
+          "PCT",
+        ],
+        standings.map((team) => ({
+          teamCode: team.team_code,
+          clinch: team.clinched || undefined,
+          values: [
+            team.games_played,
+            // team.games_remaining,
+            team.points,
+            league === "pwhl" ? team.regulation_wins : team.wins,
+            league === "pwhl"
+              ? String(Number(team.ot_wins) + Number(team.shootout_wins))
+              : "",
+            String(Number(team.ot_losses) + Number(team.shootout_losses)),
+            team.losses,
+            getPointsPct(
+              league as HockeyTechLeague,
+              Number(team.points),
+              Number(team.games_played),
+            ),
+          ],
+        })),
+      );
 
-  return ctx.reply({ embeds: [embed] });
+      await ctx.followup.editOriginalMessage({ embeds: [embed] });
+    },
+  ];
 };
