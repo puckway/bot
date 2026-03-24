@@ -4,64 +4,96 @@ import { Feed } from "feed";
 
 const parser = new XMLParser();
 
-// Filters out livestreams from three sources and returns them as one feed
-export const loader = async ({ request }: LoaderFunctionArgs) => {
-  const { origin } = new URL(request.url);
+const youtubeStrategy = async (feed: Feed) => {
+  try {
+    const siteResponse = await fetch("https://www.thepwhl.com/en/pwhl-live-1", {
+      method: "GET",
+      headers: { Accept: "text/html" },
+    });
+    // They haven't streamed on twitch since 2024-25 so I'm not sure what this
+    // page would look like for those games. There would probably be similar
+    // indications of a twitch embed.
+    const youtubeIds: string[] = [];
+    if (siteResponse.ok) {
+      const txt = await siteResponse.text();
+      const matches = txt.matchAll(/"live-chat-panel-([\w-]+)"/g);
+      for (const match of matches) {
+        const [, id] = match;
+        if (!youtubeIds.includes(id)) youtubeIds.push(id);
+      }
+      // We're only sure about getting info for one game right now, but this
+      // element might simply be duplicated & sensibly in order for multiple
+      // games (don't know yet!)
+      if (youtubeIds.length === 1) {
+        const infoMatch = txt.match(
+          /<h2 style="text-align: ?center;">([^<]+)(?:<br>([^<]+))?(?:<br>([^<]+))?/,
+        );
+        if (infoMatch) {
+          const videoId = youtubeIds[0];
 
-  const feed = new Feed({
-    id: "live:pwhl",
-    title: "PWHL Livestreams",
-    link: "https://www.thepwhl.com",
-    description:
-      "An aggregation of active livestreams for the PWHL across three channels: YouTube @thepwhlofficial, Twitch @thepwhl, and Twitch @thepwhl2",
-    copyright: "Professional Women's Hockey League",
-    ttl: 15,
-    generator: "Puckway (https://puckway.shay.cat)",
-    language: "en",
-    feedLinks: { rss: `${origin}/feeds/livestreams/pwhl.rss` },
-  });
-  feed.addCategory("Sports");
-  feed.addCategory("Hockey");
+          const [, matchup, date, time] = infoMatch;
+          let title = matchup ?? `PWHL: ${videoId}`;
+          if (date) title += ` - ${date}`;
 
-  const ytResponse = await fetch(
-    "https://www.youtube.com/feeds/videos.xml?channel_id=UCNKUkQV2R0JKakyE1vuC1lQ",
-    { method: "GET", headers: { Accept: "text/xml,application/xml" } },
-  );
-  if (ytResponse.ok) {
-    const ytFeed = parser.parse(await ytResponse.text()).feed;
-    const entries = (
-      Array.isArray(ytFeed.entry) ? ytFeed.entry : [ytFeed.entry]
-    ) as YTFeedEntry[];
-
-    for (const video of entries) {
-      if (!video["yt:videoId"]) continue;
-      const link = `https://www.youtube.com/watch?v=${video["yt:videoId"]}`;
-      const vidResponse = await fetch(link, { method: "GET" });
-      if (vidResponse.ok) {
-        const raw = await vidResponse.text();
-        if (raw.includes(`{"key":"is_viewed_live","value":"True"}`)) {
+          // Most of the season takes place during standard time so we have to
+          // guess a little bit for convenience
+          const dt = new Date(`${date} ${time.replace("ET", "EST")}`);
           feed.addItem({
-            id: video.id,
-            title: video.title,
-            link,
-            date: new Date(video.published),
-            published: new Date(video.published),
+            id: videoId,
+            title,
+            link: `https://www.youtube.com/watch?v=${videoId}`,
+            date: dt,
+            published: dt,
             image:
               "https://hockey-bot.s3.us-east-005.backblazeb2.com/leagues/pwhl.jpg",
-            // description: video["media:group"].description,
-            author: [video.author],
+            author: [{ name: "The PWHL", link: "https://www.thepwhl.com" }],
           });
-          // Multiple livestreams may be active, so we don't break here
-        } else {
-          break;
+          // We have sufficient video info so we don't need to fetch the RSS data
+          return;
         }
       }
     }
-  }
+    // Either our method broke or there are no upcoming streams. Our previous
+    // method involved only the youtube feed, but I think youtube was detecting
+    // that I was a bot when I fetched the page to see if it was a livestream,
+    // and I didn't want to deal with that.
+    if (youtubeIds.length === 0) return;
 
-  // They only ever stream 2 games at a time at most, but in
-  // theory 3 could be played at the same time (6 teams)
-  if (feed.items.length < 3) {
+    // Fall back to youtube's rss feed to get the video title and date
+    const ytResponse = await fetch(
+      "https://www.youtube.com/feeds/videos.xml?channel_id=UCNKUkQV2R0JKakyE1vuC1lQ",
+      { method: "GET", headers: { Accept: "text/xml,application/xml" } },
+    );
+    if (ytResponse.ok) {
+      const ytFeed = parser.parse(await ytResponse.text()).feed;
+      const entries = (
+        Array.isArray(ytFeed.entry) ? ytFeed.entry : [ytFeed.entry]
+      ) as YTFeedEntry[];
+
+      for (const video of entries) {
+        const videoId = video["yt:videoId"];
+        if (!videoId) continue;
+        if (!youtubeIds.includes(videoId)) continue;
+
+        feed.addItem({
+          id: video.id,
+          title: video.title,
+          link: `https://www.youtube.com/watch?v=${videoId}`,
+          date: new Date(video.published),
+          published: new Date(video.published),
+          image:
+            "https://hockey-bot.s3.us-east-005.backblazeb2.com/leagues/pwhl.jpg",
+          author: [video.author],
+        });
+      }
+    }
+  } catch (e) {
+    console.error(e);
+  }
+};
+
+const twitchStrategy = async (feed: Feed): Promise<void> => {
+  try {
     for (const channel of ["thepwhl", "thepwhl2"]) {
       const twResponse = await fetch(
         `https://twitchrss.appspot.com/vod/${channel}`,
@@ -90,7 +122,31 @@ export const loader = async ({ request }: LoaderFunctionArgs) => {
         }
       }
     }
+  } catch (e) {
+    console.error(e);
   }
+};
+
+// Filters out livestreams from three sources and returns them as one feed
+export const loader = async ({ request }: LoaderFunctionArgs) => {
+  const { origin } = new URL(request.url);
+
+  const feed = new Feed({
+    id: "live:pwhl",
+    title: "PWHL Livestreams",
+    link: "https://www.thepwhl.com",
+    description:
+      "An aggregation of active livestreams for the PWHL across three channels: YouTube @thepwhlofficial, Twitch @thepwhl, and Twitch @thepwhl2",
+    copyright: "Professional Women's Hockey League",
+    ttl: 15,
+    generator: "Puckway (https://puckway.shay.cat)",
+    language: "en",
+    feedLinks: { rss: `${origin}/feeds/livestreams/pwhl.rss` },
+  });
+  feed.addCategory("Sports");
+  feed.addCategory("Hockey");
+
+  await Promise.all([youtubeStrategy(feed), twitchStrategy(feed)]);
 
   // The reader I made this for just reposts the base feed info
   // when there are no entries
