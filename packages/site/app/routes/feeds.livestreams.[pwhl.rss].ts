@@ -6,51 +6,23 @@ const parser = new XMLParser();
 
 const youtubeStrategy = async (feed: Feed) => {
   try {
-    const siteResponse = await fetch("https://www.thepwhl.com/en/pwhl-live-1", {
-      method: "GET",
-      headers: { Accept: "text/html" },
-    });
-    // They haven't streamed on twitch since 2024-25 so I'm not sure what this
-    // page would look like for those games. There would probably be similar
-    // indications of a twitch embed.
     const youtubeIds: string[] = [];
-    if (siteResponse.ok) {
-      const txt = await siteResponse.text();
-      const matches = txt.matchAll(/"live-chat-panel-([\w-]+)"/g);
-      for (const match of matches) {
-        const [, id] = match;
-        if (!youtubeIds.includes(id)) youtubeIds.push(id);
-      }
-      // We're only sure about getting info for one game right now, but this
-      // element might simply be duplicated & sensibly in order for multiple
-      // games (don't know yet!)
-      if (youtubeIds.length === 1) {
-        const infoMatch = txt.match(
-          /<h2 style="text-align: ?center;">([^<]+)(?:<br>([^<]+))?(?:<br>([^<]+))?/,
-        );
-        if (infoMatch) {
-          const videoId = youtubeIds[0];
-
-          const [, matchup, date, time] = infoMatch;
-          let title = matchup ?? `PWHL: ${videoId}`;
-          if (date) title += ` - ${date}`;
-
-          // Most of the season takes place during standard time so we have to
-          // guess a little bit for convenience
-          const dt = new Date(`${date} ${time.replace("ET", "EST")}`);
-          feed.addItem({
-            id: videoId,
-            title,
-            link: `https://www.youtube.com/watch?v=${videoId}`,
-            date: dt,
-            published: dt,
-            image:
-              "https://hockey-bot.s3.us-east-005.backblazeb2.com/leagues/pwhl.jpg",
-            author: [{ name: "The PWHL", link: "https://www.thepwhl.com" }],
-          });
-          // We have sufficient video info so we don't need to fetch the RSS data
-          return;
-        }
+    // Max of 4 simultaneous games with 8 teams
+    for (const pageNum of [1, 2, 3, 4]) {
+      const siteResponse = await fetch(
+        `https://www.thepwhl.com/en/pwhl-live-${pageNum}`,
+        {
+          method: "GET",
+          headers: { Accept: "text/html" },
+        },
+      );
+      // They haven't streamed on twitch since 2024-25 so I'm not sure what this
+      // page would look like for those games. There would probably be similar
+      // indications of a twitch embed.
+      if (siteResponse.ok) {
+        const txt = await siteResponse.text();
+        const match = txt.match(/"live-chat-panel-([\w-]+)"/);
+        if (match?.[1]) youtubeIds.push(match[1]);
       }
     }
     // Either our method broke or there are no upcoming streams. Our previous
@@ -58,6 +30,35 @@ const youtubeStrategy = async (feed: Feed) => {
     // that I was a bot when I fetched the page to see if it was a livestream,
     // and I didn't want to deal with that.
     if (youtubeIds.length === 0) return;
+
+    const apiRes = await fetch(
+      `https://ytapi.apps.mattw.io/v3/videos?part=snippet&id=${youtubeIds.join(",")}`,
+      { method: "GET", headers: { Accept: "application/json" } },
+    );
+    if (apiRes.ok) {
+      const data = (await apiRes.json()) as { items: YouTubeVideoItem[] };
+      for (const { id: videoId, snippet } of data.items) {
+        // This line is basically the only reason we are using the above API
+        if (snippet.liveBroadcastContent !== "live") return;
+
+        feed.addItem({
+          id: videoId,
+          title: snippet.title,
+          description: snippet.description, //.replace(/\n/g, "<br>"),
+          link: `https://www.youtube.com/watch?v=${videoId}`,
+          date: new Date(snippet.publishedAt),
+          published: new Date(snippet.publishedAt),
+          image: snippet.thumbnails.maxres,
+          author: [
+            {
+              name: snippet.channelTitle,
+              link: `https://www.youtube.com/channel/${snippet.channelId}`,
+            },
+          ],
+        });
+      }
+      return;
+    }
 
     // Fall back to youtube's rss feed to get the video title and date
     const ytResponse = await fetch(
@@ -193,4 +194,35 @@ interface TwitchFeedEntry {
   /** `Date`-parseable */
   pubDate: string;
   category: string;
+}
+
+interface YouTubeVideoItem {
+  kind: "youtube#video";
+  etag: string;
+  id: string;
+  snippet: {
+    publishedAt: string;
+    channelId: string;
+    title: string;
+    description: string;
+    thumbnails: Record<
+      "default" | "medium" | "high" | "standard" | "maxres",
+      {
+        url: string;
+        width: number;
+        height: number;
+      }
+    >;
+    channelTitle: string;
+    tags: string[];
+    categoryId: string;
+    liveBroadcastContent: "upcoming" | "none" | "live";
+    defaultLanguage: string;
+    localized: { title: string; description: string };
+    defaultAudioLanguage: string;
+  };
+  // liveStreamingDetails?: {
+  //   scheduledStartTime: string;
+  //   activeLiveChatId?: string;
+  // };
 }
