@@ -1,6 +1,17 @@
 import type { League } from "../db/schema";
 
-type PwhlTeamId = "1" | "2" | "3" | "4" | "5" | "6" | "8" | "9";
+type PwhlTeamId =
+  | "1"
+  | "2"
+  | "3"
+  | "4"
+  | "5"
+  | "6"
+  | "8"
+  | "9"
+  | "10"
+  | "11"
+  | "12";
 
 export const colors = {
   main: 0x985df5,
@@ -14,6 +25,9 @@ export const colors = {
     "6": 0x467ddb,
     "8": 0x255357,
     "9": 0xa46d4e,
+    "10": 0xa6192e, // det
+    "11": 0x64111d, // ham
+    "12": 0x686f12, // vegas
   } satisfies Record<PwhlTeamId, number> as Record<PwhlTeamId, number>,
   khl: 0x306da9,
   zhhl: 0x306da9,

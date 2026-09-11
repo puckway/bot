@@ -43,7 +43,7 @@ export default [
     code: "TOR",
     nickname: "Sceptres",
   },
-  // 7 redirects to boston
+  // 7 redirects to 1 (Boston)
   {
     id: "8",
     name: "Seattle Torrent",
@@ -57,5 +57,26 @@ export default [
     city: "Vancouver",
     code: "VAN",
     nickname: "Goldeneyes",
+  },
+  {
+    id: "10",
+    name: "PWHL Detroit",
+    city: "Detroit",
+    code: "DET",
+    nickname: "PWHL Detroit",
+  },
+  {
+    id: "11",
+    name: "PWHL Hamilton",
+    city: "Hamilton",
+    code: "HAM",
+    nickname: "PWHL Hamilton",
+  },
+  {
+    id: "12",
+    name: "PWHL Las Vegas",
+    city: "Las Vegas",
+    code: "LVG",
+    nickname: "PWHL Las Vegas",
   },
 ] satisfies HockeyTechTeam[];

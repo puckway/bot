@@ -141,6 +141,9 @@ export default [
     code: "ADM",
     nickname: "Admiral",
   },
+  // This team is no longer part of the league, but it may still show up in
+  // messages. We need a separate flag to exclude it from relevant autocomplete
+  // fuctions.
   {
     id: "34",
     name: "Vityaz",
