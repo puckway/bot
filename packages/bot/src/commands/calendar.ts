@@ -196,28 +196,39 @@ const sendScheduleMessage = async (
               componentTimeout: 600,
               componentOnce: true,
               league,
-              games: notStarted.map((game) => ({
-                id: game.id,
-                title: `${game.visiting_team_nickname} at ${game.home_team_nickname}`,
-                location: game.venue_location,
-                description: [
-                  watch
-                    ? `📺 Watch live on ${watch.platform}: ${watch.url}${
-                        watch.regions ? ` (${watch.regions.join(", ")})` : ""
-                      }`
-                    : "",
-                  `🏟️ ${game.visiting_team_code} @ ${game.home_team_code} - ${
-                    "venue" in game ? game.venue : game.venue_name
-                  }`,
-                  `🎟️ Buy tickets: ${
-                    game.tickets_url || "no link available for this game"
-                  }`,
-                  `🆔 ${league}:${game.id}`,
-                ]
-                  .join("\n\n")
-                  .trim(),
-                date: isoDate(game),
-              })),
+              games: notStarted.map((game) => {
+                // why did they set the nickname to the first part of the name lol
+                const homeNick =
+                  game.home_team_nickname === "PWHL"
+                    ? `PWHL ${game.home_team_city}`
+                    : game.home_team_nickname;
+                const awayNick =
+                  game.visiting_team_nickname === "PWHL"
+                    ? `PWHL ${game.visiting_team_city}`
+                    : game.visiting_team_nickname;
+                return {
+                  id: game.id,
+                  title: `${awayNick} at ${homeNick}`,
+                  location: game.venue_location,
+                  description: [
+                    watch
+                      ? `📺 Watch live on ${watch.platform}: ${watch.url}${
+                          watch.regions ? ` (${watch.regions.join(", ")})` : ""
+                        }`
+                      : "",
+                    `🏟️ ${game.visiting_team_code} @ ${game.home_team_code} - ${
+                      "venue" in game ? game.venue : game.venue_name
+                    }`,
+                    `🎟️ Buy tickets: ${
+                      game.tickets_url || "no link available for this game"
+                    }`,
+                    `🆔 ${league}:${game.id}`,
+                  ]
+                    .join("\n\n")
+                    .trim(),
+                  date: isoDate(game),
+                };
+              }),
             } satisfies AddScheduleEventsState,
           ])),
           new ButtonBuilder()
