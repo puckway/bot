@@ -76,7 +76,14 @@ export default [
     id: "12",
     name: "PWHL Las Vegas",
     city: "Las Vegas",
-    code: "LVG",
+    code: "VEG",
     nickname: "PWHL Las Vegas",
+  },
+  {
+    id: "13",
+    name: "PWHL San Jose",
+    city: "San Jose",
+    code: "SJ",
+    nickname: "PWHL San Jose",
   },
 ] satisfies HockeyTechTeam[];

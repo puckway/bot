@@ -11,7 +11,8 @@ type PwhlTeamId =
   | "9"
   | "10"
   | "11"
-  | "12";
+  | "12"
+  | "13";
 
 export const colors = {
   main: 0x985df5,
@@ -28,6 +29,7 @@ export const colors = {
     "10": 0xa6192e, // det
     "11": 0x64111d, // ham
     "12": 0x686f12, // vegas
+    "13": 0xf48845, // san jose
   } satisfies Record<PwhlTeamId, number> as Record<PwhlTeamId, number>,
   khl: 0x306da9,
   zhhl: 0x306da9,
