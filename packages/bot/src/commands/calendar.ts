@@ -200,11 +200,11 @@ const sendScheduleMessage = async (
                 // why did they set the nickname to the first part of the name lol
                 const homeNick =
                   game.home_team_nickname === "PWHL"
-                    ? `PWHL ${game.home_team_city}`
+                    ? game.home_team_name
                     : game.home_team_nickname;
                 const awayNick =
                   game.visiting_team_nickname === "PWHL"
-                    ? `PWHL ${game.visiting_team_city}`
+                    ? game.visiting_team_name
                     : game.visiting_team_nickname;
                 return {
                   id: game.id,
