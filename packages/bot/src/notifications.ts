@@ -1217,6 +1217,10 @@ export const ensurePeriodName = (
   because nothing happened during it. I think this is unlikely because faceoffs
   are essentially guaranteed, and surely there won't be non-stop play for 20 minutes,
   so I'm not worrying about it for now, but it is worth noting just in case.
+
+  Oct 2026 addendum: It looks like the AHL does not send faceoff events. Maybe
+  we should insert e.g. a false 2nd period if we encounter the 3rd immediately
+  after the 1st.
 */
 export const getPlaysWithPeriods = (
   pxp: GCGamePlayByPlay["Pxpverbose"],
@@ -1835,19 +1839,37 @@ const runNotifications = async ({
 
         for (const play of newPlays) {
           switch (play.event) {
+            case ExtraPXPEvent.PeriodStart:
             case GamePlayByPlayEvent.Faceoff: {
               if (play.s !== 0) break;
 
-              const period = allPlays.find(
-                (p): p is GamePlayByPlayEventPeriodStart =>
-                  p.event === ExtraPXPEvent.PeriodStart &&
-                  p.period_id === play.period,
-              );
+              // https://discord.com/channels/663898246804144138/671628824781389837/1564111916081610794 (bearhouse)
+              // For some reason, the AHL's play by plays do not contain
+              // faceoff data, so this never happens. Therefore we have a
+              // fallback to our assumed PeriodStart event for that league
+              // specifically. It might be inaccurate but better than nothing
+              // at all.
+              if (
+                play.event === ExtraPXPEvent.PeriodStart &&
+                league !== "ahl"
+              ) {
+                break;
+              }
+
+              const period =
+                play.event === ExtraPXPEvent.PeriodStart
+                  ? play
+                  : allPlays.find(
+                      (p): p is GamePlayByPlayEventPeriodStart =>
+                        p.event === ExtraPXPEvent.PeriodStart &&
+                        p.period_id === play.period,
+                    );
               if (!period) break;
+              // Non-AHL:
               // We have now confirmed that the period has started.
-              // Some leagues tend to "begin" the game prematurely, so using
-              // a `PeriodStart` case would result in period start messages
-              // being sent as much as 20 minutes too soon.
+              // Some leagues (PWHL) tend to "begin" the game prematurely,
+              // so using a `PeriodStart` case would result in period start
+              // messages being sent as much as 20 minutes too soon.
 
               const channelIds = filterConfigChannels(
                 channelConfigs,
