@@ -3,8 +3,10 @@
   "files": {
     "includes": [
       "**",
+      "!node_modules",
       "!packages/site/public",
       "!packages/site/functions",
+      "!packages/site/.wrangler",
       "!packages/bot/migrations",
       "!packages/bot/.wrangler",
       "!**/*.css"
@@ -14,7 +16,6 @@
   "linter": {
     "enabled": true,
     "rules": {
-      "recommended": true,
       "style": {
         "noUselessElse": "off",
         "noParameterAssign": "error",

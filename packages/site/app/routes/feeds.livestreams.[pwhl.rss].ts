@@ -102,7 +102,7 @@ const twitchStrategy = async (feed: Feed): Promise<void> => {
       );
       if (twResponse.ok) {
         const twFeed = parser.parse(await twResponse.text())?.rss?.channel;
-        if (!twFeed || !twFeed.item) continue;
+        if (!twFeed?.item) continue;
 
         // if there's only one item it doesn't return an array
         const vods = (

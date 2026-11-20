@@ -1177,7 +1177,7 @@ export const deleteNotificationsMirrorCallback: ButtonCallback = async (
         eq(table.channelId, makeSnowflake(state.channelId)),
       ),
   });
-  if (!settings || !settings.mirrorConfig) {
+  if (!settings?.mirrorConfig) {
     // this shouldn't happen
     return ctx.reply({
       content: "There's nothing to delete.",
