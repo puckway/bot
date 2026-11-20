@@ -13,10 +13,10 @@
     "pages:deploy": "npm run build && wrangler pages deploy ./public"
   },
   "dependencies": {
-    "@remix-run/cloudflare": "^2.4.0",
-    "@remix-run/cloudflare-pages": "^2.4.0",
-    "@remix-run/css-bundle": "^2.4.0",
-    "@remix-run/react": "^2.4.0",
+    "@remix-run/cloudflare": "^2.17.5",
+    "@remix-run/cloudflare-pages": "^2.17.5",
+    "@remix-run/css-bundle": "^2.17.5",
+    "@remix-run/react": "^2.17.5",
     "fast-xml-parser": "^4.5.0",
     "feed": "^4.2.2",
     "isbot": "^3.6.8",
@@ -24,16 +24,16 @@
     "react-dom": "^18.2.0"
   },
   "devDependencies": {
-    "@cloudflare/workers-types": "^4.20230518.0",
-    "@remix-run/dev": "^2.4.0",
+    "@cloudflare/workers-types": "^5.20261120.1",
+    "@remix-run/dev": "^2.17.5",
     "@types/react": "^18.2.20",
     "@types/react-dom": "^18.2.7",
     "tailwind-merge": "^2.2.1",
     "tailwindcss": "^3.4.1",
     "typescript": "^5.1.0",
-    "wrangler": "^3.8.0"
+    "wrangler": "^4.166.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=24.0.0"
   }
 }

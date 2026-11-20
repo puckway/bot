@@ -61,10 +61,23 @@ export const loader = async ({ request, params }: LoaderFunctionArgs) => {
       id: entry.uid,
       link: `${base}${entry.url}`,
       title: entry.title,
-      description: entry.description.replace(entry.title, "").trim(),
+      description: entry.description?.replace(entry.title, "").trim(),
       date: new Date(entry.date),
       image: entry.preview_image[0]?.secure_url,
       category: entry.tags.map((tag) => ({ name: tag.title })),
+    });
+  }
+
+  // The reader I made this for just reposts the base feed info
+  // when there are no entries
+  if (feed.items.length === 0) {
+    feed.addItem({
+      id: "pwhl:placeholder",
+      title: "Placeholder",
+      link: "https://thepwhl.com/news",
+      description:
+        "Prevents the items from being empty, confusing some readers",
+      date: new Date(2024, 1, 1),
     });
   }
 
